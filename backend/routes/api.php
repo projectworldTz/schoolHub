@@ -317,7 +317,7 @@ Route::prefix('v1')->group(function () use ($schoolRoutes, $parentRoutes) {
         Route::post('/auth/logout', [ApiAuthController::class, 'logout']);
         Route::get('/auth/me', [ApiAuthController::class, 'me']);
 
-        Route::prefix('school')->group($schoolRoutes);
+        Route::prefix('school')->name('v1.')->group($schoolRoutes);
         Route::middleware('role:Parent')->prefix('parent')->group($parentRoutes);
     });
 });
