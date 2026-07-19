@@ -2,13 +2,25 @@
 
 Enterprise multi-tenant School ERP SaaS platform.
 
+## Key features
+
+Admissions & enrollment, students/staff/HR, attendance, timetable, homework, LMS courses,
+examinations with ranked report cards (bulk PDF generation, class/subject rankings, teacher
+performance leaderboards, auto-generated performance messages), a public results Notice Board,
+finance (fees/invoices/payments/payroll/expenses/budgets), library/hostel/transport/inventory/
+clinic/cafeteria, analytics dashboards, a tabular Report Library with CSV export, an audit trail,
+multi-branch reporting, bulk CSV student import, and an AI Assistant (chat + lesson-plan generation,
+gated behind an API key — see below). See [ROADMAP.md](./ROADMAP.md) for the full build-out history
+and the reasoning behind each module's scope.
+
 ## Stack
 
 - **Backend:** Laravel 12, PHP 8.2+ locally (target 8.4 in production — see note below), MySQL/MariaDB (via XAMPP locally)
 - **Auth:** Laravel Sanctum (SPA cookie auth)
 - **Permissions:** Spatie Laravel Permission (roles + granular permissions)
-- **Frontend:** React 19 + TypeScript + Vite, Tailwind CSS + shadcn/ui, TanStack Query, React Hook Form + Zod, Recharts
-- **Mobile:** Expo (React Native + TypeScript), React Navigation — a Parent-role vertical slice against the public API (see below)
+- **Frontend:** React 19 + TypeScript + Vite, Tailwind CSS + shadcn/ui, TanStack Query, React Hook Form + Zod, Recharts. Ships as an installable PWA with offline read-caching (see `ROADMAP.md`'s "Offline resilience" section).
+- **Mobile:** Expo (React Native + TypeScript), React Navigation — Teacher and Parent vertical slices against the public API (see below)
+- **AI:** Anthropic Claude API (chat + structured lesson-plan generation), optional — the app runs fully without it, see below
 - **Cache/queue/sessions:** database driver locally, Redis in production (see note below)
 
 ## Tenancy model
@@ -60,6 +72,16 @@ php artisan serve
 Seeds a Super Admin at `admin@schoolhub.africa` / `password` (override via `PLATFORM_ADMIN_EMAIL`
 / `PLATFORM_ADMIN_NAME` / `PLATFORM_ADMIN_PASSWORD` before seeding anywhere but local).
 
+Optional — enable the AI Assistant (chat + lesson-plan generation) by adding a key to `.env`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...   # from https://console.anthropic.com/
+```
+
+Leave it blank to keep the feature disabled — the UI shows a plain "not configured" state instead
+of erroring, both endpoints degrade to a 503, and everything else in the app works normally either
+way.
+
 ### 3. Frontend (React)
 
 ```bash
@@ -83,9 +105,18 @@ npm run web             # runs in a real browser — the only target verifiable 
 # npm run ios / npm run android need a simulator or the Expo Go app on a device
 ```
 
-Currently a Parent-role vertical slice (login, announcements, per-child attendance/homework/exam
-results) proving the public API end-to-end for a mobile client, not full feature parity with the
-web dashboard across every role — see `ROADMAP.md` Phase 7 for scope reasoning.
+Two vertical slices proving the public API end-to-end for a mobile client, not full feature parity
+with the web dashboard across every role — see `ROADMAP.md` for scope reasoning:
+
+- **Parent:** login, announcements, per-child attendance/homework/exam results.
+- **Teacher:** login, daily attendance register, gradebook (record exam marks).
+
+## Testing
+
+```bash
+cd backend && php artisan test      # PHPUnit, SQLite in-memory — no DB server needed
+cd frontend && npx vitest run       # Vitest — pure-logic units (ranking, CSV, permissions)
+```
 
 ## Project structure
 
