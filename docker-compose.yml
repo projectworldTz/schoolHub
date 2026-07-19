@@ -1,0 +1,33 @@
+# OPTIONAL. Local dev does not require this file: MySQL comes from XAMPP,
+# and cache/queue/sessions run on the database driver (see backend/.env).
+#
+# Bring this up later if you want Redis (to match the production driver
+# exactly) and/or Mailpit (to view outgoing mail in a browser instead of
+# storage/logs/laravel.log). If you do, flip backend/.env back to
+# CACHE_STORE=redis / QUEUE_CONNECTION=redis / SESSION_DRIVER=redis and
+# MAIL_MAILER=smtp with MAIL_PORT=1025.
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: schoolhub_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - schoolhub_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: schoolhub_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  schoolhub_redis_data:

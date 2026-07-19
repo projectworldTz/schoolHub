@@ -1,0 +1,7 @@
+# Each subproject (backend/, frontend/, mobile/) has its own .gitignore for
+# its own tooling. This one just covers OS/editor cruft at the repo root.
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

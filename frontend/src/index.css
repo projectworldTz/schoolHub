@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.85rem;
+  /* A cool, softly-tinted canvas (not stark white) — cards stay near-white
+     so they visibly lift off this backdrop instead of blending into it. */
+  --background: oklch(0.965 0.012 280);
+  --foreground: oklch(0.18 0.015 285);
+  --card: oklch(0.995 0.002 285);
+  --card-foreground: oklch(0.18 0.015 285);
+  --popover: oklch(0.995 0.002 285);
+  --popover-foreground: oklch(0.18 0.015 285);
+  --primary: oklch(0.541 0.229 293.4);
+  --primary-foreground: oklch(0.99 0.005 293);
+  --secondary: oklch(0.94 0.012 285);
+  --secondary-foreground: oklch(0.28 0.02 285);
+  --muted: oklch(0.95 0.01 285);
+  --muted-foreground: oklch(0.5 0.02 285);
+  --accent: oklch(0.685 0.15 237.3);
+  --accent-foreground: oklch(0.99 0.005 237);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.9 0.012 285);
+  --input: oklch(0.9 0.012 285);
+  --ring: oklch(0.541 0.229 293.4 / 40%);
+  --chart-1: oklch(0.541 0.229 293.4);
+  --chart-2: oklch(0.685 0.15 237.3);
+  --chart-3: oklch(0.72 0.16 175);
+  --chart-4: oklch(0.769 0.188 70.08);
+  --chart-5: oklch(0.65 0.22 25);
+  --sidebar: oklch(0.995 0.002 285);
+  --sidebar-foreground: oklch(0.18 0.015 285);
+  --sidebar-primary: oklch(0.541 0.229 293.4);
+  --sidebar-primary-foreground: oklch(0.99 0.005 293);
+  --sidebar-accent: oklch(0.94 0.012 285);
+  --sidebar-accent-foreground: oklch(0.28 0.02 285);
+  --sidebar-border: oklch(0.9 0.012 285);
+  --sidebar-ring: oklch(0.541 0.229 293.4 / 40%);
+  --brand-from: oklch(0.541 0.229 293.4);
+  --brand-via: oklch(0.6 0.2 280);
+  --brand-to: oklch(0.685 0.15 237.3);
+}
+
+.dark {
+  --background: oklch(0.16 0.014 285);
+  --foreground: oklch(0.96 0.006 285);
+  --card: oklch(0.2 0.016 285);
+  --card-foreground: oklch(0.96 0.006 285);
+  --popover: oklch(0.2 0.016 285);
+  --popover-foreground: oklch(0.96 0.006 285);
+  --primary: oklch(0.72 0.19 293.4);
+  --primary-foreground: oklch(0.16 0.02 293);
+  --secondary: oklch(0.27 0.018 285);
+  --secondary-foreground: oklch(0.96 0.006 285);
+  --muted: oklch(0.25 0.016 285);
+  --muted-foreground: oklch(0.68 0.015 285);
+  --accent: oklch(0.72 0.13 237.3);
+  --accent-foreground: oklch(0.16 0.02 237);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.19 293.4 / 45%);
+  --chart-1: oklch(0.72 0.19 293.4);
+  --chart-2: oklch(0.72 0.13 237.3);
+  --chart-3: oklch(0.72 0.16 175);
+  --chart-4: oklch(0.769 0.188 70.08);
+  --chart-5: oklch(0.65 0.22 25);
+  --sidebar: oklch(0.19 0.015 285);
+  --sidebar-foreground: oklch(0.96 0.006 285);
+  --sidebar-primary: oklch(0.72 0.19 293.4);
+  --sidebar-primary-foreground: oklch(0.16 0.02 293);
+  --sidebar-accent: oklch(0.27 0.018 285);
+  --sidebar-accent-foreground: oklch(0.96 0.006 285);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.72 0.19 293.4 / 45%);
+  --brand-from: oklch(0.72 0.19 293.4);
+  --brand-via: oklch(0.65 0.19 280);
+  --brand-to: oklch(0.72 0.13 237.3);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lexend", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+    /* Soft, low-opacity brand-colored blobs behind the whole app — the
+       "modern, cool, attractive" canvas for light mode, instead of a flat
+       white page. Fixed so it doesn't scroll/tile with content. */
+    background-image:
+      radial-gradient(ellipse 900px 560px at 8% -8%, oklch(0.72 0.15 293.4 / 16%), transparent 60%),
+      radial-gradient(ellipse 760px 520px at 108% 0%, oklch(0.75 0.14 237.3 / 14%), transparent 60%),
+      radial-gradient(ellipse 800px 620px at 50% 115%, oklch(0.78 0.13 175 / 10%), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  .dark body {
+    /* Dark mode already reads as a deliberate, finished surface on its
+       own — the gradient wash is a light-mode-only treatment. */
+    background-image: none;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .bg-gradient-brand {
+    background-image: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-via) 55%, var(--brand-to) 100%);
+  }
+
+  .text-gradient-brand {
+    background-image: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-via) 55%, var(--brand-to) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    background-color: color-mix(in oklch, var(--card) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px -12px color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+
+  /* Layered, soft-focus elevation for the dashboard's premium cards — three
+     stacked shadows read as depth instead of the single flat shadow-sm. */
+  .shadow-premium {
+    box-shadow:
+      0 1px 2px -1px color-mix(in oklch, var(--foreground) 6%, transparent),
+      0 10px 26px -10px color-mix(in oklch, var(--foreground) 14%, transparent),
+      0 28px 56px -28px color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+  .dark .shadow-premium {
+    box-shadow:
+      0 1px 2px -1px oklch(0 0 0 / 35%),
+      0 10px 26px -10px oklch(0 0 0 / 40%),
+      0 28px 64px -28px color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-130%) skewX(-14deg);
+  }
+  to {
+    transform: translateX(230%) skewX(-14deg);
+  }
+}
+/* A slow, subtle light sweep across the hero greeting card — the one
+   deliberately "alive" element on the dashboard, everything else stays
+   static so this doesn't compete for attention. */
+.animate-sheen {
+  animation: sheen 5s ease-in-out infinite;
+}
