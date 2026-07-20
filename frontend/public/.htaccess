@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Force HTTPS — without this, cookies set by the (HTTPS-only) API get
+  # dropped as cross-site by browsers when this SPA is loaded over plain
+  # HTTP, since scheme differences make same-registrable-domain requests
+  # count as cross-site for SameSite cookie purposes.
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # SPA fallback: let real files/dirs (assets, favicon, etc.) serve
+  # directly, send every other path to index.html for client-side routing.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>
