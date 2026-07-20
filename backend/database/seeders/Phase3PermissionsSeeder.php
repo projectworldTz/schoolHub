@@ -32,6 +32,17 @@ class Phase3PermissionsSeeder extends Seeder
         'Academic Master' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
         'Class Teacher' => ['attendance.manage', 'homework.manage', 'announcements.manage'],
         'Teacher' => ['attendance.manage', 'homework.manage'],
+
+        'Head Teacher' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Vice Chancellor' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Deputy Head Teacher' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Second Master' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Deputy Vice Chancellor' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Head of Department' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
+        'Discipline Master' => ['attendance.manage', 'announcements.manage'],
+        'Dean of Students' => ['attendance.manage', 'announcements.manage'],
+        'Subject Teacher' => ['attendance.manage', 'homework.manage'],
+        'Lecturer' => ['attendance.manage', 'homework.manage'],
     ];
 
     public function run(): void

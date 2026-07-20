@@ -64,6 +64,7 @@ export function SchoolsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Owner</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>City</TableHead>
@@ -73,21 +74,21 @@ export function SchoolsPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   Loading schools…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-destructive">
+                <TableCell colSpan={6} className="text-center text-destructive">
                   Could not load schools.
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No schools registered yet.
                 </TableCell>
               </TableRow>
@@ -95,6 +96,16 @@ export function SchoolsPage() {
             {data?.data.map((school) => (
               <TableRow key={school.id}>
                 <TableCell className="font-medium">{school.name}</TableCell>
+                <TableCell>
+                  {school.owner ? (
+                    <div className="flex flex-col">
+                      <span>{school.owner.name}</span>
+                      <span className="text-muted-foreground text-xs">{school.owner.email}</span>
+                    </div>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
                 <TableCell className="capitalize">{school.type}</TableCell>
                 <TableCell>
                   <Badge variant={STATUS_VARIANT[school.status]}>{school.status}</Badge>

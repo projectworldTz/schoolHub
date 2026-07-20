@@ -44,6 +44,15 @@ class Phase4PermissionsSeeder extends Seeder
         'Academic Master' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
         'Class Teacher' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
         'Teacher' => ['exam-marks.record', 'lms.manage'],
+
+        'Head Teacher' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Vice Chancellor' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Deputy Head Teacher' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Second Master' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Deputy Vice Chancellor' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Head of Department' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
+        'Subject Teacher' => ['exam-marks.record', 'lms.manage'],
+        'Lecturer' => ['exam-marks.record', 'lms.manage'],
     ];
 
     public function run(): void

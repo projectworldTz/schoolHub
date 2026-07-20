@@ -20,6 +20,9 @@ export interface CreateSchoolPayload {
   phone?: string
   city?: string
   country?: string
+  owner_name: string
+  owner_email: string
+  owner_password: string
 }
 
 export async function createSchool(payload: CreateSchoolPayload): Promise<School> {

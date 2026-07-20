@@ -43,6 +43,17 @@ class Phase7PermissionsSeeder extends Seeder
         'Class Teacher' => ['discipline.manage'],
         'Teacher' => ['discipline.manage'],
         'Security Officer' => ['discipline.manage'],
+
+        'Head Teacher' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
+        'Vice Chancellor' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
+        'Deputy Head Teacher' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
+        'Second Master' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
+        'Deputy Vice Chancellor' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
+        'Head of Department' => ['analytics.view'],
+        'Discipline Master' => ['discipline.manage'],
+        'Dean of Students' => ['discipline.manage'],
+        'Subject Teacher' => ['discipline.manage'],
+        'Lecturer' => ['discipline.manage'],
     ];
 
     public function run(): void

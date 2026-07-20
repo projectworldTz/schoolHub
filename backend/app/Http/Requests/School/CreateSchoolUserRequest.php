@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\SchoolRoles;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -20,16 +21,14 @@ class CreateSchoolUserRequest extends FormRequest
 
     public function rules(): array
     {
+        $allowedRoles = SchoolRoles::forType($this->user()->school?->type);
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', Password::defaults()],
             'roles' => ['required', 'array', 'min:1'],
-            'roles.*' => [
-                'string',
-                Rule::exists('roles', 'name')->where('guard_name', 'web'),
-                Rule::notIn(['Super Admin']),
-            ],
+            'roles.*' => ['string', Rule::in($allowedRoles)],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

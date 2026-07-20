@@ -33,6 +33,9 @@ class Phase6PermissionsSeeder extends Seeder
         'Transport Officer' => ['transport.manage'],
         'Store Keeper' => ['inventory.manage', 'cafeteria.manage'],
         'Nurse' => ['clinic.manage'],
+
+        'Head Teacher' => ['library.manage', 'hostel.manage', 'transport.manage', 'inventory.manage', 'clinic.manage', 'cafeteria.manage'],
+        'Vice Chancellor' => ['library.manage', 'hostel.manage', 'transport.manage', 'inventory.manage', 'clinic.manage', 'cafeteria.manage'],
     ];
 
     public function run(): void

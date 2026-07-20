@@ -42,6 +42,20 @@ class RolesAndPermissionsSeeder extends Seeder
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+
+        // Per-school-type leadership/teaching titles — see
+        // config/school_roles.php and App\Support\SchoolRoles for which of
+        // these each school type actually offers.
+        'Head Teacher',
+        'Deputy Head Teacher',
+        'Discipline Master',
+        'Subject Teacher',
+        'Second Master',
+        'Vice Chancellor',
+        'Deputy Vice Chancellor',
+        'Dean of Students',
+        'Head of Department',
+        'Lecturer',
     ];
 
     public function run(): void

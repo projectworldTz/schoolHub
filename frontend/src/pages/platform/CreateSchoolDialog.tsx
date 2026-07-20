@@ -51,6 +51,9 @@ const createSchoolSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   city: z.string().optional(),
   country: z.string().length(2, 'Use a 2-letter country code').optional().or(z.literal('')),
+  owner_name: z.string().min(2, 'Owner name is required'),
+  owner_email: z.string().email('Enter a valid email'),
+  owner_password: z.string().min(8, 'At least 8 characters'),
 })
 
 type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>
@@ -61,7 +64,17 @@ export function CreateSchoolDialog() {
 
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
-    defaultValues: { name: '', slug: '', type: 'secondary', email: '', city: '', country: 'TZ' },
+    defaultValues: {
+      name: '',
+      slug: '',
+      type: 'secondary',
+      email: '',
+      city: '',
+      country: 'TZ',
+      owner_name: '',
+      owner_email: '',
+      owner_password: '',
+    },
   })
 
   function onSubmit(values: CreateSchoolFormValues) {
@@ -176,6 +189,52 @@ export function CreateSchoolDialog() {
                     <FormLabel>Country code</FormLabel>
                     <FormControl>
                       <Input maxLength={2} placeholder="TZ" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="space-y-4 border-t pt-4">
+              <p className="text-sm font-medium">School Owner account</p>
+              <p className="text-muted-foreground text-sm">
+                Creates the school's first login. There's no invite-email flow yet — share this
+                password with the owner directly.
+              </p>
+              <FormField
+                control={form.control}
+                name="owner_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="owner_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="owner_password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

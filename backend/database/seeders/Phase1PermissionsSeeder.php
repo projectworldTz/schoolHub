@@ -29,6 +29,15 @@ class Phase1PermissionsSeeder extends Seeder
         'Academic Master' => ['classes.manage', 'subjects.manage'],
         'Registrar' => ['classes.manage'],
         'HR Officer' => ['users.manage'],
+
+        // Per-school-type equivalents of the roles above — same bundle,
+        // see App\Support\SchoolRoles for which type offers which.
+        'Head Teacher' => ['school-settings.manage', 'classes.manage', 'subjects.manage', 'users.manage'],
+        'Vice Chancellor' => ['school-settings.manage', 'classes.manage', 'subjects.manage', 'users.manage'],
+        'Deputy Head Teacher' => ['classes.manage', 'subjects.manage', 'users.manage'],
+        'Second Master' => ['classes.manage', 'subjects.manage', 'users.manage'],
+        'Deputy Vice Chancellor' => ['classes.manage', 'subjects.manage', 'users.manage'],
+        'Head of Department' => ['classes.manage', 'subjects.manage'],
     ];
 
     public function run(): void

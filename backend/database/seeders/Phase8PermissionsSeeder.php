@@ -39,6 +39,17 @@ class Phase8PermissionsSeeder extends Seeder
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+
+        'Head Teacher',
+        'Deputy Head Teacher',
+        'Discipline Master',
+        'Subject Teacher',
+        'Second Master',
+        'Vice Chancellor',
+        'Deputy Vice Chancellor',
+        'Dean of Students',
+        'Head of Department',
+        'Lecturer',
     ];
 
     public function run(): void

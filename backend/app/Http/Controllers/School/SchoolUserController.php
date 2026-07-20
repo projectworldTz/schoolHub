@@ -7,6 +7,7 @@ use App\Http\Requests\School\CreateSchoolUserRequest;
 use App\Http\Requests\School\UpdateSchoolUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Support\SchoolRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -81,8 +82,10 @@ class SchoolUserController extends Controller
     {
         abort_unless($request->user()->can('users.manage'), 403);
 
+        $allowed = SchoolRoles::forType($request->user()->school?->type);
+
         return response()->json([
-            'data' => Role::query()->where('name', '!=', 'Super Admin')->orderBy('name')->pluck('name'),
+            'data' => Role::query()->whereIn('name', $allowed)->orderBy('name')->pluck('name'),
         ]);
     }
 }

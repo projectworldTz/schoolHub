@@ -9,6 +9,7 @@ use App\Http\Requests\Platform\UpdateSchoolRequest;
 use App\Http\Resources\Platform\SchoolResource;
 use App\Models\School;
 use App\Services\Platform\SchoolService;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 
 class SchoolController extends Controller
@@ -19,11 +20,16 @@ class SchoolController extends Controller
     {
         $this->authorize('viewAny', School::class);
 
-        $schools = School::query()
+        // The owner relation queries the (tenant-scoped) users table; a
+        // Super Admin has no school_id of their own, so without this the
+        // global scope would filter it to school_id IS NULL and every
+        // school would appear ownerless. See App\Support\Tenancy\Tenant.
+        $schools = Tenant::runAsPlatform(fn () => School::query()
+            ->with('owner')
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->string('search')->isNotEmpty(), fn ($query) => $query->where('name', 'like', '%'.$request->string('search').'%'))
             ->latest()
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($request->integer('per_page', 20)));
 
         return SchoolResource::collection($schools);
     }
@@ -38,6 +44,8 @@ class SchoolController extends Controller
     public function show(School $school)
     {
         $this->authorize('view', $school);
+
+        Tenant::runAsPlatform(fn () => $school->load('owner'));
 
         return new SchoolResource($school);
     }

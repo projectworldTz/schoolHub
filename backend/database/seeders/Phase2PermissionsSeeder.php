@@ -29,6 +29,14 @@ class Phase2PermissionsSeeder extends Seeder
         'Registrar' => ['students.manage', 'admissions.manage'],
         'Admissions Officer' => ['admissions.manage'],
         'HR Officer' => ['staff.manage'],
+
+        'Head Teacher' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        'Vice Chancellor' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        'Deputy Head Teacher' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        'Second Master' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        'Deputy Vice Chancellor' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        'Head of Department' => ['students.manage'],
+        'Dean of Students' => ['students.manage'],
     ];
 
     public function run(): void

@@ -29,6 +29,10 @@ class SchoolResource extends JsonResource
             'approved_at' => $this->approved_at,
             'suspended_at' => $this->suspended_at,
             'suspension_reason' => $this->suspension_reason,
+            'owner' => $this->whenLoaded('owner', fn () => $this->owner ? [
+                'name' => $this->owner->name,
+                'email' => $this->owner->email,
+            ] : null),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
