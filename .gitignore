@@ -5,3 +5,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Written by deploy.sh on the server to track the last successfully
+# deployed commit — not something to commit itself.
+.last-deployed-commit

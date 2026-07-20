@@ -29,7 +29,13 @@ else
   log "Updated $BEFORE -> $AFTER"
 fi
 
-CHANGED_FILES=$(git diff --name-only "$BEFORE" "$AFTER")
+# Diffed against origin's previous known position, not just this run's
+# BEFORE/AFTER — if a prior run (or a manual git pull) already landed a
+# commit, this run's own BEFORE==AFTER would otherwise make a real
+# composer.lock change invisible to it.
+LAST_DEPLOYED_MARKER="$REPO_DIR/.last-deployed-commit"
+PREVIOUS_DEPLOY=$(cat "$LAST_DEPLOYED_MARKER" 2>/dev/null || echo "$BEFORE")
+CHANGED_FILES=$(git diff --name-only "$PREVIOUS_DEPLOY" "$AFTER" 2>/dev/null || echo "")
 
 cd "$BACKEND_DIR"
 
@@ -57,16 +63,20 @@ php artisan view:cache
 # route:cache is intentionally skipped: routes/web.php registers a closure
 # route, and Laravel's route cache can't serialize closures.
 
-if echo "$CHANGED_FILES" | grep -q '^frontend/dist/'; then
-  log "frontend/dist changed - publishing to $FRONTEND_DOCROOT"
-  if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete "$FRONTEND_DIST_DIR/" "$FRONTEND_DOCROOT/"
-  else
-    find "$FRONTEND_DOCROOT" -mindepth 1 -delete
-    cp -r "$FRONTEND_DIST_DIR/." "$FRONTEND_DOCROOT/"
-  fi
+# Always publish, unconditionally — a few small static files, cheap enough
+# that "only if changed" isn't worth it. That optimization is exactly what
+# caused frontend/dist to twice go unpublished after a real change: the
+# diff it relied on only sees commits pulled by *this* run, so a manual
+# `git pull` (or any earlier run) landing the commit first made the change
+# invisible to it.
+log "Publishing frontend/dist to $FRONTEND_DOCROOT"
+if command -v rsync >/dev/null 2>&1; then
+  rsync -a --delete "$FRONTEND_DIST_DIR/" "$FRONTEND_DOCROOT/"
 else
-  log "No frontend changes - skipping publish"
+  find "$FRONTEND_DOCROOT" -mindepth 1 -delete
+  cp -r "$FRONTEND_DIST_DIR/." "$FRONTEND_DOCROOT/"
 fi
+
+echo "$AFTER" > "$LAST_DEPLOYED_MARKER"
 
 log "Deploy complete."
