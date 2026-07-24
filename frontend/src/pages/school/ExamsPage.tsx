@@ -47,9 +47,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useCreateExam, useDeleteExam, useExams } from '@/hooks/useExams'
+import { useExamEditRequests, useDeleteExamEditRequest, useReviewExamEditRequest } from '@/hooks/useExamEditRequests'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
-import type { ExamStatus, ExamType } from '@/types/exams'
+import { useCurrentUser } from '@/hooks/useAuth'
+import type { ExamEditRequestStatus, ExamStatus, ExamType } from '@/types/exams'
 
 const STATUS_VARIANT: Record<ExamStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   draft: 'secondary',
@@ -211,6 +213,100 @@ function CreateExamDialog() {
   )
 }
 
+const EDIT_REQUEST_STATUS_VARIANT: Record<ExamEditRequestStatus, 'default' | 'secondary' | 'destructive'> = {
+  pending: 'secondary',
+  approved: 'default',
+  rejected: 'destructive',
+}
+
+function ExamEditRequestsCard() {
+  const { data, isLoading } = useExamEditRequests()
+  const review = useReviewExamEditRequest()
+  const remove = useDeleteExamEditRequest()
+  const { data: currentUser } = useCurrentUser()
+  const canManage = currentUser?.permissions.includes('exams.manage')
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gradebook Edit Requests</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {canManage
+            ? 'Requests from teachers to reopen a gradebook locked past its 24-hour submission window.'
+            : 'Your requests to reopen a locked gradebook.'}
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {canManage && <TableHead>Teacher</TableHead>}
+              <TableHead>Exam</TableHead>
+              <TableHead>Class / Subject</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-32" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow>
+                <TableCell colSpan={canManage ? 6 : 5} className="text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
+            )}
+            {!isLoading && data?.data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={canManage ? 6 : 5} className="text-center text-muted-foreground">
+                  No edit requests.
+                </TableCell>
+              </TableRow>
+            )}
+            {data?.data.map((req) => (
+              <TableRow key={req.id}>
+                {canManage && <TableCell>{req.requested_by_name}</TableCell>}
+                <TableCell>{req.exam_name}</TableCell>
+                <TableCell>
+                  {req.school_class_name} · {req.subject_name}
+                </TableCell>
+                <TableCell className="max-w-xs truncate" title={req.reason}>
+                  {req.reason}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={EDIT_REQUEST_STATUS_VARIANT[req.status]}>{req.status}</Badge>
+                </TableCell>
+                <TableCell className="space-x-1">
+                  {canManage && req.status === 'pending' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => review.mutate({ id: req.id, status: 'approved' })}>
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive"
+                        onClick={() => review.mutate({ id: req.id, status: 'rejected' })}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  {!canManage && req.status === 'pending' && (
+                    <Button size="sm" variant="ghost" onClick={() => remove.mutate(req.id)}>
+                      Cancel
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ExamsPage() {
   const { data: exams, isLoading } = useExams()
   const remove = useDeleteExam()
@@ -291,6 +387,8 @@ export function ExamsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ExamEditRequestsCard />
     </div>
   )
 }

@@ -1,5 +1,7 @@
 export type SchoolStatus = 'pending' | 'approved' | 'suspended' | 'rejected'
 
+export type LicenseDurationMonths = 1 | 3 | 6 | 12
+
 export type SchoolType =
   | 'nursery'
   | 'primary'
@@ -24,7 +26,7 @@ export interface School {
   currency: string | null
   logo_path: string | null
   subscription_plan: string | null
-  trial_ends_at: string | null
+  license_expires_at: string | null
   approved_at: string | null
   suspended_at: string | null
   suspension_reason: string | null

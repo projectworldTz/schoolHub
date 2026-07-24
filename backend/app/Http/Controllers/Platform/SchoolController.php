@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\RenewSchoolLicenseRequest;
 use App\Http\Requests\Platform\StoreSchoolRequest;
 use App\Http\Requests\Platform\SuspendSchoolRequest;
 use App\Http\Requests\Platform\UpdateSchoolRequest;
@@ -76,5 +77,10 @@ class SchoolController extends Controller
     public function suspend(SuspendSchoolRequest $request, School $school)
     {
         return new SchoolResource($this->schools->suspend($school, $request->validated('reason')));
+    }
+
+    public function renewLicense(RenewSchoolLicenseRequest $request, School $school)
+    {
+        return new SchoolResource($this->schools->renewLicense($school, $request->validated('months')));
     }
 }

@@ -22,6 +22,8 @@ import {
 import { MoreHorizontal } from 'lucide-react'
 import { CreateSchoolDialog } from '@/pages/platform/CreateSchoolDialog'
 import { SuspendSchoolDialog } from '@/pages/platform/SuspendSchoolDialog'
+import { RenewLicenseDialog } from '@/pages/platform/RenewLicenseDialog'
+import { licenseStatus, type LicenseTier } from '@/lib/license'
 
 const STATUS_VARIANT: Record<School['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
   pending: 'secondary',
@@ -30,10 +32,35 @@ const STATUS_VARIANT: Record<School['status'], 'default' | 'secondary' | 'destru
   rejected: 'outline',
 }
 
+const LICENSE_VARIANT: Record<LicenseTier, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  ok: 'outline',
+  warning: 'secondary',
+  danger: 'destructive',
+  expired: 'destructive',
+}
+
+function LicenseBadge({ expiresAt }: { expiresAt: string | null }) {
+  const status = licenseStatus(expiresAt)
+  if (!status) return <span className="text-muted-foreground">—</span>
+
+  const label =
+    status.tier === 'expired'
+      ? `Expired ${Math.abs(status.daysRemaining)}d ago`
+      : `${status.daysRemaining}d left`
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <Badge variant={LICENSE_VARIANT[status.tier]}>{label}</Badge>
+      <span className="text-xs text-muted-foreground">{new Date(expiresAt!).toLocaleDateString()}</span>
+    </div>
+  )
+}
+
 export function SchoolsPage() {
   const { data, isLoading, isError } = useSchools()
   const approveSchool = useApproveSchool()
   const [suspendTarget, setSuspendTarget] = useState<School | null>(null)
+  const [renewTarget, setRenewTarget] = useState<School | null>(null)
 
   function handleApprove(school: School) {
     approveSchool.mutate(school.id, {
@@ -68,27 +95,29 @@ export function SchoolsPage() {
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>City</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>License</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   Loading schools…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-destructive">
+                <TableCell colSpan={8} className="text-center text-destructive">
                   Could not load schools.
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   No schools registered yet.
                 </TableCell>
               </TableRow>
@@ -111,6 +140,12 @@ export function SchoolsPage() {
                   <Badge variant={STATUS_VARIANT[school.status]}>{school.status}</Badge>
                 </TableCell>
                 <TableCell>{school.city ?? '—'}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {new Date(school.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <LicenseBadge expiresAt={school.license_expires_at} />
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -124,6 +159,9 @@ export function SchoolsPage() {
                         onClick={() => handleApprove(school)}
                       >
                         Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setRenewTarget(school)}>
+                        Renew license
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={school.status === 'suspended'}
@@ -147,6 +185,15 @@ export function SchoolsPage() {
           schoolName={suspendTarget.name}
           open={Boolean(suspendTarget)}
           onOpenChange={(open) => !open && setSuspendTarget(null)}
+        />
+      )}
+
+      {renewTarget && (
+        <RenewLicenseDialog
+          schoolId={renewTarget.id}
+          schoolName={renewTarget.name}
+          open={Boolean(renewTarget)}
+          onOpenChange={(open) => !open && setRenewTarget(null)}
         />
       )}
     </div>

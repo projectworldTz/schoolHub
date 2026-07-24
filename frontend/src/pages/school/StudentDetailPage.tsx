@@ -62,9 +62,62 @@ import {
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses, useStreams } from '@/hooks/useAcademics'
 import { useExams, useReportCard, useSetReportCardRemark } from '@/hooks/useExams'
+import { useStudentAttendanceHistory } from '@/hooks/useAttendance'
 import { reportCardPdfUrl } from '@/api/exams'
 import { Textarea } from '@/components/ui/textarea'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
+
+const ATTENDANCE_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  present: 'default',
+  absent: 'destructive',
+  late: 'secondary',
+  excused: 'outline',
+}
+
+function AttendanceCard({ studentId }: { studentId: string }) {
+  const { data, isLoading } = useStudentAttendanceHistory(studentId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Attendance</CardTitle>
+        <CardDescription>Monthly attendance rate trend, with the most recent daily records below.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {!isLoading && <AttendanceTrendChart data={data?.trend ?? []} />}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Remarks</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!isLoading && data?.records.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                  No attendance recorded yet.
+                </TableCell>
+              </TableRow>
+            )}
+            {data?.records.slice(0, 10).map((record) => (
+              <TableRow key={record.id}>
+                <TableCell>{record.date}</TableCell>
+                <TableCell>
+                  <Badge variant={ATTENDANCE_STATUS_VARIANT[record.status]}>{record.status}</Badge>
+                </TableCell>
+                <TableCell>{record.remarks ?? '—'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
 
 const guardianSchema = z.object({
   name: z.string().min(1, 'Required'),
@@ -778,6 +831,7 @@ export function StudentDetailPage() {
         </CardContent>
       </Card>
 
+      <AttendanceCard studentId={studentId} />
       <DocumentsCard studentId={studentId} />
       <ReportCardsCard studentId={studentId} />
     </div>

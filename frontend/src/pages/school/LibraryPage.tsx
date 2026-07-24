@@ -39,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCard'
+import { StudentCombobox } from '@/components/school/StudentCombobox'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useStudents } from '@/hooks/useStudents'
 import { useBookLoans, useBooks, useBorrowBook, useReturnBookLoan } from '@/hooks/useLibrary'
@@ -178,20 +179,9 @@ function RecordLoanDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Student</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a student" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {students?.data.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <StudentCombobox students={students?.data} value={field.value} onChange={field.onChange} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

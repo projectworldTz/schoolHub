@@ -38,6 +38,23 @@ class ExamSubjectController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * The grading teacher's explicit "I'm done" action — distinct from the
+     * ordinary save in ExamResultController::update(), which can be called
+     * any number of times beforehand. Starts the 24h edit grace period
+     * (ExamSubject::EDIT_GRACE_PERIOD_HOURS); once it elapses, further saves
+     * are blocked until an Academic Master approves an ExamEditRequest.
+     */
+    public function submit(Request $request, ExamSubject $examSubject)
+    {
+        abort_unless($request->user()->can('exam-marks.record'), 403);
+        abort_if($examSubject->submitted_at, 422, 'This gradebook has already been submitted.');
+
+        $examSubject->update(['submitted_at' => now()]);
+
+        return new ExamSubjectResource($examSubject->load(['schoolClass', 'subject']));
+    }
+
     public function results(ExamSubject $examSubject)
     {
         return ExamResultResource::collection(

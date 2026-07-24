@@ -41,6 +41,13 @@ const SCHOOL_TYPES = [
   'other',
 ] as const
 
+const LICENSE_DURATIONS = [
+  { value: '1', label: '1 month' },
+  { value: '3', label: '3 months' },
+  { value: '6', label: '6 months' },
+  { value: '12', label: '12 months' },
+] as const
+
 const createSchoolSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   slug: z
@@ -51,6 +58,7 @@ const createSchoolSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   city: z.string().optional(),
   country: z.string().length(2, 'Use a 2-letter country code').optional().or(z.literal('')),
+  license_duration_months: z.enum(['1', '3', '6', '12']),
   owner_name: z.string().min(2, 'Owner name is required'),
   owner_email: z.string().email('Enter a valid email'),
   owner_password: z.string().min(8, 'At least 8 characters'),
@@ -71,6 +79,7 @@ export function CreateSchoolDialog() {
       email: '',
       city: '',
       country: 'TZ',
+      license_duration_months: '1',
       owner_name: '',
       owner_email: '',
       owner_password: '',
@@ -78,19 +87,22 @@ export function CreateSchoolDialog() {
   })
 
   function onSubmit(values: CreateSchoolFormValues) {
-    createSchool.mutate(values, {
-      onSuccess: () => {
-        toast.success('School registered')
-        form.reset()
-        setOpen(false)
-      },
-      onError: (error) => {
-        const message = isAxiosError(error)
-          ? (error.response?.data?.message ?? 'Could not register school')
-          : 'Something went wrong'
-        toast.error(message)
-      },
-    })
+    createSchool.mutate(
+      { ...values, license_duration_months: Number(values.license_duration_months) as 1 | 3 | 6 | 12 },
+      {
+        onSuccess: () => {
+          toast.success('School registered')
+          form.reset()
+          setOpen(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not register school')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
   }
 
   return (
@@ -195,6 +207,30 @@ export function CreateSchoolDialog() {
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="license_duration_months"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>License duration</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LICENSE_DURATIONS.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="space-y-4 border-t pt-4">
               <p className="text-sm font-medium">School Owner account</p>
               <p className="text-muted-foreground text-sm">

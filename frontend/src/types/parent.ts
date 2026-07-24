@@ -1,3 +1,5 @@
+import type { AttendanceTrendPoint } from './attendance'
+
 export interface ParentAttendanceRecord {
   id: string
   student_id: string
@@ -6,6 +8,11 @@ export interface ParentAttendanceRecord {
   date: string
   status: 'present' | 'absent' | 'late' | 'excused'
   remarks: string | null
+}
+
+export interface ParentAttendanceHistory {
+  records: ParentAttendanceRecord[]
+  trend: AttendanceTrendPoint[]
 }
 
 export interface ParentHomeworkItem {

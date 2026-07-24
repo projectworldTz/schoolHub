@@ -3,10 +3,12 @@ import {
   approveSchool,
   createSchool,
   listSchools,
+  renewSchoolLicense,
   suspendSchool,
   type CreateSchoolPayload,
   type ListSchoolsParams,
 } from '@/api/schools'
+import type { LicenseDurationMonths } from '@/types/school'
 
 const SCHOOLS_QUERY_KEY = ['platform', 'schools'] as const
 
@@ -44,6 +46,17 @@ export function useSuspendSchool() {
 
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => suspendSchool(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useRenewSchoolLicense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, months }: { id: string; months: LicenseDurationMonths }) => renewSchoolLicense(id, months),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
     },

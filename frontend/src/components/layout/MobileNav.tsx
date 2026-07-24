@@ -11,13 +11,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCurrentUser } from '@/hooks/useAuth'
+import { useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { hasPermission } from '@/lib/permissions'
+import { lmsTerm } from '@/lib/schoolTerms'
 import { NAV_SECTIONS } from '@/config/nav'
 import { cn } from '@/lib/utils'
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const { data: user } = useCurrentUser()
+  const { data: school } = useSchoolProfile()
   const navigate = useNavigate()
 
   function go(to: string) {
@@ -70,7 +73,9 @@ export function MobileNav() {
                           )}
                         >
                           <link.icon className="size-4 text-muted-foreground" />
-                          <span className="flex-1">{link.label}</span>
+                          <span className="flex-1">
+                            {link.to === '/app/courses' ? lmsTerm(school?.type).plural : link.label}
+                          </span>
                           {link.comingSoon && <span className="text-[10px] text-muted-foreground">Soon</span>}
                         </button>
                       ))}

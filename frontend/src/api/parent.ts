@@ -1,16 +1,19 @@
 import { apiClient } from '@/api/client'
 import type { Student } from '@/types/students'
 import type { Invoice } from '@/types/finance'
-import type { ParentAnnouncement, ParentAttendanceRecord, ParentHomeworkItem, ParentResultGroup } from '@/types/parent'
+import type { AttendanceTrendPoint } from '@/types/attendance'
+import type { ParentAnnouncement, ParentAttendanceHistory, ParentAttendanceRecord, ParentHomeworkItem, ParentResultGroup } from '@/types/parent'
 
 export async function fetchMyChildren(): Promise<Student[]> {
   const { data } = await apiClient.get<{ data: Student[] }>('/parent/children')
   return data.data
 }
 
-export async function fetchChildAttendance(studentId: string): Promise<ParentAttendanceRecord[]> {
-  const { data } = await apiClient.get<{ data: ParentAttendanceRecord[] }>(`/parent/children/${studentId}/attendance`)
-  return data.data
+export async function fetchChildAttendance(studentId: string): Promise<ParentAttendanceHistory> {
+  const { data } = await apiClient.get<{ data: ParentAttendanceRecord[]; meta: { trend: AttendanceTrendPoint[] } }>(
+    `/parent/children/${studentId}/attendance`
+  )
+  return { records: data.data, trend: data.meta.trend }
 }
 
 export async function fetchChildHomework(studentId: string): Promise<ParentHomeworkItem[]> {

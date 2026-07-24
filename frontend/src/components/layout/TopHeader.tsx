@@ -38,8 +38,16 @@ import { MegaMenuContent } from '@/components/layout/MegaMenuContent'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { hasPermission } from '@/lib/permissions'
-import { NAV_SECTIONS } from '@/config/nav'
+import { lmsTerm } from '@/lib/schoolTerms'
+import { NAV_SECTIONS, type NavLink } from '@/config/nav'
 import { cn } from '@/lib/utils'
+import type { SchoolType } from '@/types/school'
+
+function resolveLmsLabel(link: NavLink, schoolType: SchoolType | undefined): NavLink {
+  if (link.to !== '/app/courses') return link
+  const term = lmsTerm(schoolType)
+  return { ...link, label: term.plural, description: term.description }
+}
 
 function initials(name: string): string {
   return name
@@ -80,7 +88,9 @@ export function TopHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   const visibleSections = NAV_SECTIONS.map((section) => ({
     ...section,
-    links: section.links?.filter((link) => hasPermission(user, link.permission)),
+    links: section.links
+      ?.filter((link) => hasPermission(user, link.permission))
+      .map((link) => resolveLmsLabel(link, school?.type)),
   })).filter((section) => section.to || (section.links && section.links.length > 0))
 
   return (

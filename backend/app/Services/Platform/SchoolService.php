@@ -16,10 +16,11 @@ class SchoolService
         $ownerName = $data['owner_name'];
         $ownerEmail = $data['owner_email'];
         $ownerPassword = $data['owner_password'];
-        unset($data['owner_name'], $data['owner_email'], $data['owner_password']);
+        $licenseDurationMonths = $data['license_duration_months'];
+        unset($data['owner_name'], $data['owner_email'], $data['owner_password'], $data['license_duration_months']);
 
         $data['status'] = 'pending';
-        $data['trial_ends_at'] ??= now()->addDays(30);
+        $data['license_expires_at'] = now()->addMonths($licenseDurationMonths);
 
         return DB::transaction(function () use ($data, $ownerName, $ownerEmail, $ownerPassword) {
             $school = School::create($data);
@@ -69,6 +70,19 @@ class SchoolService
             'suspended_at' => Carbon::now(),
             'suspension_reason' => $reason,
         ]);
+
+        return $school;
+    }
+
+    /**
+     * Extends the license from today, not from whatever the old
+     * license_expires_at was — a Super Admin renewing a lapsed or
+     * about-to-lapse school means "N more months starting now," not
+     * "N months tacked onto an already-passed date."
+     */
+    public function renewLicense(School $school, int $months): School
+    {
+        $school->update(['license_expires_at' => Carbon::now()->addMonths($months)]);
 
         return $school;
     }

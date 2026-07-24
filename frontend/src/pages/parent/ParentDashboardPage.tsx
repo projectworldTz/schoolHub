@@ -25,6 +25,7 @@ import {
   useMyChildren,
   useParentAnnouncements,
 } from '@/hooks/useParentPortal'
+import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
 import type { Student } from '@/types/students'
 import type { InvoiceStatus } from '@/types/finance'
 
@@ -51,8 +52,8 @@ function ChildOverview({ student }: { student: Student }) {
 
   const outstandingBalance = (invoices ?? []).reduce((sum, inv) => sum + Number(inv.balance), 0)
 
-  const presentCount = attendance?.filter((a) => a.status === 'present').length ?? 0
-  const totalMarked = attendance?.length ?? 0
+  const presentCount = attendance?.records.filter((a) => a.status === 'present').length ?? 0
+  const totalMarked = attendance?.records.length ?? 0
 
   // Backend already orders exams newest-first by exam start_date.
   const latestResult = results?.[0]
@@ -88,7 +89,7 @@ function ChildOverview({ student }: { student: Student }) {
               <CalendarCheck className="size-5" />
             </span>
             <div>
-              <p className="text-sm text-muted-foreground">Attendance (last 60 days)</p>
+              <p className="text-sm text-muted-foreground">Attendance (last 12 months)</p>
               <p className="font-display text-2xl font-semibold">
                 {attendanceLoading ? '…' : `${presentCount}/${totalMarked}`}
               </p>
@@ -173,9 +174,11 @@ function ChildOverview({ student }: { student: Student }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent attendance</CardTitle>
+          <CardTitle>Attendance trend</CardTitle>
+          <CardDescription>How {student.first_name}'s attendance has moved month to month.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {!attendanceLoading && <AttendanceTrendChart data={attendance?.trend ?? []} />}
           <Table>
             <TableHeader>
               <TableRow>
@@ -185,14 +188,14 @@ function ChildOverview({ student }: { student: Student }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!attendanceLoading && attendance?.length === 0 && (
+              {!attendanceLoading && attendance?.records.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-muted-foreground">
                     No attendance recorded yet.
                   </TableCell>
                 </TableRow>
               )}
-              {attendance?.slice(0, 10).map((a) => (
+              {attendance?.records.slice(0, 10).map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>{a.date}</TableCell>
                   <TableCell>

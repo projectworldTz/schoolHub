@@ -51,6 +51,8 @@ import { useCourses, useCreateCourse, useDeleteCourse } from '@/hooks/useLms'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { useStaffList } from '@/hooks/useStaff'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
+import { useSchoolProfile } from '@/hooks/useSchoolSetup'
+import { lmsTerm } from '@/lib/schoolTerms'
 
 const courseSchema = z.object({
   subject_id: z.string().min(1, 'Required'),
@@ -60,7 +62,7 @@ const courseSchema = z.object({
   description: z.string().optional(),
 })
 
-function CreateCourseDialog() {
+function CreateCourseDialog({ term }: { term: string }) {
   const [open, setOpen] = useQuickAddTrigger('course')
   const { data: subjects } = useSubjects.useList()
   const { data: classes } = useClasses.useList()
@@ -74,13 +76,13 @@ function CreateCourseDialog() {
   function onSubmit(values: z.infer<typeof courseSchema>) {
     create.mutate(values, {
       onSuccess: () => {
-        toast.success('Course created')
+        toast.success(`${term} created`)
         form.reset()
         setOpen(false)
       },
       onError: (error) => {
         const message = isAxiosError(error)
-          ? (error.response?.data?.message ?? 'Could not create course')
+          ? (error.response?.data?.message ?? `Could not create ${term.toLowerCase()}`)
           : 'Something went wrong'
         toast.error(message)
       },
@@ -90,11 +92,11 @@ function CreateCourseDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">New course</Button>
+        <Button size="sm">New {term.toLowerCase()}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create course</DialogTitle>
+          <DialogTitle>Create {term.toLowerCase()}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -213,20 +215,22 @@ function CreateCourseDialog() {
 export function LmsPage() {
   const { data: courses, isLoading } = useCourses()
   const remove = useDeleteCourse()
+  const { data: school } = useSchoolProfile()
+  const term = lmsTerm(school?.type)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Learning</h1>
-          <p className="text-sm text-muted-foreground">Courses and lesson content.</p>
+          <p className="text-sm text-muted-foreground">{term.plural} and lesson content.</p>
         </div>
-        <CreateCourseDialog />
+        <CreateCourseDialog term={term.singular} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Courses</CardTitle>
+          <CardTitle>{term.plural}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -252,7 +256,7 @@ export function LmsPage() {
               {!isLoading && courses?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No courses created yet.
+                    No {term.plural.toLowerCase()} created yet.
                   </TableCell>
                 </TableRow>
               )}

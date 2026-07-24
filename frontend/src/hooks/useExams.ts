@@ -13,6 +13,7 @@ import {
   listExams,
   recordExamMarks,
   setReportCardRemark,
+  submitExamSubject,
   updateExamStatus,
   type ExamPayload,
   type ExamSubjectPayload,
@@ -82,6 +83,14 @@ export function useRecordExamMarks(examSubjectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: RecordMarksPayload) => recordExamMarks(examSubjectId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', 'exam-subjects', examSubjectId] }),
+  })
+}
+
+export function useSubmitExamSubject(examSubjectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => submitExamSubject(examSubjectId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', 'exam-subjects', examSubjectId] }),
   })
 }

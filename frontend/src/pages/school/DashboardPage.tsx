@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
+  AlertTriangle,
   ArrowUpRight,
   CalendarDays,
   ClipboardList,
+  Info,
   FileBarChart,
   Megaphone,
   NotebookPen,
@@ -22,6 +24,8 @@ import { useHomeworks } from '@/hooks/useHomework'
 import { useAnnouncements } from '@/hooks/useCommunication'
 import { useInvoices } from '@/hooks/useFinance'
 import { hasPermission } from '@/lib/permissions'
+import { lmsTerm } from '@/lib/schoolTerms'
+import { licenseStatus } from '@/lib/license'
 import { MODULE_CARDS } from '@/config/nav'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
@@ -190,7 +194,13 @@ export function DashboardPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 6)
 
-  const visibleModules = MODULE_CARDS.filter((m) => hasPermission(user, m.permission))
+  const isOwner = user?.roles?.includes('School Owner') ?? false
+  const license = licenseStatus(school?.license_expires_at ?? null)
+  const showLicenseBanner = isOwner && license && license.tier !== 'ok'
+
+  const visibleModules = MODULE_CARDS.filter((m) => hasPermission(user, m.permission)).map((m) =>
+    m.to === '/app/courses' ? { ...m, label: lmsTerm(school?.type).plural, description: lmsTerm(school?.type).description } : m
+  )
 
   return (
     <div className="space-y-6">
@@ -227,6 +237,47 @@ export function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {showLicenseBanner && license && (
+        <div
+          className={cn(
+            'flex items-start gap-3 rounded-lg border p-4 text-sm',
+            license.tier === 'warning' &&
+              'border-yellow-600/30 bg-yellow-500/10 text-yellow-800 dark:text-yellow-400',
+            (license.tier === 'danger' || license.tier === 'expired') &&
+              'border-destructive/30 bg-destructive/10 text-destructive'
+          )}
+        >
+          {license.tier === 'warning' ? (
+            <Info className="mt-0.5 size-4 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          )}
+          <div>
+            {license.tier === 'warning' && (
+              <p>
+                Your school's license expires in <span className="font-medium">{license.daysRemaining} days</span>{' '}
+                (on {new Date(school!.license_expires_at!).toLocaleDateString()}). Please arrange a renewal with your
+                account manager ahead of time.
+              </p>
+            )}
+            {license.tier === 'danger' && (
+              <p className="font-medium">
+                Urgent: your school's license expires in {license.daysRemaining} day{license.daysRemaining === 1 ? '' : 's'} (on{' '}
+                {new Date(school!.license_expires_at!).toLocaleDateString()}). Renew now to avoid a service
+                interruption.
+              </p>
+            )}
+            {license.tier === 'expired' && (
+              <p className="font-medium">
+                Your school's license expired {Math.abs(license.daysRemaining)} day
+                {Math.abs(license.daysRemaining) === 1 ? '' : 's'} ago. Contact your account manager immediately to
+                restore full access.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {canStudents && (

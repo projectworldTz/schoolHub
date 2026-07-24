@@ -4,6 +4,7 @@ namespace App\Services\School;
 
 use App\Models\AttendanceRecord;
 use App\Models\StudentEnrollment;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceService
@@ -62,5 +63,38 @@ class AttendanceService
                 $this->mark($record, $markedBy);
             }
         });
+    }
+
+    /**
+     * One point per calendar month (oldest first) — the "line graph" trend
+     * behind a single student's attendance history: how many days were
+     * present/absent/late/excused that month, and the resulting rate
+     * (present ÷ marked days, as a percentage). Fed straight into a line
+     * chart on the student detail page (staff) and the parent portal.
+     *
+     * @param  Collection<int, AttendanceRecord>  $records
+     * @return array<int, array{period: string, present: int, absent: int, late: int, excused: int, total: int, rate: float}>
+     */
+    public function trend(Collection $records): array
+    {
+        return $records
+            ->groupBy(fn (AttendanceRecord $record) => $record->date->format('Y-m'))
+            ->map(function (Collection $group, string $period) {
+                $total = $group->count();
+                $present = $group->where('status', 'present')->count();
+
+                return [
+                    'period' => $period,
+                    'present' => $present,
+                    'absent' => $group->where('status', 'absent')->count(),
+                    'late' => $group->where('status', 'late')->count(),
+                    'excused' => $group->where('status', 'excused')->count(),
+                    'total' => $total,
+                    'rate' => $total > 0 ? round(($present / $total) * 100, 1) : 0.0,
+                ];
+            })
+            ->sortKeys()
+            ->values()
+            ->all();
     }
 }

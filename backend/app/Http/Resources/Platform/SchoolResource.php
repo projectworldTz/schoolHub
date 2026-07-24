@@ -25,7 +25,7 @@ class SchoolResource extends JsonResource
             'currency' => $this->currency,
             'logo_path' => $this->logo_path,
             'subscription_plan' => $this->subscription_plan,
-            'trial_ends_at' => $this->trial_ends_at,
+            'license_expires_at' => $this->license_expires_at,
             'approved_at' => $this->approved_at,
             'suspended_at' => $this->suspended_at,
             'suspension_reason' => $this->suspension_reason,

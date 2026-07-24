@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use BelongsToSchool, HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
+    use BelongsToSchool, HasApiTokens, HasFactory, HasRoles, HasUuids, LogsActivity, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -94,6 +95,11 @@ class User extends Authenticatable
         return $this->hasMany(LeaveRequest::class);
     }
 
+    public function examEditRequests(): HasMany
+    {
+        return $this->hasMany(ExamEditRequest::class, 'requested_by');
+    }
+
     public function timetableEntries(): HasMany
     {
         return $this->hasMany(TimetableEntry::class, 'teacher_id');
@@ -117,5 +123,21 @@ class User extends Authenticatable
     public function payslips(): HasMany
     {
         return $this->hasMany(Payslip::class);
+    }
+
+    /**
+     * The password hash and remember token change on every login/reset —
+     * neither is a "who changed what" event worth surfacing in the audit
+     * log, and a hash has no business sitting in a changes column even
+     * though it's already irreversible.
+     */
+    protected function activityExcludedAttributes(): array
+    {
+        return ['password', 'remember_token'];
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "User {$this->name} ({$this->email}) {$action}";
     }
 }

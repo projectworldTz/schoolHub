@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Dialog,
   DialogContent,
@@ -293,20 +294,22 @@ function ReportCardsCard({ exam }: { exam: Exam }) {
           </label>
 
           {!generateAll && (
-            <div className="space-y-1">
+            <div className="w-64 space-y-1">
               <label className="text-sm font-medium">Student</label>
-              <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger className="w-56">
-                  <SelectValue placeholder="Select a student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ranking?.map((row) => (
-                    <SelectItem key={row.student_id} value={row.student_id}>
-                      {row.position}. {row.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={studentId}
+                onChange={setStudentId}
+                placeholder="Select a student"
+                searchPlaceholder="Search by name or admission #…"
+                emptyText="No student found."
+                options={
+                  ranking?.map((row) => ({
+                    value: row.student_id,
+                    label: `${row.position}. ${row.name}`,
+                    sublabel: row.admission_number,
+                  })) ?? []
+                }
+              />
             </div>
           )}
 

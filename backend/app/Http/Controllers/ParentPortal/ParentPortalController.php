@@ -12,6 +12,7 @@ use App\Models\ExamResult;
 use App\Models\HomeworkSubmission;
 use App\Models\Invoice;
 use App\Models\Student;
+use App\Services\School\AttendanceService;
 use App\Services\School\ExamService;
 use App\Services\School\PerformanceMessageService;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class ParentPortalController extends Controller
     public function __construct(
         protected ExamService $examService,
         protected PerformanceMessageService $messages,
+        protected AttendanceService $attendance,
     ) {}
 
     protected function guardian(Request $request)
@@ -58,10 +60,11 @@ class ParentPortalController extends Controller
 
         $records = AttendanceRecord::where('student_id', $student->id)
             ->orderByDesc('date')
-            ->limit(60)
+            ->limit(365)
             ->get();
 
-        return AttendanceRecordResource::collection($records);
+        return AttendanceRecordResource::collection($records)
+            ->additional(['meta' => ['trend' => $this->attendance->trend($records)]]);
     }
 
     public function fees(Request $request, Student $student)

@@ -44,7 +44,7 @@ trait LogsActivity
         if (in_array('updated', $logged, true)) {
             static::updated(function ($model) {
                 $changes = collect($model->getChanges())
-                    ->except(['updated_at'])
+                    ->except(array_merge(['updated_at'], $model->activityExcludedAttributes()))
                     ->mapWithKeys(fn ($new, $key) => [$key => ['old' => $model->getOriginal($key), 'new' => $new]])
                     ->all();
 
@@ -75,6 +75,16 @@ trait LogsActivity
     protected function logsActivityOn(): array
     {
         return ['created', 'updated', 'deleted'];
+    }
+
+    /**
+     * Attributes to leave out of the logged diff even though they changed —
+     * override for fields that are sensitive (User's password hash) or too
+     * noisy to be worth a reviewer's attention.
+     */
+    protected function activityExcludedAttributes(): array
+    {
+        return [];
     }
 
     protected function recordActivity(string $action, ?array $changes = null): void

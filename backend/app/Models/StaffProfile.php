@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StaffProfile extends Model
 {
-    use BelongsToSchool, HasFactory, HasUuids, SoftDeletes;
+    use BelongsToSchool, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $attributes = [
         'employment_type' => 'full_time',
@@ -51,5 +52,10 @@ class StaffProfile extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Staff profile ({$this->staff_number}, {$this->job_title}) {$action}";
     }
 }

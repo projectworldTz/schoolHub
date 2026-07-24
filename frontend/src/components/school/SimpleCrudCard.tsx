@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Dialog,
   DialogContent,
@@ -50,9 +51,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 export interface FieldDef {
   name: string
   label: string
-  type: 'text' | 'number' | 'textarea' | 'switch' | 'select' | 'date'
+  type: 'text' | 'number' | 'textarea' | 'switch' | 'select' | 'combobox' | 'date'
   placeholder?: string
-  options?: { value: string; label: string }[]
+  options?: { value: string; label: string; sublabel?: string }[]
 }
 
 export interface ColumnDef<T> {
@@ -173,6 +174,13 @@ export function SimpleCrudCard<T extends { id: string }>({
                                 ))}
                               </SelectContent>
                             </Select>
+                          ) : field.type === 'combobox' ? (
+                            <Combobox
+                              options={field.options ?? []}
+                              value={rhf.value ?? ''}
+                              onChange={rhf.onChange}
+                              placeholder={field.placeholder}
+                            />
                           ) : (
                             <Input
                               type={field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}

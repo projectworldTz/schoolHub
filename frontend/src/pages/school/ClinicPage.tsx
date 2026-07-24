@@ -58,8 +58,9 @@ export function ClinicPage() {
           {
             name: 'student_id',
             label: 'Student',
-            type: 'select',
-            options: students?.data.map((s) => ({ value: s.id, label: s.full_name })) ?? [],
+            type: 'combobox',
+            placeholder: 'Select a student',
+            options: students?.data.map((s) => ({ value: s.id, label: s.full_name, sublabel: s.admission_number })) ?? [],
           },
           { name: 'visit_date', label: 'Visit date', type: 'date' },
           { name: 'reason', label: 'Reason', type: 'textarea' },

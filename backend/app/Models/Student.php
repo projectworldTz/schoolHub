@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 
 class Student extends Model
 {
-    use BelongsToSchool, HasFactory, HasUuids, SoftDeletes;
+    use BelongsToSchool, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     /**
      * Mirrors the DB column default so a freshly created instance reflects
@@ -162,5 +163,10 @@ class Student extends Model
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Student {$this->first_name} {$this->last_name} ({$this->admission_number}) {$action}";
     }
 }

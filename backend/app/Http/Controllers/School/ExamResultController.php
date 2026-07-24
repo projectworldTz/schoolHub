@@ -19,6 +19,13 @@ class ExamResultController extends Controller
      */
     public function update(RecordExamMarksRequest $request, ExamSubject $examSubject)
     {
+        abort_if(
+            $examSubject->isLocked(),
+            423,
+            'This gradebook was submitted more than '.ExamSubject::EDIT_GRACE_PERIOD_HOURS.' hours ago and is locked. '
+                .'Ask the Academic Master to approve an edit request before making further changes.'
+        );
+
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $examSubject, $request) {

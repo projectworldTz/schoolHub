@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SchoolClass extends Model
 {
-    use BelongsToSchool, HasFactory, HasUuids, SoftDeletes;
+    use BelongsToSchool, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $table = 'school_classes';
 
@@ -61,5 +62,10 @@ class SchoolClass extends Model
     public function courses(): HasMany
     {
         return $this->hasMany(Course::class);
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Class \"{$this->name}\" {$action}";
     }
 }

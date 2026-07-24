@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSchoolProfile } from '@/hooks/useSchoolSetup'
+import { lmsTerm } from '@/lib/schoolTerms'
 
 const PATH_LABELS: Record<string, string> = {
   '/app/dashboard': 'Dashboard',
@@ -62,12 +64,14 @@ export interface Crumb {
  */
 export function Breadcrumbs({ extra }: { extra?: string }) {
   const { pathname } = useLocation()
+  const { data: school } = useSchoolProfile()
   if (pathname === '/app/dashboard') return null
 
-  const base = PATH_LABELS[pathname]
+  const pathLabels: Record<string, string> = { ...PATH_LABELS, '/app/courses': lmsTerm(school?.type).plural }
+  const base = pathLabels[pathname]
   const parentPath = '/' + pathname.split('/').slice(0, -1).join('/').replace(/^\/+/, '')
   const override = DETAIL_PARENT_OVERRIDES[parentPath]
-  const parentLabel = !base ? (override?.label ?? PATH_LABELS[parentPath]) : undefined
+  const parentLabel = !base ? (override?.label ?? pathLabels[parentPath]) : undefined
   const parentTo = override?.to ?? parentPath
 
   const crumbs: Crumb[] = [{ label: 'Dashboard', to: '/app/dashboard' }]

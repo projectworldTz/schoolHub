@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffSalary extends Model
 {
-    use BelongsToSchool, HasFactory, HasUuids;
+    use BelongsToSchool, HasFactory, HasUuids, LogsActivity;
 
     protected $attributes = [
         'allowances' => 0,
@@ -44,5 +45,10 @@ class StaffSalary extends Model
     public function getNetSalaryAttribute(): string
     {
         return bcsub(bcadd((string) $this->basic_salary, (string) $this->allowances, 2), (string) $this->deductions, 2);
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Staff salary (basic {$this->basic_salary}) {$action}";
     }
 }

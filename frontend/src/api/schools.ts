@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/client'
-import type { PaginatedResponse, School } from '@/types/school'
+import type { LicenseDurationMonths, PaginatedResponse, School } from '@/types/school'
 
 export interface ListSchoolsParams {
   status?: string
@@ -20,6 +20,7 @@ export interface CreateSchoolPayload {
   phone?: string
   city?: string
   country?: string
+  license_duration_months: LicenseDurationMonths
   owner_name: string
   owner_email: string
   owner_password: string
@@ -37,5 +38,10 @@ export async function approveSchool(id: string): Promise<School> {
 
 export async function suspendSchool(id: string, reason: string): Promise<School> {
   const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/suspend`, { reason })
+  return data.data
+}
+
+export async function renewSchoolLicense(id: string, months: LicenseDurationMonths): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/renew-license`, { months })
   return data.data
 }

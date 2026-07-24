@@ -99,7 +99,13 @@ class ActivityLogTest extends TestCase
 
         $logsForA = $this->actingAs($ownerA, 'web')->getJson('/api/school/activity-logs');
 
-        $this->assertCount(0, $logsForA->json('data'));
+        // School A's own owner-account creation is expected to appear (User
+        // now carries LogsActivity too) — the property under test is that
+        // School B's expense never leaks in, not that the log is empty.
+        $this->assertFalse(
+            collect($logsForA->json('data'))->contains('subject_type', 'Expense'),
+            'Expense log entries from School B leaked into School A\'s activity log.'
+        );
     }
 
     public function test_exam_result_stub_creation_is_not_logged_but_recording_marks_is(): void

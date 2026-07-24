@@ -69,8 +69,9 @@ export function DisciplinePage() {
           {
             name: 'student_id',
             label: 'Student',
-            type: 'select',
-            options: students?.data.map((s) => ({ value: s.id, label: s.full_name })) ?? [],
+            type: 'combobox',
+            placeholder: 'Select a student',
+            options: students?.data.map((s) => ({ value: s.id, label: s.full_name, sublabel: s.admission_number })) ?? [],
           },
           { name: 'incident_date', label: 'Incident date', type: 'date' },
           { name: 'category', label: 'Category', type: 'text', placeholder: 'e.g. Fighting, Cheating, Tardiness' },

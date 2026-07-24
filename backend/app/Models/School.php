@@ -32,7 +32,7 @@ class School extends Model
         'currency',
         'logo_path',
         'subscription_plan',
-        'trial_ends_at',
+        'license_expires_at',
         'approved_at',
         'suspended_at',
         'suspension_reason',
@@ -41,7 +41,7 @@ class School extends Model
     protected function casts(): array
     {
         return [
-            'trial_ends_at' => 'datetime',
+            'license_expires_at' => 'datetime',
             'approved_at' => 'datetime',
             'suspended_at' => 'datetime',
         ];

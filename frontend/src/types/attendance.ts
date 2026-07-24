@@ -7,3 +7,31 @@ export interface AttendanceRosterRow {
   status: AttendanceStatus | null
   remarks: string | null
 }
+
+export interface AttendanceRecord {
+  id: string
+  student_id: string
+  student_name?: string
+  school_class_id: string
+  stream_id: string | null
+  date: string
+  status: AttendanceStatus
+  remarks: string | null
+  marked_by: string | null
+}
+
+/** One point per calendar month — the line-graph trend behind a student's attendance history. */
+export interface AttendanceTrendPoint {
+  period: string
+  present: number
+  absent: number
+  late: number
+  excused: number
+  total: number
+  rate: number
+}
+
+export interface AttendanceHistory {
+  records: AttendanceRecord[]
+  trend: AttendanceTrendPoint[]
+}

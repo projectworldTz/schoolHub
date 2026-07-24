@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\School\CreateSchoolUserRequest;
 use App\Http\Requests\School\UpdateSchoolUserRequest;
 use App\Http\Resources\UserResource;
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Support\SchoolRoles;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -61,7 +63,24 @@ class SchoolUserController extends Controller
             $user->update(collect($data)->except('roles')->all());
 
             if (isset($data['roles'])) {
+                $oldRoles = $user->getRoleNames()->all();
                 $user->syncRoles($data['roles']);
+
+                // Spatie role assignment writes to the model_has_roles pivot
+                // table, not a User column, so LogsActivity's update-diffing
+                // (which only reacts to the User model's own attribute
+                // changes) never sees it — logged explicitly here instead.
+                if (collect($oldRoles)->sort()->values()->all() !== collect($data['roles'])->sort()->values()->all()) {
+                    ActivityLog::create([
+                        'school_id' => $user->school_id,
+                        'user_id' => Auth::id(),
+                        'subject_type' => User::class,
+                        'subject_id' => $user->id,
+                        'action' => 'updated',
+                        'description' => "Roles updated for {$user->name} ({$user->email})",
+                        'changes' => ['roles' => ['old' => $oldRoles, 'new' => $data['roles']]],
+                    ]);
+                }
             }
         });
 

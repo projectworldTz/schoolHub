@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FeeStructure extends Model
 {
-    use BelongsToSchool, HasFactory, HasUuids, SoftDeletes;
+    use BelongsToSchool, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'school_id',
@@ -49,5 +50,10 @@ class FeeStructure extends Model
     public function feeCategory(): BelongsTo
     {
         return $this->belongsTo(FeeCategory::class);
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Fee structure (amount {$this->amount}, due {$this->due_date}) {$action}";
     }
 }

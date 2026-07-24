@@ -4,6 +4,9 @@ namespace App\Http\Controllers\School;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\School\MarkAttendanceRequest;
+use App\Http\Resources\School\AttendanceRecordResource;
+use App\Models\AttendanceRecord;
+use App\Models\Student;
 use App\Services\School\AttendanceService;
 use Illuminate\Http\Request;
 
@@ -62,5 +65,26 @@ class AttendanceController extends Controller
         );
 
         return response()->json(['message' => 'Attendance saved.']);
+    }
+
+    /**
+     * One student's full attendance history plus a month-by-month rate
+     * trend — lets a class teacher or Academic Master trace a student's
+     * pattern over time, not just today's register.
+     */
+    public function history(Request $request, Student $student)
+    {
+        abort_unless(
+            $request->user()->can('attendance.manage') || $request->user()->can('students.manage'),
+            403
+        );
+
+        $records = AttendanceRecord::where('student_id', $student->id)
+            ->orderByDesc('date')
+            ->limit(365)
+            ->get();
+
+        return AttendanceRecordResource::collection($records)
+            ->additional(['meta' => ['trend' => $this->attendance->trend($records)]]);
     }
 }

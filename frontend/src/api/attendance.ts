@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/client'
-import type { AttendanceRosterRow, AttendanceStatus } from '@/types/attendance'
+import type { AttendanceHistory, AttendanceRecord, AttendanceRosterRow, AttendanceStatus } from '@/types/attendance'
 
 export interface AttendanceRegisterParams {
   school_class_id: string
@@ -23,4 +23,11 @@ export async function fetchAttendanceRegister(params: AttendanceRegisterParams):
 
 export async function markAttendance(payload: AttendanceMarkPayload): Promise<void> {
   await apiClient.post('/school/attendance', payload)
+}
+
+export async function fetchStudentAttendanceHistory(studentId: string): Promise<AttendanceHistory> {
+  const { data } = await apiClient.get<{ data: AttendanceRecord[]; meta: { trend: AttendanceHistory['trend'] } }>(
+    `/school/students/${studentId}/attendance`
+  )
+  return { records: data.data, trend: data.meta.trend }
 }

@@ -30,7 +30,11 @@ class UpdateSchoolRequest extends FormRequest
             'timezone' => ['nullable', 'timezone'],
             'currency' => ['nullable', 'string', 'size:3'],
             'subscription_plan' => ['nullable', 'string', 'max:100'],
-            'trial_ends_at' => ['nullable', 'date'],
+            // Free-form correction only — the normal way to extend a
+            // license is POST schools/{school}/renew-license (see
+            // RenewSchoolLicenseRequest), which extends from today rather
+            // than requiring the admin to compute a date by hand.
+            'license_expires_at' => ['nullable', 'date'],
         ];
     }
 }

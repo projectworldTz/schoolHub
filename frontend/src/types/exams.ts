@@ -12,6 +12,16 @@ export interface ExamResult {
   remarks: string | null
 }
 
+export type ExamEditRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface MyExamEditRequest {
+  id: string
+  status: ExamEditRequestStatus
+  reason: string
+  unlocked_until: string | null
+  created_at: string
+}
+
 export interface ExamSubject {
   id: string
   exam_id: string
@@ -22,7 +32,32 @@ export interface ExamSubject {
   max_marks: string
   pass_marks: string | null
   exam_date: string | null
+  /** Set once the grading teacher explicitly submits — never before. */
+  submitted_at: string | null
+  /** submitted_at + the 24h grace period; null if never submitted. */
+  edit_locked_at: string | null
+  /** True once past edit_locked_at with no approved, still-valid edit request. */
+  is_locked: boolean
+  /** The current user's own latest edit request against this subject, if any. */
+  my_edit_request: MyExamEditRequest | null
   results?: ExamResult[]
+}
+
+export interface ExamEditRequest {
+  id: string
+  exam_subject_id: string
+  exam_name?: string
+  school_class_name?: string
+  subject_name?: string
+  requested_by: string
+  requested_by_name?: string
+  reason: string
+  status: ExamEditRequestStatus
+  reviewed_by: string | null
+  reviewer_name?: string | null
+  reviewed_at: string | null
+  unlocked_until: string | null
+  created_at: string
 }
 
 export interface Exam {

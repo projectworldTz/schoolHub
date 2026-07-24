@@ -77,6 +77,11 @@ export async function recordExamMarks(examSubjectId: string, payload: RecordMark
   return data.data
 }
 
+export async function submitExamSubject(examSubjectId: string): Promise<ExamSubject> {
+  const { data } = await apiClient.post<{ data: ExamSubject }>(`/school/exam-subjects/${examSubjectId}/submit`)
+  return data.data
+}
+
 export async function fetchReportCard(studentId: string, examId: string): Promise<ReportCard> {
   const { data } = await apiClient.get<{ data: ReportCard }>(`/school/students/${studentId}/report-card`, {
     params: { exam_id: examId },

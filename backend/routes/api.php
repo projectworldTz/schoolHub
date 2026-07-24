@@ -26,6 +26,7 @@ use App\Http\Controllers\School\DisciplineIncidentController;
 use App\Http\Controllers\School\DocumentController;
 use App\Http\Controllers\School\DocumentGeneratorController;
 use App\Http\Controllers\School\ExamController;
+use App\Http\Controllers\School\ExamEditRequestController;
 use App\Http\Controllers\School\ExamResultController;
 use App\Http\Controllers\School\ExamSubjectController;
 use App\Http\Controllers\School\GradingSystemController;
@@ -153,6 +154,7 @@ $schoolRoutes = function () {
         // Attendance
         Route::get('attendance/register', [AttendanceController::class, 'register']);
         Route::post('attendance', [AttendanceController::class, 'store']);
+        Route::get('students/{student}/attendance', [AttendanceController::class, 'history']);
 
         // Timetable
         Route::apiResource('timetable-periods', TimetablePeriodController::class)->except(['show']);
@@ -177,6 +179,9 @@ $schoolRoutes = function () {
         Route::delete('exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy']);
         Route::get('exam-subjects/{examSubject}/results', [ExamSubjectController::class, 'results']);
         Route::put('exam-subjects/{examSubject}/results', [ExamResultController::class, 'update']);
+        Route::post('exam-subjects/{examSubject}/submit', [ExamSubjectController::class, 'submit']);
+        Route::apiResource('exam-edit-requests', ExamEditRequestController::class)->only(['index', 'store', 'destroy']);
+        Route::post('exam-edit-requests/{examEditRequest}/review', [ExamEditRequestController::class, 'review']);
         Route::get('students/{student}/report-card', [ReportCardController::class, 'show']);
         Route::get('students/{student}/report-card/pdf', [ReportCardController::class, 'pdf']);
         Route::put('exams/{exam}/students/{student}/remark', [ReportCardController::class, 'setRemark']);
@@ -296,6 +301,7 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
         Route::apiResource('schools', PlatformSchoolController::class);
         Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
         Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
+        Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
     });
 
     Route::prefix('school')->group($schoolRoutes);

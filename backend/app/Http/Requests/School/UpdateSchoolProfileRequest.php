@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * A school admin editing their OWN school's profile — deliberately excludes
  * fields the Super Admin (Platform) layer owns: slug, status,
- * subscription_plan, trial_ends_at, approval/suspension state.
+ * subscription_plan, license_expires_at, approval/suspension state.
  */
 class UpdateSchoolProfileRequest extends FormRequest
 {

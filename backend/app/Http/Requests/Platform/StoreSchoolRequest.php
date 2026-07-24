@@ -29,7 +29,11 @@ class StoreSchoolRequest extends FormRequest
             'timezone' => ['nullable', 'timezone'],
             'currency' => ['nullable', 'string', 'size:3'],
             'subscription_plan' => ['nullable', 'string', 'max:100'],
-            'trial_ends_at' => ['nullable', 'date'],
+
+            // How long this school's license runs from today — the Super
+            // Admin picks one of these on every school they register;
+            // there's no silent default anymore (see SchoolService::create()).
+            'license_duration_months' => ['required', Rule::in([1, 3, 6, 12])],
 
             // The school's first user (School Owner role) — created in the
             // same request. No invite-email flow yet (same as
