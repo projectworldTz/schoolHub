@@ -29,7 +29,12 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: logoutRequest,
-    onSuccess: () => {
+    // onSettled, not onSuccess: a logout button must clear local state and
+    // let the caller navigate away even if the server call itself fails
+    // (expired session, CSRF mismatch, network blip) — the alternative is
+    // a user stuck on an authenticated-looking screen with no way out
+    // short of a manual refresh.
+    onSettled: () => {
       // Full clear (not just the auth query) — the persisted cache in
       // localStorage (see main.tsx) holds real school data (students,
       // grades, fees) for offline viewing, and must not survive a logout

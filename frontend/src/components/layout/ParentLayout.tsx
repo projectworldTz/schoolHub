@@ -14,7 +14,7 @@ export function ParentLayout() {
 
   function handleLogout() {
     logoutMutation.mutate(undefined, {
-      onSuccess: () => {
+      onSettled: () => {
         toast.success('Signed out')
         navigate('/login')
       },

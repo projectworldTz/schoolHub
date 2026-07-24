@@ -79,7 +79,7 @@ export function TopHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   function handleLogout() {
     logoutMutation.mutate(undefined, {
-      onSuccess: () => {
+      onSettled: () => {
         toast.success('Signed out')
         navigate('/login')
       },
