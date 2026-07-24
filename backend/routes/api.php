@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController as ApiAuthController;
 use App\Http\Controllers\Auth\ApiTokenController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
 use App\Http\Controllers\Platform\SchoolController as PlatformSchoolController;
 use App\Http\Controllers\Public\NoticeBoardController;
 use App\Http\Controllers\School\AcademicYearController;
@@ -298,6 +299,7 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
     Route::apiResource('tokens', ApiTokenController::class)->only(['index', 'store', 'destroy']);
 
     Route::middleware('role:Super Admin')->prefix('platform')->group(function () {
+        Route::get('dashboard', [PlatformDashboardController::class, 'index']);
         Route::apiResource('schools', PlatformSchoolController::class);
         Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
         Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);

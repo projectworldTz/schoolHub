@@ -14,7 +14,7 @@ export function HomeRedirect() {
   }
 
   if (user?.roles?.includes('Super Admin')) {
-    return <Navigate to="/platform/schools" replace />
+    return <Navigate to="/platform/dashboard" replace />
   }
 
   if (user?.roles?.includes('Parent')) {

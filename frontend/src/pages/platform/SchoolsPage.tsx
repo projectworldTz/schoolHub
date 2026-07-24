@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal, UsersRound } from 'lucide-react'
 import { CreateSchoolDialog } from '@/pages/platform/CreateSchoolDialog'
 import { SuspendSchoolDialog } from '@/pages/platform/SuspendSchoolDialog'
 import { RenewLicenseDialog } from '@/pages/platform/RenewLicenseDialog'
@@ -95,6 +95,7 @@ export function SchoolsPage() {
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>City</TableHead>
+              <TableHead>Users</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>License</TableHead>
               <TableHead className="w-12" />
@@ -103,21 +104,21 @@ export function SchoolsPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   Loading schools…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-destructive">
+                <TableCell colSpan={9} className="text-center text-destructive">
                   Could not load schools.
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   No schools registered yet.
                 </TableCell>
               </TableRow>
@@ -140,6 +141,12 @@ export function SchoolsPage() {
                   <Badge variant={STATUS_VARIANT[school.status]}>{school.status}</Badge>
                 </TableCell>
                 <TableCell>{school.city ?? '—'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <UsersRound className="size-3.5 text-muted-foreground" />
+                    {school.users_count ?? '—'}
+                  </div>
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {new Date(school.created_at).toLocaleDateString()}
                 </TableCell>

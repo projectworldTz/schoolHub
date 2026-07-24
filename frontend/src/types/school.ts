@@ -31,8 +31,44 @@ export interface School {
   suspended_at: string | null
   suspension_reason: string | null
   owner?: { name: string; email: string } | null
+  users_count?: number
   created_at: string
   updated_at: string
+}
+
+export interface PlatformStats {
+  schools_total: number
+  schools_pending: number
+  schools_approved: number
+  schools_suspended: number
+  users_total: number
+  licenses_expiring_soon: number
+  licenses_expired: number
+}
+
+export interface PlatformRecentSchool {
+  id: string
+  name: string
+  type: SchoolType
+  status: SchoolStatus
+  users_count: number
+  created_at: string
+}
+
+export interface PlatformActivityEntry {
+  id: string
+  school_name: string
+  user_name: string
+  action: string
+  description: string
+  subject_type: string
+  created_at: string
+}
+
+export interface PlatformDashboard {
+  stats: PlatformStats
+  recent_schools: PlatformRecentSchool[]
+  recent_activity: PlatformActivityEntry[]
 }
 
 export interface PaginatedResponse<T> {

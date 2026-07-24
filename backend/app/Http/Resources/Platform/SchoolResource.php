@@ -33,6 +33,7 @@ class SchoolResource extends JsonResource
                 'name' => $this->owner->name,
                 'email' => $this->owner->email,
             ] : null),
+            'users_count' => $this->whenCounted('users'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   approveSchool,
   createSchool,
+  fetchPlatformDashboard,
   listSchools,
   renewSchoolLicense,
   suspendSchool,
@@ -16,6 +17,13 @@ export function useSchools(params: ListSchoolsParams = {}) {
   return useQuery({
     queryKey: [...SCHOOLS_QUERY_KEY, params],
     queryFn: () => listSchools(params),
+  })
+}
+
+export function usePlatformDashboard() {
+  return useQuery({
+    queryKey: ['platform', 'dashboard'],
+    queryFn: fetchPlatformDashboard,
   })
 }
 

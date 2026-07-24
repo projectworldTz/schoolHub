@@ -27,6 +27,7 @@ class SchoolController extends Controller
         // school would appear ownerless. See App\Support\Tenancy\Tenant.
         $schools = Tenant::runAsPlatform(fn () => School::query()
             ->with('owner')
+            ->withCount('users')
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->string('search')->isNotEmpty(), fn ($query) => $query->where('name', 'like', '%'.$request->string('search').'%'))
             ->latest()

@@ -1,12 +1,18 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { LogOut } from 'lucide-react'
+import { LayoutGrid, LogOut, School } from 'lucide-react'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Logo } from '@/components/layout/Logo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { cn } from '@/lib/utils'
+
+const NAV_LINKS = [
+  { to: '/platform/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { to: '/platform/schools', label: 'Schools', icon: School },
+]
 
 export function PlatformLayout() {
   const { data: user } = useCurrentUser()
@@ -31,6 +37,23 @@ export function PlatformLayout() {
             <Badge variant="secondary" className="rounded-full">
               Platform Admin
             </Badge>
+            <nav className="ml-2 hidden items-center gap-1 sm:flex">
+              {NAV_LINKS.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                      isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    )
+                  }
+                >
+                  <link.icon className="size-4" />
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

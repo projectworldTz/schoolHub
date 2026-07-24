@@ -1,5 +1,10 @@
 import { apiClient } from '@/api/client'
-import type { LicenseDurationMonths, PaginatedResponse, School } from '@/types/school'
+import type { LicenseDurationMonths, PaginatedResponse, PlatformDashboard, School } from '@/types/school'
+
+export async function fetchPlatformDashboard(): Promise<PlatformDashboard> {
+  const { data } = await apiClient.get<{ data: PlatformDashboard }>('/platform/dashboard')
+  return data.data
+}
 
 export interface ListSchoolsParams {
   status?: string

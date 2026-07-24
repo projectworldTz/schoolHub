@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { SchoolsPage } from '@/pages/platform/SchoolsPage'
+import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { DashboardPage } from '@/pages/school/DashboardPage'
 import { SettingsPage } from '@/pages/school/SettingsPage'
 import { AcademicSetupPage } from '@/pages/school/AcademicSetupPage'
@@ -61,6 +62,7 @@ function App() {
 
         <Route element={<ProtectedRoute requireRole="Super Admin" />}>
           <Route element={<PlatformLayout />}>
+            <Route path="/platform/dashboard" element={<PlatformDashboardPage />} />
             <Route path="/platform/schools" element={<SchoolsPage />} />
           </Route>
         </Route>
