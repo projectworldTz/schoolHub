@@ -2,7 +2,7 @@ import { apiClient } from '@/api/client'
 import type { Student } from '@/types/students'
 import type { Invoice } from '@/types/finance'
 import type { AttendanceTrendPoint } from '@/types/attendance'
-import type { ParentAnnouncement, ParentAttendanceHistory, ParentAttendanceRecord, ParentHomeworkItem, ParentResultGroup } from '@/types/parent'
+import type { ParentAnnouncement, ParentAnnouncementsResponse, ParentAttendanceHistory, ParentAttendanceRecord, ParentHomeworkItem, ParentResultGroup } from '@/types/parent'
 
 export async function fetchMyChildren(): Promise<Student[]> {
   const { data } = await apiClient.get<{ data: Student[] }>('/parent/children')
@@ -31,7 +31,7 @@ export async function fetchChildFees(studentId: string): Promise<Invoice[]> {
   return data.data
 }
 
-export async function fetchParentAnnouncements(): Promise<ParentAnnouncement[]> {
-  const { data } = await apiClient.get<{ data: ParentAnnouncement[] }>('/parent/announcements')
-  return data.data
+export async function fetchParentAnnouncements(): Promise<ParentAnnouncementsResponse> {
+  const { data } = await apiClient.get<{ data: ParentAnnouncement[]; meta: { unread_count: number } }>('/parent/announcements')
+  return { records: data.data, unread_count: data.meta.unread_count }
 }

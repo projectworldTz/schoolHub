@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Logo } from '@/components/layout/Logo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { PlatformMobileNav } from '@/components/layout/PlatformMobileNav'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = [
@@ -33,6 +34,7 @@ export function PlatformLayout() {
       <header className="glass sticky top-0 z-30 border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-3">
+            <PlatformMobileNav links={NAV_LINKS} />
             <Logo />
             <Badge variant="secondary" className="rounded-full">
               Platform Admin

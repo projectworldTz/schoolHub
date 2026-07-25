@@ -633,7 +633,7 @@ function ContractsTab() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Select value={staffId} onValueChange={setStaffId}>
-          <SelectTrigger className="w-72">
+          <SelectTrigger className="w-full sm:w-72">
             <SelectValue placeholder="Select a staff member" />
           </SelectTrigger>
           <SelectContent>

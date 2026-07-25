@@ -87,10 +87,10 @@ function AcademicYearsTab() {
       />
 
       <div className="space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-medium">Terms for:</p>
           <Select value={selectedYearId ?? undefined} onValueChange={setSelectedYearId}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select an academic year" />
             </SelectTrigger>
             <SelectContent>

@@ -57,4 +57,10 @@ export interface ParentAnnouncement {
   body: string
   audience: string
   published_at: string | null
+  is_new: boolean
+}
+
+export interface ParentAnnouncementsResponse {
+  records: ParentAnnouncement[]
+  unread_count: number
 }

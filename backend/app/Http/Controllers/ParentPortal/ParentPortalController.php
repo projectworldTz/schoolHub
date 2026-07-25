@@ -153,8 +153,18 @@ class ParentPortalController extends Controller
         ]);
     }
 
+    /**
+     * "Unread" here means "published after this login's last visit" — there's
+     * no per-announcement recipients/read table, just a single last-seen
+     * marker on the user, updated at the end of every call. That's enough to
+     * drive a simple "N new since you were last here" badge without the
+     * overhead of tracking read state per announcement per guardian.
+     */
     public function announcements(Request $request)
     {
+        $user = $request->user();
+        $lastSeenAt = $user->announcements_last_seen_at;
+
         $classIds = $this->guardian($request)->students()
             ->with('currentEnrollment')
             ->get()
@@ -176,6 +186,11 @@ class ParentPortalController extends Controller
             ->orderByDesc('published_at')
             ->get();
 
+        $isNew = fn ($a) => ! $lastSeenAt || ($a->published_at && $a->published_at->gt($lastSeenAt));
+        $unreadCount = $announcements->filter($isNew)->count();
+
+        $user->update(['announcements_last_seen_at' => now()]);
+
         return response()->json([
             'data' => $announcements->map(fn ($a) => [
                 'id' => $a->id,
@@ -183,7 +198,9 @@ class ParentPortalController extends Controller
                 'body' => $a->body,
                 'audience' => $a->audience,
                 'published_at' => $a->published_at,
+                'is_new' => $isNew($a),
             ]),
+            'meta' => ['unread_count' => $unreadCount],
         ]);
     }
 }

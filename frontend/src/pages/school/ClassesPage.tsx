@@ -147,7 +147,7 @@ function ClassesTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={curriculumClassId ?? undefined} onValueChange={setCurriculumClassId}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select a class" />
             </SelectTrigger>
             <SelectContent>

@@ -369,11 +369,11 @@ function AcademicsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end gap-3">
-        <div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:w-auto">
           <p className="mb-1 text-xs text-muted-foreground">Exam</p>
           <Select value={examId ?? data?.exam_id ?? undefined} onValueChange={setExamId}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Best-covered exam" />
             </SelectTrigger>
             <SelectContent>

@@ -339,15 +339,27 @@ export function ParentDashboardPage() {
           <CardTitle>
             <span className="flex items-center gap-2">
               <Megaphone className="size-4" /> Announcements
+              {Boolean(announcements?.unread_count) && (
+                <Badge variant="default" className="ml-1">
+                  {announcements!.unread_count} new
+                </Badge>
+              )}
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {announcements?.length === 0 && <p className="text-sm text-muted-foreground">No announcements yet.</p>}
-          {announcements?.map((a) => (
-            <div key={a.id} className="rounded-lg border p-3">
-              <p className="text-sm font-medium">{a.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
+          {announcements?.records.length === 0 && <p className="text-sm text-muted-foreground">No announcements yet.</p>}
+          {announcements?.records.map((a) => (
+            <div key={a.id} className="flex items-start justify-between gap-3 rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">{a.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
+              </div>
+              {a.is_new && (
+                <Badge variant="secondary" className="shrink-0">
+                  New
+                </Badge>
+              )}
             </div>
           ))}
         </CardContent>
