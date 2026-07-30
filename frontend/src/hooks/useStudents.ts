@@ -7,6 +7,7 @@ import {
   enrollStudent,
   fetchStudent,
   grantGuardianPortalAccess,
+  importGuardians,
   importStudents,
   listEnrollments,
   listStudentDocuments,
@@ -40,6 +41,18 @@ export function useImportStudents() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ file, dryRun }: { file: File; dryRun: boolean }) => importStudents(file, dryRun),
+    onSuccess: (result) => {
+      if (result.committed) {
+        queryClient.invalidateQueries({ queryKey: STUDENTS_KEY })
+      }
+    },
+  })
+}
+
+export function useImportGuardians() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, dryRun }: { file: File; dryRun: boolean }) => importGuardians(file, dryRun),
     onSuccess: (result) => {
       if (result.committed) {
         queryClient.invalidateQueries({ queryKey: STUDENTS_KEY })

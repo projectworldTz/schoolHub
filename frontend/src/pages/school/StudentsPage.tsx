@@ -34,10 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useCreateStudent, useImportStudents, useStudents } from '@/hooks/useStudents'
+import { useCreateStudent, useImportGuardians, useImportStudents, useStudents } from '@/hooks/useStudents'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useBranches } from '@/hooks/useSchoolSetup'
-import type { StudentImportResult } from '@/types/students'
+import type { GuardianImportResult, StudentImportResult } from '@/types/students'
 
 const studentSchema = z.object({
   admission_number: z.string().min(1, 'Required'),
@@ -352,6 +352,199 @@ function ImportStudentsDialog() {
   )
 }
 
+function downloadGuardianImportTemplate() {
+  const csv =
+    'student_admission_number,guardian_name,relationship,phone,email,occupation,address,is_primary,is_emergency_contact\n'
+    + 'ADM-001,Hassan Ali,Father,+255700000101,hassan.ali@example.com,Business Owner,"Mikocheni, Dar es Salaam",yes,yes\n'
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'guardian-import-template.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+const GUARDIAN_IMPORT_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  created: 'default',
+  would_create: 'secondary',
+  error: 'destructive',
+}
+
+function GuardianImportResultTable({ result }: { result: GuardianImportResult }) {
+  return (
+    <div className="max-h-72 overflow-y-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14">Row</TableHead>
+            <TableHead>Guardian</TableHead>
+            <TableHead>Admission #</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Notes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {result.rows.map((row) => (
+            <TableRow key={row.row}>
+              <TableCell>{row.row}</TableCell>
+              <TableCell className="font-medium">{row.name || '—'}</TableCell>
+              <TableCell>{row.admission_number || '—'}</TableCell>
+              <TableCell>
+                <Badge variant={GUARDIAN_IMPORT_STATUS_VARIANT[row.status]}>
+                  {row.status === 'would_create' ? 'valid' : row.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {[...row.errors, ...row.warnings].join(' ') || '—'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function ImportGuardiansDialog() {
+  const [open, setOpen] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<GuardianImportResult | null>(null)
+  const [committedResult, setCommittedResult] = useState<GuardianImportResult | null>(null)
+  const importGuardians = useImportGuardians()
+
+  function reset() {
+    setFile(null)
+    setPreview(null)
+    setCommittedResult(null)
+  }
+
+  function handlePreview() {
+    if (!file) return
+    importGuardians.mutate(
+      { file, dryRun: true },
+      {
+        onSuccess: (result) => {
+          if (result.missing_headers.length > 0) {
+            toast.error(`Missing required columns: ${result.missing_headers.join(', ')}`)
+            return
+          }
+          setPreview(result)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not read that file')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  function handleConfirm() {
+    if (!file) return
+    importGuardians.mutate(
+      { file, dryRun: false },
+      {
+        onSuccess: (result) => {
+          setCommittedResult(result)
+          toast.success(`Imported ${result.created_count} guardian link(s)`)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Import failed')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) reset()
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          Import guardians
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Import guardians</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <p className="text-muted-foreground">
+              Columns: <code>student_admission_number</code>, <code>guardian_name</code>, <code>relationship</code>{' '}
+              (required), plus optional <code>phone</code>, <code>email</code>, <code>occupation</code>,{' '}
+              <code>address</code>, <code>is_primary</code>, <code>is_emergency_contact</code>. Students must already
+              be imported. A guardian with an email is emailed a Parent Portal activation link.
+            </p>
+            <Button type="button" variant="link" size="sm" className="shrink-0" onClick={downloadGuardianImportTemplate}>
+              Download template
+            </Button>
+          </div>
+
+          <Input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null)
+              setPreview(null)
+              setCommittedResult(null)
+            }}
+          />
+
+          {committedResult ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium text-primary">{committedResult.created_count} linked</span>
+                {committedResult.error_count > 0 && `, ${committedResult.error_count} skipped`}
+              </p>
+              <GuardianImportResultTable result={committedResult} />
+            </>
+          ) : preview ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium">{preview.created_count} of {preview.total_rows} rows are valid</span>
+                {preview.error_count > 0 && ` — ${preview.error_count} will be skipped`}
+              </p>
+              <GuardianImportResultTable result={preview} />
+            </>
+          ) : null}
+        </div>
+
+        <DialogFooter>
+          {committedResult ? (
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          ) : preview ? (
+            <>
+              <Button variant="outline" onClick={reset}>
+                Start over
+              </Button>
+              <Button onClick={handleConfirm} disabled={importGuardians.isPending || preview.created_count === 0}>
+                {importGuardians.isPending ? 'Importing…' : `Confirm import (${preview.created_count})`}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handlePreview} disabled={!file || importGuardians.isPending}>
+              {importGuardians.isPending ? 'Reading…' : 'Preview'}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const ALL_BRANCHES = '__all'
 
 export function StudentsPage() {
@@ -369,6 +562,7 @@ export function StudentsPage() {
         </div>
         <div className="flex items-center gap-2">
           <ImportStudentsDialog />
+          <ImportGuardiansDialog />
           <CreateStudentDialog />
         </div>
       </div>

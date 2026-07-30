@@ -1,4 +1,4 @@
-import type { Subject } from '@/types/academics'
+import type { SchoolClass, Subject } from '@/types/academics'
 
 export interface StaffProfile {
   id: string
@@ -17,6 +17,7 @@ export interface StaffProfile {
   termination_date: string | null
   bio: string | null
   subjects_taught?: Subject[]
+  classes_assigned?: SchoolClass[]
   created_at: string
 }
 
@@ -29,6 +30,25 @@ export interface StaffContract {
   end_date: string | null
   salary: string | null
   notes: string | null
+}
+
+export interface TeacherImportRow {
+  row: number
+  email: string
+  name: string
+  status: 'created' | 'would_create' | 'error'
+  errors: string[]
+  warnings: string[]
+  user_id?: string
+}
+
+export interface TeacherImportResult {
+  total_rows: number
+  created_count: number
+  error_count: number
+  committed: boolean
+  missing_headers: string[]
+  rows: TeacherImportRow[]
 }
 
 export interface LeaveRequest {

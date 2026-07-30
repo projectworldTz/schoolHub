@@ -1,7 +1,7 @@
 import { apiClient } from '@/api/client'
 import { createCrudApi } from '@/api/crud'
 import type { PaginatedResponse } from '@/types/school'
-import type { LeaveRequest, StaffContract, StaffProfile } from '@/types/staff'
+import type { LeaveRequest, StaffContract, StaffProfile, TeacherImportResult } from '@/types/staff'
 
 export const staffApi = createCrudApi<StaffProfile>('staff')
 
@@ -13,6 +13,13 @@ export async function listStaff(search = ''): Promise<PaginatedResponse<StaffPro
 export async function syncTeacherSubjects(staffId: string, subjectIds: string[]): Promise<StaffProfile> {
   const { data } = await apiClient.put<{ data: StaffProfile }>(`/school/staff/${staffId}/subjects`, {
     subject_ids: subjectIds,
+  })
+  return data.data
+}
+
+export async function syncTeacherClasses(staffId: string, classIds: string[]): Promise<StaffProfile> {
+  const { data } = await apiClient.put<{ data: StaffProfile }>(`/school/staff/${staffId}/classes`, {
+    class_ids: classIds,
   })
   return data.data
 }
@@ -29,6 +36,16 @@ export async function createStaffContract(payload: Partial<StaffContract>): Prom
 
 export async function deleteStaffContract(id: string): Promise<void> {
   await apiClient.delete(`/school/staff-contracts/${id}`)
+}
+
+export async function importTeachers(file: File, dryRun: boolean): Promise<TeacherImportResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('dry_run', dryRun ? 'true' : 'false')
+  const { data } = await apiClient.post<{ data: TeacherImportResult }>('/school/staff/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
 }
 
 export async function listLeaveRequests(): Promise<PaginatedResponse<LeaveRequest>> {

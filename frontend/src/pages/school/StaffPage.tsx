@@ -50,8 +50,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   useCreateStaff,
+  useImportTeachers,
   useStaffContracts,
   useStaffList,
+  useSyncTeacherClasses,
   useSyncTeacherSubjects,
   useUpdateStaff,
 } from '@/hooks/useStaff'
@@ -63,12 +65,12 @@ import {
   useReviewLeaveRequest,
 } from '@/hooks/useStaff'
 import { useSchoolUsers } from '@/hooks/useSchoolUsers'
-import { useSubjects } from '@/hooks/useAcademics'
+import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useMarkStaffAttendance, useStaffAttendanceRegister } from '@/hooks/useStaffAttendance'
 import { apiOrigin } from '@/api/client'
-import type { StaffProfile } from '@/types/staff'
+import type { StaffProfile, TeacherImportResult } from '@/types/staff'
 import type { StaffAttendanceStatus } from '@/types/staffAttendance'
 
 const staffSchema = z.object({
@@ -319,11 +321,242 @@ function SubjectAssignmentEditor({ staff }: { staff: StaffProfile }) {
   )
 }
 
+function ClassAssignmentEditor({ staff }: { staff: StaffProfile }) {
+  const { data: classes } = useClasses.useList()
+  const sync = useSyncTeacherClasses()
+  const currentIds = new Set((staff.classes_assigned ?? []).map((c) => c.id))
+
+  function toggle(classId: string, checked: boolean) {
+    const next = new Set(currentIds)
+    if (checked) next.add(classId)
+    else next.delete(classId)
+
+    sync.mutate(
+      { staffId: staff.id, classIds: Array.from(next) },
+      {
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update classes')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <div className="space-y-2 p-1">
+      {classes?.map((schoolClass) => (
+        <label key={schoolClass.id} className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={currentIds.has(schoolClass.id)}
+            onCheckedChange={(checked) => toggle(schoolClass.id, checked === true)}
+          />
+          {schoolClass.name}
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function downloadTeacherImportTemplate() {
+  const csv =
+    'full_name,email,phone,role,staff_number,job_title,employment_type,hire_date,class_assigned\n'
+    + 'Grace Mwakalinga,grace.mwakalinga@example.com,+255700000001,Class Teacher,STF-001,Class Teacher - Standard 1,full_time,2026-01-05,Standard 1\n'
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'teacher-import-template.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+const TEACHER_IMPORT_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  created: 'default',
+  would_create: 'secondary',
+  error: 'destructive',
+}
+
+function TeacherImportResultTable({ result }: { result: TeacherImportResult }) {
+  return (
+    <div className="max-h-72 overflow-y-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14">Row</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Notes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {result.rows.map((row) => (
+            <TableRow key={row.row}>
+              <TableCell>{row.row}</TableCell>
+              <TableCell className="font-medium">{row.name || '—'}</TableCell>
+              <TableCell>{row.email || '—'}</TableCell>
+              <TableCell>
+                <Badge variant={TEACHER_IMPORT_STATUS_VARIANT[row.status]}>
+                  {row.status === 'would_create' ? 'valid' : row.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {[...row.errors, ...row.warnings].join(' ') || '—'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function ImportTeachersDialog() {
+  const [open, setOpen] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<TeacherImportResult | null>(null)
+  const [committedResult, setCommittedResult] = useState<TeacherImportResult | null>(null)
+  const importTeachers = useImportTeachers()
+
+  function reset() {
+    setFile(null)
+    setPreview(null)
+    setCommittedResult(null)
+  }
+
+  function handlePreview() {
+    if (!file) return
+    importTeachers.mutate(
+      { file, dryRun: true },
+      {
+        onSuccess: (result) => {
+          if (result.missing_headers.length > 0) {
+            toast.error(`Missing required columns: ${result.missing_headers.join(', ')}`)
+            return
+          }
+          setPreview(result)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not read that file')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  function handleConfirm() {
+    if (!file) return
+    importTeachers.mutate(
+      { file, dryRun: false },
+      {
+        onSuccess: (result) => {
+          setCommittedResult(result)
+          toast.success(`Imported ${result.created_count} teacher(s) — activation emails sent`)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Import failed')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) reset()
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          Import CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Import teachers</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <p className="text-muted-foreground">
+              Columns: <code>full_name</code>, <code>email</code>, <code>role</code> (required), plus optional{' '}
+              <code>phone</code>, <code>staff_number</code>, <code>job_title</code>, <code>employment_type</code>,{' '}
+              <code>hire_date</code>, <code>class_assigned</code>. Each teacher is emailed an activation link.
+            </p>
+            <Button type="button" variant="link" size="sm" className="shrink-0" onClick={downloadTeacherImportTemplate}>
+              Download template
+            </Button>
+          </div>
+
+          <Input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null)
+              setPreview(null)
+              setCommittedResult(null)
+            }}
+          />
+
+          {committedResult ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium text-primary">{committedResult.created_count} created</span>
+                {committedResult.error_count > 0 && `, ${committedResult.error_count} skipped`}
+              </p>
+              <TeacherImportResultTable result={committedResult} />
+            </>
+          ) : preview ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium">{preview.created_count} of {preview.total_rows} rows are valid</span>
+                {preview.error_count > 0 && ` — ${preview.error_count} will be skipped`}
+              </p>
+              <TeacherImportResultTable result={preview} />
+            </>
+          ) : null}
+        </div>
+
+        <DialogFooter>
+          {committedResult ? (
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          ) : preview ? (
+            <>
+              <Button variant="outline" onClick={reset}>
+                Start over
+              </Button>
+              <Button onClick={handleConfirm} disabled={importTeachers.isPending || preview.created_count === 0}>
+                {importTeachers.isPending ? 'Importing…' : `Confirm import (${preview.created_count})`}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handlePreview} disabled={!file || importTeachers.isPending}>
+              {importTeachers.isPending ? 'Reading…' : 'Preview'}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function StaffTab() {
   const [search, setSearch] = useState('')
   const { data, isLoading } = useStaffList(search)
   const { data: branches } = useBranches.useList()
   const [subjectsFor, setSubjectsFor] = useState<StaffProfile | null>(null)
+  const [classesFor, setClassesFor] = useState<StaffProfile | null>(null)
 
   return (
     <Card>
@@ -339,7 +572,10 @@ function StaffTab() {
             />
           </CardDescription>
         </div>
-        <CreateStaffDialog />
+        <div className="flex items-center gap-2">
+          <ImportTeachersDialog />
+          <CreateStaffDialog />
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -396,6 +632,11 @@ function StaffTab() {
                           Assign subjects
                         </DropdownMenuItem>
                       )}
+                      {staff.roles?.includes('Teacher') && (
+                        <DropdownMenuItem onClick={() => setClassesFor(staff)}>
+                          Assign classes
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -410,6 +651,15 @@ function StaffTab() {
               <DialogTitle>Subjects taught — {subjectsFor?.name}</DialogTitle>
             </DialogHeader>
             {subjectsFor && <SubjectAssignmentEditor staff={subjectsFor} />}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={Boolean(classesFor)} onOpenChange={(open) => !open && setClassesFor(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Classes assigned — {classesFor?.name}</DialogTitle>
+            </DialogHeader>
+            {classesFor && <ClassAssignmentEditor staff={classesFor} />}
           </DialogContent>
         </Dialog>
       </CardContent>

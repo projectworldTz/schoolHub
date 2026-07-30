@@ -75,3 +75,22 @@ export interface StudentImportResult {
   missing_headers: string[]
   rows: StudentImportRow[]
 }
+
+export interface GuardianImportRow {
+  row: number
+  admission_number: string
+  name: string
+  status: 'created' | 'would_create' | 'error'
+  errors: string[]
+  warnings: string[]
+  guardian_id?: string
+}
+
+export interface GuardianImportResult {
+  total_rows: number
+  created_count: number
+  error_count: number
+  committed: boolean
+  missing_headers: string[]
+  rows: GuardianImportRow[]
+}

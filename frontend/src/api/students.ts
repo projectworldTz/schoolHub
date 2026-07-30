@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client'
 import type { PaginatedResponse } from '@/types/school'
-import type { Student, StudentDocument, StudentEnrollment, StudentImportResult } from '@/types/students'
+import type { GuardianImportResult, Student, StudentDocument, StudentEnrollment, StudentImportResult } from '@/types/students'
 
 export interface StudentPayload {
   admission_number: string
@@ -106,6 +106,16 @@ export async function importStudents(file: File, dryRun: boolean): Promise<Stude
   form.append('file', file)
   form.append('dry_run', dryRun ? 'true' : 'false')
   const { data } = await apiClient.post<{ data: StudentImportResult }>('/school/students/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function importGuardians(file: File, dryRun: boolean): Promise<GuardianImportResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('dry_run', dryRun ? 'true' : 'false')
+  const { data } = await apiClient.post<{ data: GuardianImportResult }>('/school/guardians/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data.data

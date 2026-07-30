@@ -32,6 +32,7 @@ use App\Http\Controllers\School\ExamResultController;
 use App\Http\Controllers\School\ExamSubjectController;
 use App\Http\Controllers\School\GradingSystemController;
 use App\Http\Controllers\School\GraduationController;
+use App\Http\Controllers\School\GuardianImportController;
 use App\Http\Controllers\School\GuardianPortalController;
 use App\Http\Controllers\School\HolidayController;
 use App\Http\Controllers\School\HomeworkController;
@@ -57,6 +58,7 @@ use App\Http\Controllers\School\StudentEnrollmentController;
 use App\Http\Controllers\School\StudentGuardianController;
 use App\Http\Controllers\School\StudentImportController;
 use App\Http\Controllers\School\SubjectController;
+use App\Http\Controllers\School\TeacherImportController;
 use App\Http\Controllers\School\TermController;
 use App\Http\Controllers\School\TimetableEntryController;
 use App\Http\Controllers\School\TimetablePeriodController;
@@ -76,6 +78,7 @@ use App\Http\Controllers\Finance\StaffSalaryController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/activate-account', [AuthController::class, 'activate']);
 
 // The entire school route surface is shared verbatim between the SPA
 // (session-cookie, 'auth:web' below) and the versioned public API
@@ -113,6 +116,7 @@ $schoolRoutes = function () {
         Route::post('students/import', [StudentImportController::class, 'import']);
         Route::post('students/{student}/guardians', [StudentGuardianController::class, 'store']);
         Route::delete('students/{student}/guardians/{guardian}', [StudentGuardianController::class, 'destroy']);
+        Route::post('guardians/import', [GuardianImportController::class, 'import']);
         Route::get('students/{student}/enrollments', [StudentEnrollmentController::class, 'index']);
         Route::post('students/{student}/enrollments', [StudentEnrollmentController::class, 'store']);
         Route::get('students/{student}/documents', [StudentDocumentController::class, 'index']);
@@ -131,7 +135,9 @@ $schoolRoutes = function () {
 
         // Staff / Teachers (HR)
         Route::apiResource('staff', StaffProfileController::class);
+        Route::post('staff/import', [TeacherImportController::class, 'import']);
         Route::put('staff/{staff}/subjects', [StaffProfileController::class, 'syncSubjects']);
+        Route::put('staff/{staff}/classes', [StaffProfileController::class, 'syncClasses']);
         Route::get('staff/{staff}/contracts', [StaffContractController::class, 'index']);
         Route::post('staff-contracts', [StaffContractController::class, 'store']);
         Route::delete('staff-contracts/{contract}', [StaffContractController::class, 'destroy']);
@@ -280,6 +286,13 @@ $parentRoutes = function () {
     Route::get('children/{student}/results', [ParentPortalController::class, 'results']);
     Route::get('children/{student}/fees', [ParentPortalController::class, 'fees']);
     Route::get('announcements', [ParentPortalController::class, 'announcements']);
+
+    // Read/reply only — parents never start a conversation (see
+    // ConversationController::store), only reply within one an admin
+    // already started with them.
+    Route::get('conversations', [ConversationController::class, 'index']);
+    Route::get('conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+    Route::post('conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
 };
 
 // auth:web (not auth:sanctum) — this app is SPA-cookie-auth only for this
@@ -304,6 +317,7 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
         Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
         Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
         Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
+        Route::post('schools/{school}/custom-domain', [PlatformSchoolController::class, 'setCustomDomain']);
     });
 
     Route::prefix('school')->group($schoolRoutes);

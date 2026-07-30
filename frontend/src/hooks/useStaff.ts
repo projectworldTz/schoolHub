@@ -5,11 +5,13 @@ import {
   createStaffContract,
   deleteLeaveRequest,
   deleteStaffContract,
+  importTeachers,
   listLeaveRequests,
   listStaff,
   listStaffContracts,
   reviewLeaveRequest,
   staffApi,
+  syncTeacherClasses,
   syncTeacherSubjects,
 } from '@/api/staff'
 import type { LeaveRequest, StaffContract, StaffProfile } from '@/types/staff'
@@ -30,6 +32,27 @@ export function useSyncTeacherSubjects() {
     mutationFn: ({ staffId, subjectIds }: { staffId: string; subjectIds: string[] }) =>
       syncTeacherSubjects(staffId, subjectIds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', 'staff'] }),
+  })
+}
+
+export function useSyncTeacherClasses() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ staffId, classIds }: { staffId: string; classIds: string[] }) =>
+      syncTeacherClasses(staffId, classIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', 'staff'] }),
+  })
+}
+
+export function useImportTeachers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, dryRun }: { file: File; dryRun: boolean }) => importTeachers(file, dryRun),
+    onSuccess: (result) => {
+      if (result.committed) {
+        queryClient.invalidateQueries({ queryKey: ['school', 'staff'] })
+      }
+    },
   })
 }
 
