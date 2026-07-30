@@ -4,7 +4,6 @@ namespace App\Http\Requests\Platform;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class StoreSchoolRequest extends FormRequest
 {
@@ -36,12 +35,12 @@ class StoreSchoolRequest extends FormRequest
             'license_duration_months' => ['required', Rule::in([1, 3, 6, 12])],
 
             // The school's first user (School Owner role) — created in the
-            // same request. No invite-email flow yet (same as
-            // CreateSchoolUserRequest for staff): the Super Admin sets the
-            // initial password directly and shares it out of band.
+            // same request. No password field: SchoolService::create()
+            // generates one, emails an activation link, and the owner sets
+            // their own password on first use of that link.
             'owner_name' => ['required', 'string', 'max:255'],
             'owner_email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'owner_password' => ['required', Password::defaults()],
+            'owner_phone' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

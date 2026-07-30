@@ -58,10 +58,11 @@ const createSchoolSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   city: z.string().optional(),
   country: z.string().length(2, 'Use a 2-letter country code').optional().or(z.literal('')),
+  subscription_plan: z.string().optional(),
   license_duration_months: z.enum(['1', '3', '6', '12']),
   owner_name: z.string().min(2, 'Owner name is required'),
   owner_email: z.string().email('Enter a valid email'),
-  owner_password: z.string().min(8, 'At least 8 characters'),
+  owner_phone: z.string().optional(),
 })
 
 type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>
@@ -79,10 +80,11 @@ export function CreateSchoolDialog() {
       email: '',
       city: '',
       country: 'TZ',
+      subscription_plan: '',
       license_duration_months: '1',
       owner_name: '',
       owner_email: '',
-      owner_password: '',
+      owner_phone: '',
     },
   })
 
@@ -209,6 +211,19 @@ export function CreateSchoolDialog() {
             </div>
             <FormField
               control={form.control}
+              name="subscription_plan"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subscription plan</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Standard" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="license_duration_months"
               render={({ field }) => (
                 <FormItem>
@@ -234,8 +249,8 @@ export function CreateSchoolDialog() {
             <div className="space-y-4 border-t pt-4">
               <p className="text-sm font-medium">School Owner account</p>
               <p className="text-muted-foreground text-sm">
-                Creates the school's first login. There's no invite-email flow yet — share this
-                password with the owner directly.
+                Creates the school's first login. We'll email them an activation link to set their
+                own password — no password to share here.
               </p>
               <FormField
                 control={form.control}
@@ -265,12 +280,12 @@ export function CreateSchoolDialog() {
               />
               <FormField
                 control={form.control}
-                name="owner_password"
+                name="owner_phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Initial password</FormLabel>
+                    <FormLabel>Owner phone</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="tel" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

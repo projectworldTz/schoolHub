@@ -15,6 +15,7 @@ export interface School {
   id: string
   name: string
   slug: string
+  custom_domain: string | null
   type: SchoolType
   status: SchoolStatus
   email: string | null

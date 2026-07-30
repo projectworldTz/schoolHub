@@ -12,6 +12,18 @@ export async function login(payload: LoginPayload): Promise<User> {
   return data.data
 }
 
+export interface ActivateAccountPayload {
+  email: string
+  token: string
+  password: string
+}
+
+export async function activateAccount(payload: ActivateAccountPayload): Promise<User> {
+  await ensureCsrfCookie()
+  const { data } = await apiClient.post<{ data: User }>('/auth/activate-account', payload)
+  return data.data
+}
+
 export async function logout(): Promise<void> {
   await apiClient.post('/auth/logout')
 }

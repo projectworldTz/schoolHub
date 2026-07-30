@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchCurrentUser, login as loginRequest, logout as logoutRequest } from '@/api/auth'
-import type { LoginPayload } from '@/api/auth'
+import {
+  activateAccount as activateAccountRequest,
+  fetchCurrentUser,
+  login as loginRequest,
+  logout as logoutRequest,
+} from '@/api/auth'
+import type { ActivateAccountPayload, LoginPayload } from '@/api/auth'
 
 export const AUTH_QUERY_KEY = ['auth', 'me'] as const
 
@@ -18,6 +23,17 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (payload: LoginPayload) => loginRequest(payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, user)
+    },
+  })
+}
+
+export function useActivateAccount() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ActivateAccountPayload) => activateAccountRequest(payload),
     onSuccess: (user) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, user)
     },

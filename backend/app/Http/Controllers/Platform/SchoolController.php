@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\RenewSchoolLicenseRequest;
+use App\Http\Requests\Platform\SetSchoolCustomDomainRequest;
 use App\Http\Requests\Platform\StoreSchoolRequest;
 use App\Http\Requests\Platform\SuspendSchoolRequest;
 use App\Http\Requests\Platform\UpdateSchoolRequest;
@@ -83,5 +84,18 @@ class SchoolController extends Controller
     public function renewLicense(RenewSchoolLicenseRequest $request, School $school)
     {
         return new SchoolResource($this->schools->renewLicense($school, $request->validated('months')));
+    }
+
+    /**
+     * Groundwork for the custom-domains roadmap — safe to expose now since
+     * setting a domain here does nothing on its own until DNS actually
+     * points that domain at this server (and a certificate exists for it).
+     * See App\Http\Middleware\ResolveTenantFromUser.
+     */
+    public function setCustomDomain(SetSchoolCustomDomainRequest $request, School $school)
+    {
+        $school->update(['custom_domain' => $request->validated('custom_domain')]);
+
+        return new SchoolResource($school);
     }
 }

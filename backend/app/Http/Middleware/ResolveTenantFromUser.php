@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\School;
 use App\Support\Tenancy\Tenant;
 use Closure;
 use Illuminate\Http\Request;
@@ -47,6 +48,14 @@ use Symfony\Component\HttpFoundation\Response;
  * only sets the guard's in-memory $user property for this request, not the
  * session, so it doesn't create a login and doesn't touch the default
  * guard/config the way shouldUse() would.
+ *
+ * Custom-domain groundwork: an authenticated user's own school_id always
+ * wins — a Host header must never override who someone actually
+ * authenticated as. Domain-based resolution only ever fires for the
+ * unauthenticated slice of a request (the login screen, csrf-cookie,
+ * public notice board) so that a school's own domain can eventually brand
+ * those pre-login surfaces. It's a no-op today: schools.custom_domain is
+ * NULL for every school until a Super Admin explicitly sets one.
  */
 class ResolveTenantFromUser
 {
@@ -65,8 +74,15 @@ class ResolveTenantFromUser
             Auth::guard('web')->setUser($user);
         }
 
-        Tenant::set($user?->school_id);
+        Tenant::set($user?->school_id ?? $this->resolveSchoolIdFromDomain($request));
 
         return $next($request);
+    }
+
+    protected function resolveSchoolIdFromDomain(Request $request): ?string
+    {
+        return Tenant::runAsPlatform(
+            fn () => School::where('custom_domain', $request->getHost())->value('id')
+        );
     }
 }

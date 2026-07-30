@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '@/pages/auth/LoginPage'
+import { ActivateAccountPage } from '@/pages/auth/ActivateAccountPage'
 import { SchoolsPage } from '@/pages/platform/SchoolsPage'
 import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { DashboardPage } from '@/pages/school/DashboardPage'
@@ -55,6 +56,7 @@ function App() {
       <OfflineBanner />
       <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/activate-account" element={<ActivateAccountPage />} />
       <Route path="/notice-board/:slug" element={<NoticeBoardPage />} />
 
       <Route element={<ProtectedRoute />}>
