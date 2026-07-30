@@ -5,6 +5,7 @@ import {
   fetchPlatformDashboard,
   listSchools,
   renewSchoolLicense,
+  setSchoolCustomDomain,
   suspendSchool,
   type CreateSchoolPayload,
   type ListSchoolsParams,
@@ -17,6 +18,17 @@ export function useSchools(params: ListSchoolsParams = {}) {
   return useQuery({
     queryKey: [...SCHOOLS_QUERY_KEY, params],
     queryFn: () => listSchools(params),
+  })
+}
+
+export function useSetSchoolCustomDomain() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, customDomain }: { id: string; customDomain: string | null }) => setSchoolCustomDomain(id, customDomain),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
   })
 }
 

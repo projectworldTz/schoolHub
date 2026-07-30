@@ -25,10 +25,11 @@ export interface CreateSchoolPayload {
   phone?: string
   city?: string
   country?: string
+  subscription_plan?: string
   license_duration_months: LicenseDurationMonths
   owner_name: string
   owner_email: string
-  owner_password: string
+  owner_phone?: string
 }
 
 export async function createSchool(payload: CreateSchoolPayload): Promise<School> {
@@ -48,5 +49,12 @@ export async function suspendSchool(id: string, reason: string): Promise<School>
 
 export async function renewSchoolLicense(id: string, months: LicenseDurationMonths): Promise<School> {
   const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/renew-license`, { months })
+  return data.data
+}
+
+export async function setSchoolCustomDomain(id: string, customDomain: string | null): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/custom-domain`, {
+    custom_domain: customDomain,
+  })
   return data.data
 }

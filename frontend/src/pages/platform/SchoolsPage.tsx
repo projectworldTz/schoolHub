@@ -23,6 +23,7 @@ import { MoreHorizontal, UsersRound } from 'lucide-react'
 import { CreateSchoolDialog } from '@/pages/platform/CreateSchoolDialog'
 import { SuspendSchoolDialog } from '@/pages/platform/SuspendSchoolDialog'
 import { RenewLicenseDialog } from '@/pages/platform/RenewLicenseDialog'
+import { CustomDomainDialog } from '@/pages/platform/CustomDomainDialog'
 import { licenseStatus, type LicenseTier } from '@/lib/license'
 
 const STATUS_VARIANT: Record<School['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -61,6 +62,7 @@ export function SchoolsPage() {
   const approveSchool = useApproveSchool()
   const [suspendTarget, setSuspendTarget] = useState<School | null>(null)
   const [renewTarget, setRenewTarget] = useState<School | null>(null)
+  const [domainTarget, setDomainTarget] = useState<School | null>(null)
 
   function handleApprove(school: School) {
     approveSchool.mutate(school.id, {
@@ -125,7 +127,14 @@ export function SchoolsPage() {
             )}
             {data?.data.map((school) => (
               <TableRow key={school.id}>
-                <TableCell className="font-medium">{school.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex flex-col">
+                    <span>{school.name}</span>
+                    {school.custom_domain && (
+                      <span className="text-xs font-normal text-muted-foreground">{school.custom_domain}</span>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   {school.owner ? (
                     <div className="flex flex-col">
@@ -170,6 +179,9 @@ export function SchoolsPage() {
                       <DropdownMenuItem onClick={() => setRenewTarget(school)}>
                         Renew license
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDomainTarget(school)}>
+                        {school.custom_domain ? 'Edit custom domain' : 'Set custom domain'}
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={school.status === 'suspended'}
                         onClick={() => setSuspendTarget(school)}
@@ -201,6 +213,16 @@ export function SchoolsPage() {
           schoolName={renewTarget.name}
           open={Boolean(renewTarget)}
           onOpenChange={(open) => !open && setRenewTarget(null)}
+        />
+      )}
+
+      {domainTarget && (
+        <CustomDomainDialog
+          schoolId={domainTarget.id}
+          schoolName={domainTarget.name}
+          currentDomain={domainTarget.custom_domain}
+          open={Boolean(domainTarget)}
+          onOpenChange={(open) => !open && setDomainTarget(null)}
         />
       )}
     </div>

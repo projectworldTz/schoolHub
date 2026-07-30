@@ -14,6 +14,7 @@ class SchoolResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'custom_domain' => $this->custom_domain,
             'type' => $this->type,
             'status' => $this->status,
             'email' => $this->email,

@@ -21,6 +21,7 @@ class School extends Model
     protected $fillable = [
         'name',
         'slug',
+        'custom_domain',
         'type',
         'status',
         'email',
