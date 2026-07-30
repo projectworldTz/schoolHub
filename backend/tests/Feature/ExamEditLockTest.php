@@ -27,6 +27,7 @@ class ExamEditLockTest extends TestCase
             $this->recordMark($fixture['school'], $examSubject, $student, null);
         }
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
 
         $records = $fixture['students']->map(fn ($s) => ['student_id' => $s->id, 'marks_obtained' => 70])->all();
 
@@ -50,6 +51,7 @@ class ExamEditLockTest extends TestCase
         );
         $this->recordMark($fixture['school'], $examSubject, $fixture['students']->first(), null);
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
 
         $submit = $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit");
         $submit->assertOk();
@@ -71,6 +73,7 @@ class ExamEditLockTest extends TestCase
             $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
         );
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
 
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertOk();
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertStatus(422);
@@ -85,6 +88,7 @@ class ExamEditLockTest extends TestCase
         );
         $this->recordMark($fixture['school'], $examSubject, $fixture['students']->first(), null);
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
 
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertOk();
 
@@ -107,6 +111,7 @@ class ExamEditLockTest extends TestCase
         );
         $this->recordMark($fixture['school'], $examSubject, $fixture['students']->first(), null);
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
         $academicMaster = $this->createUser($fixture['school'], 'Academic Master');
 
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertOk();
@@ -164,6 +169,7 @@ class ExamEditLockTest extends TestCase
         );
         $this->recordMark($fixture['school'], $examSubject, $fixture['students']->first(), null);
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
         $academicMaster = $this->createUser($fixture['school'], 'Academic Master');
 
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertOk();
@@ -189,6 +195,7 @@ class ExamEditLockTest extends TestCase
             $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
         );
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
         $classTeacher = $this->createUser($fixture['school'], 'Class Teacher');
 
         $this->actingAs($teacher, 'web')->postJson("/api/school/exam-subjects/{$examSubject->id}/submit")->assertOk();
@@ -213,6 +220,7 @@ class ExamEditLockTest extends TestCase
             $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
         );
         $teacherA = $this->createUser($fixture['school'], 'Teacher');
+        $teacherA->assignedClasses()->attach($fixture['schoolClass']->id);
         $teacherB = $this->createUser($fixture['school'], 'Teacher');
         $academicMaster = $this->createUser($fixture['school'], 'Academic Master');
 
@@ -241,6 +249,7 @@ class ExamEditLockTest extends TestCase
             $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
         );
         $teacher = $this->createUser($fixture['school'], 'Teacher');
+        $teacher->assignedClasses()->attach($fixture['schoolClass']->id);
 
         $response = $this->actingAs($teacher, 'web')->postJson('/api/school/exam-edit-requests', [
             'exam_subject_id' => $examSubject->id,

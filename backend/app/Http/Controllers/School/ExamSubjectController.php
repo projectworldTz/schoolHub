@@ -22,8 +22,14 @@ class ExamSubjectController extends Controller
         return new ExamSubjectResource($examSubject->load(['schoolClass', 'subject']));
     }
 
-    public function show(ExamSubject $examSubject)
+    public function show(Request $request, ExamSubject $examSubject)
     {
+        abort_unless(
+            $request->user()->can('exams.manage') || $request->user()->can('exam-marks.record'),
+            403
+        );
+        abort_unless($request->user()->canAccessClass($examSubject->school_class_id), 403);
+
         return new ExamSubjectResource(
             $examSubject->load(['schoolClass', 'subject', 'results.student'])
         );
@@ -32,6 +38,7 @@ class ExamSubjectController extends Controller
     public function destroy(Request $request, ExamSubject $examSubject)
     {
         abort_unless($request->user()->can('exams.manage'), 403);
+        abort_unless($request->user()->canAccessClass($examSubject->school_class_id), 403);
 
         $examSubject->delete();
 
@@ -48,6 +55,7 @@ class ExamSubjectController extends Controller
     public function submit(Request $request, ExamSubject $examSubject)
     {
         abort_unless($request->user()->can('exam-marks.record'), 403);
+        abort_unless($request->user()->canAccessClass($examSubject->school_class_id), 403);
         abort_if($examSubject->submitted_at, 422, 'This gradebook has already been submitted.');
 
         $examSubject->update(['submitted_at' => now()]);
@@ -55,8 +63,14 @@ class ExamSubjectController extends Controller
         return new ExamSubjectResource($examSubject->load(['schoolClass', 'subject']));
     }
 
-    public function results(ExamSubject $examSubject)
+    public function results(Request $request, ExamSubject $examSubject)
     {
+        abort_unless(
+            $request->user()->can('exams.manage') || $request->user()->can('exam-marks.record'),
+            403
+        );
+        abort_unless($request->user()->canAccessClass($examSubject->school_class_id), 403);
+
         return ExamResultResource::collection(
             $examSubject->results()->with('student')->get()
         );

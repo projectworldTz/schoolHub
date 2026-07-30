@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchChildAttendance,
   fetchChildFees,
@@ -6,7 +6,12 @@ import {
   fetchChildResults,
   fetchMyChildren,
   fetchParentAnnouncements,
+  fetchParentConversationMessages,
+  fetchParentConversations,
+  sendParentMessage,
 } from '@/api/parent'
+
+const PARENT_CONVERSATIONS_KEY = ['parent', 'conversations'] as const
 
 export function useMyChildren() {
   return useQuery({ queryKey: ['parent', 'children'], queryFn: fetchMyChildren })
@@ -46,4 +51,28 @@ export function useChildFees(studentId: string) {
 
 export function useParentAnnouncements() {
   return useQuery({ queryKey: ['parent', 'announcements'], queryFn: fetchParentAnnouncements })
+}
+
+export function useParentConversations() {
+  return useQuery({ queryKey: PARENT_CONVERSATIONS_KEY, queryFn: fetchParentConversations, refetchInterval: 20000 })
+}
+
+export function useParentConversationMessages(conversationId: string) {
+  return useQuery({
+    queryKey: [...PARENT_CONVERSATIONS_KEY, conversationId, 'messages'],
+    queryFn: () => fetchParentConversationMessages(conversationId),
+    enabled: Boolean(conversationId),
+    refetchInterval: 8000,
+  })
+}
+
+export function useSendParentMessage(conversationId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: string) => sendParentMessage(conversationId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...PARENT_CONVERSATIONS_KEY, conversationId, 'messages'] })
+      queryClient.invalidateQueries({ queryKey: PARENT_CONVERSATIONS_KEY })
+    },
+  })
 }

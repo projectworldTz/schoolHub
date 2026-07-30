@@ -17,6 +17,10 @@ class SchoolClassController extends Controller
             SchoolClass::query()
                 ->with(['subjects', 'branch'])
                 ->when($request->input('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
+                ->when(
+                    $request->user()->cannot('classes.manage'),
+                    fn ($q) => $q->whereIn('id', $request->user()->assignedClassIds())
+                )
                 ->orderBy('level')
                 ->get()
         );

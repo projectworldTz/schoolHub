@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
+import { isAxiosError } from 'axios'
 import {
   CalendarCheck,
   GraduationCap,
   Megaphone,
+  MessageCircle,
   NotebookPen,
   Receipt,
+  Send,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -24,7 +30,11 @@ import {
   useChildResults,
   useMyChildren,
   useParentAnnouncements,
+  useParentConversationMessages,
+  useParentConversations,
+  useSendParentMessage,
 } from '@/hooks/useParentPortal'
+import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
 import type { Student } from '@/types/students'
 import type { InvoiceStatus } from '@/types/finance'
@@ -296,6 +306,142 @@ function ChildOverview({ student }: { student: Student }) {
   )
 }
 
+function messageTimeLabel(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  const sameDay = date.toDateString() === new Date().toDateString()
+  return sameDay
+    ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+/**
+ * Read/reply only — parents never start a conversation, they only reply
+ * within a thread a school administrator already started with them.
+ */
+function ParentMessagesCard() {
+  const [activeId, setActiveId] = useState('')
+  const [draft, setDraft] = useState('')
+
+  const { data: conversations, isLoading: conversationsLoading } = useParentConversations()
+  const { data: thread, isLoading: threadLoading } = useParentConversationMessages(activeId)
+  const send = useSendParentMessage(activeId)
+
+  useEffect(() => {
+    if (!activeId && conversations && conversations.length > 0) {
+      setActiveId(conversations[0].id)
+    }
+  }, [activeId, conversations])
+
+  const active = conversations?.find((c) => c.id === activeId)
+
+  function handleSend() {
+    const body = draft.trim()
+    if (!body) return
+    send.mutate(body, {
+      onSuccess: () => setDraft(''),
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? 'Could not send message')
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    })
+  }
+
+  if (!conversationsLoading && conversations?.length === 0) {
+    return null
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <span className="flex items-center gap-2">
+            <MessageCircle className="size-4" /> Messages
+          </span>
+        </CardTitle>
+        <CardDescription>Direct messages from the school.</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr]" style={{ minHeight: '22rem' }}>
+          <div className="border-r">
+            {conversationsLoading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+            <div className="divide-y">
+              {conversations?.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => setActiveId(conversation.id)}
+                  className={cn(
+                    'flex w-full flex-col gap-0.5 px-4 py-3 text-left transition-colors hover:bg-accent',
+                    conversation.id === activeId && 'bg-accent'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium">{conversation.other_user_name ?? 'School'}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {messageTimeLabel(conversation.last_message_at)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs text-muted-foreground">{conversation.last_message ?? 'No messages yet'}</span>
+                    {conversation.unread_count > 0 && <Badge className="shrink-0">{conversation.unread_count}</Badge>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col p-0">
+            {!active && (
+              <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+                Select a conversation.
+              </div>
+            )}
+            {active && (
+              <>
+                <div className="border-b px-4 py-3 font-medium">{active.other_user_name}</div>
+                <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                  {threadLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+                  {thread?.data.map((message) => (
+                    <div key={message.id} className={cn('flex', message.is_mine ? 'justify-end' : 'justify-start')}>
+                      <div
+                        className={cn(
+                          'max-w-[75%] rounded-2xl px-3 py-2 text-sm',
+                          message.is_mine ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap">{message.body}</p>
+                        <p className="mt-1 text-[10px] opacity-70">{messageTimeLabel(message.created_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 border-t p-3">
+                  <Input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="Type a message…"
+                  />
+                  <Button size="icon" onClick={handleSend} disabled={send.isPending || !draft.trim()}>
+                    <Send className="size-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ParentDashboardPage() {
   const { data: children, isLoading } = useMyChildren()
   const { data: announcements } = useParentAnnouncements()
@@ -364,6 +510,8 @@ export function ParentDashboardPage() {
           ))}
         </CardContent>
       </Card>
+
+      <ParentMessagesCard />
     </div>
   )
 }

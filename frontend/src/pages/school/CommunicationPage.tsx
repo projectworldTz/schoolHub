@@ -134,7 +134,17 @@ function CreateAnnouncementDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Audience</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      if (value === 'all_parents') {
+                        field.onChange('role')
+                        form.setValue('role', 'Parent')
+                      } else {
+                        field.onChange(value)
+                      }
+                    }}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -144,6 +154,7 @@ function CreateAnnouncementDialog() {
                       <SelectItem value="school">Whole school</SelectItem>
                       <SelectItem value="class">A specific class</SelectItem>
                       <SelectItem value="role">A specific role</SelectItem>
+                      <SelectItem value="all_parents">All parents (quick pick)</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -157,7 +168,7 @@ function CreateAnnouncementDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Class</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -183,7 +194,7 @@ function CreateAnnouncementDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />

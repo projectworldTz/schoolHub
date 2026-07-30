@@ -32,6 +32,7 @@ class User extends Authenticatable
         'school_id',
         'name',
         'email',
+        'phone',
         'password',
         'is_active',
         'announcements_last_seen_at',
@@ -85,6 +86,35 @@ class User extends Authenticatable
     public function subjectsTaught(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'teacher_subject');
+    }
+
+    public function assignedClasses(): BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_teacher');
+    }
+
+    /**
+     * Every class this user is assigned to — explicit admin assignments
+     * (class_teacher pivot) plus any stream where they're the homeroom
+     * teacher (Stream::class_teacher_id), so existing homeroom assignments
+     * scope correctly with no separate backfill required.
+     */
+    public function assignedClassIds(): \Illuminate\Support\Collection
+    {
+        $direct = $this->assignedClasses()->pluck('school_classes.id');
+        $homeroom = Stream::where('class_teacher_id', $this->id)->pluck('school_class_id');
+
+        return $direct->merge($homeroom)->unique()->values();
+    }
+
+    /**
+     * classes.manage holders (School Owner, Principal, Academic Master,
+     * Head of Department, etc.) see/manage every class; everyone else is
+     * scoped to their own assigned classes.
+     */
+    public function canAccessClass(string $schoolClassId): bool
+    {
+        return $this->can('classes.manage') || $this->assignedClassIds()->contains($schoolClassId);
     }
 
     public function contracts(): HasMany

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { hasPermission } from '@/lib/permissions'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useSchoolUsers } from '@/hooks/useSchoolUsers'
 import { useConversationMessages, useConversations, useSendMessage, useStartConversation } from '@/hooks/useMessages'
@@ -35,7 +36,12 @@ function NewConversationDialog({
   const { data: users, isLoading } = useSchoolUsers(search)
   const start = useStartConversation()
 
-  const candidates = (users?.data ?? []).filter((u) => u.id !== currentUser?.id)
+  // Messaging a parent directly is admin-tier only (staff.manage) — don't
+  // even surface parent candidates to a caller who'd just get a 403.
+  const canMessageParents = hasPermission(currentUser, 'staff.manage')
+  const candidates = (users?.data ?? []).filter(
+    (u) => u.id !== currentUser?.id && (canMessageParents || !u.roles?.includes('Parent'))
+  )
 
   async function handlePick(userId: string) {
     try {
@@ -57,11 +63,16 @@ function NewConversationDialog({
         <DialogHeader>
           <DialogTitle>New message</DialogTitle>
         </DialogHeader>
-        <Input placeholder="Search staff by name…" value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+        <Input
+          placeholder={canMessageParents ? 'Search staff or parents by name…' : 'Search staff by name…'}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+        />
         <div className="max-h-72 space-y-1 overflow-y-auto">
           {isLoading && <p className="p-2 text-sm text-muted-foreground">Searching…</p>}
           {!isLoading && candidates.length === 0 && (
-            <p className="p-2 text-sm text-muted-foreground">No matching staff found.</p>
+            <p className="p-2 text-sm text-muted-foreground">No matching {canMessageParents ? 'people' : 'staff'} found.</p>
           )}
           {candidates.map((user) => (
             <button

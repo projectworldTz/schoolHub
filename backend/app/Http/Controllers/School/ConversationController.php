@@ -26,6 +26,12 @@ class ConversationController extends Controller
         return ConversationResource::collection($conversations);
     }
 
+    /**
+     * Parents never initiate — they only read/reply within a conversation a
+     * staff member already started with them (see the /parent routes for
+     * that). Messaging a parent is further restricted to admin-tier staff
+     * (staff.manage) so a rank-and-file Teacher can't DM a parent directly.
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -34,8 +40,14 @@ class ConversationController extends Controller
 
         $authId = $request->user()->id;
         abort_if($data['recipient_id'] === $authId, 422, 'Cannot start a conversation with yourself.');
+        abort_if($request->user()->hasRole('Parent'), 403);
 
-        User::findOrFail($data['recipient_id']);
+        $recipient = User::findOrFail($data['recipient_id']);
+        abort_if(
+            $recipient->hasRole('Parent') && $request->user()->cannot('staff.manage'),
+            403,
+            'Only school administrators can message parents directly.'
+        );
 
         $conversation = Conversation::between($authId, $data['recipient_id']);
 

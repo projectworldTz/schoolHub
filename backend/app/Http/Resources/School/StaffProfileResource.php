@@ -30,6 +30,10 @@ class StaffProfileResource extends JsonResource
                 $this->relationLoaded('user') && $this->user->relationLoaded('subjectsTaught'),
                 fn () => SubjectResource::collection($this->user->subjectsTaught)
             ),
+            'classes_assigned' => $this->when(
+                $this->relationLoaded('user') && $this->user->relationLoaded('assignedClasses'),
+                fn () => SchoolClassResource::collection($this->user->assignedClasses)
+            ),
             'created_at' => $this->created_at,
         ];
     }

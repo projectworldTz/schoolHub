@@ -6,9 +6,20 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class RecordExamMarksRequest extends FormRequest
 {
+    /**
+     * exam-marks.record is held by every Teacher school-wide — without the
+     * canAccessClass check, any teacher could record marks for any class's
+     * exam-subject just by knowing/guessing its id.
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('exam-marks.record');
+        if (! $this->user()->can('exam-marks.record')) {
+            return false;
+        }
+
+        $examSubject = $this->route('examSubject');
+
+        return ! $examSubject || $this->user()->canAccessClass($examSubject->school_class_id);
     }
 
     public function rules(): array

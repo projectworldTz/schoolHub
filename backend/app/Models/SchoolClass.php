@@ -44,6 +44,11 @@ class SchoolClass extends Model
         return $this->belongsToMany(Subject::class, 'class_subject');
     }
 
+    public function assignedTeachers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'class_teacher');
+    }
+
     public function timetableEntries(): HasMany
     {
         return $this->hasMany(TimetableEntry::class);
