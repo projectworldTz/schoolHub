@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,6 +48,16 @@ class AppServiceProvider extends ServiceProvider
         // Token login is credential-guessing surface — throttle tighter and
         // strictly by IP, since there's no authenticated user yet to key on.
         RateLimiter::for('api-token-login', fn ($request) => Limit::perMinute(10)->by($request->ip()));
+
+        // SPA session login (AuthController::login) — the main
+        // password-guessing surface for the whole app. Keyed by
+        // email+IP, not IP alone: a school's staff/parents can share one
+        // network IP, and IP-only throttling would let one person's failed
+        // attempts lock out everyone else trying to sign into their own,
+        // different accounts from the same building.
+        RateLimiter::for('login', fn ($request) => Limit::perMinute(5)->by(
+            Str::lower((string) $request->input('email')).'|'.$request->ip()
+        ));
 
         // Public Notice Board (routes/api.php 'public' group, no auth at
         // all): keyed by IP since there's no user, generous enough for a
