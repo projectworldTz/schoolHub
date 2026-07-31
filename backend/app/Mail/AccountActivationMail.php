@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\BrandsFromSchool;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -12,15 +13,15 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Sent whenever this app creates a login for someone without them choosing
- * their own password — a new School Owner (SchoolService::create()), an
- * imported teacher (TeacherImportService), or an imported guardian getting
- * Parent Portal access (GuardianImportService). $roleLine is a short,
- * caller-composed phrase completing "You've been set up as {roleLine}" —
- * keeps this Mailable ignorant of which of those flows triggered it.
+ * their own password — an imported teacher (TeacherImportService) or an
+ * imported guardian getting Parent Portal access (GuardianImportService).
+ * $roleLine is a short, caller-composed phrase completing "You've been set
+ * up as {roleLine}" — keeps this Mailable ignorant of which of those flows
+ * triggered it.
  */
 class AccountActivationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use BrandsFromSchool, Queueable, SerializesModels;
 
     public function __construct(
         public User $user,
@@ -31,9 +32,7 @@ class AccountActivationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: 'Your SchoolHub Africa account is ready',
-        );
+        return $this->schoolEnvelope($this->school, "Your account at {$this->school->name} is ready");
     }
 
     public function content(): Content

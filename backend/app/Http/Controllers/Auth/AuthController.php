@@ -94,7 +94,7 @@ class AuthController extends Controller
 
             $token = Password::broker()->createToken($user);
 
-            Mail::to($user)->send(new PasswordResetMail($user, $token));
+            Mail::to($user)->send(new PasswordResetMail($user, $token, $user->school));
         });
 
         return response()->json([
