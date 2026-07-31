@@ -28,7 +28,20 @@ class SchoolController extends Controller
         // school would appear ownerless. See App\Support\Tenancy\Tenant.
         $schools = Tenant::runAsPlatform(fn () => School::query()
             ->with('owner')
-            ->withCount('users')
+            ->withCount([
+                'users',
+                'students',
+                'guardians as parents_count',
+                // Every role name in config/school_roles.php for teaching
+                // staff contains "Teacher" (Teacher, Head Teacher, Deputy
+                // Head Teacher, Class Teacher, Subject Teacher) — matching
+                // on that instead of an enumerated list stays correct if the
+                // catalog grows.
+                'users as teachers_count' => fn ($query) => $query->whereHas(
+                    'roles',
+                    fn ($roles) => $roles->where('name', 'like', '%Teacher%')
+                ),
+            ])
             ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->string('search')->isNotEmpty(), fn ($query) => $query->where('name', 'like', '%'.$request->string('search').'%'))
             ->latest()
@@ -48,7 +61,15 @@ class SchoolController extends Controller
     {
         $this->authorize('view', $school);
 
-        Tenant::runAsPlatform(fn () => $school->load('owner'));
+        Tenant::runAsPlatform(fn () => $school->load('owner')->loadCount([
+            'users',
+            'students',
+            'guardians as parents_count',
+            'users as teachers_count' => fn ($query) => $query->whereHas(
+                'roles',
+                fn ($roles) => $roles->where('name', 'like', '%Teacher%')
+            ),
+        ]));
 
         return new SchoolResource($school);
     }

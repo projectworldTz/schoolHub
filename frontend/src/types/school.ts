@@ -31,8 +31,11 @@ export interface School {
   approved_at: string | null
   suspended_at: string | null
   suspension_reason: string | null
-  owner?: { name: string; email: string } | null
+  owner?: { name: string; email: string; temporary_password?: string | null } | null
   users_count?: number
+  students_count?: number
+  teachers_count?: number
+  parents_count?: number
   created_at: string
   updated_at: string
 }

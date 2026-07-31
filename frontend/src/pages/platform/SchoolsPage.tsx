@@ -19,11 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, UsersRound } from 'lucide-react'
+import { GraduationCap, MoreHorizontal, UserRound, UsersRound } from 'lucide-react'
 import { CreateSchoolDialog } from '@/pages/platform/CreateSchoolDialog'
 import { SuspendSchoolDialog } from '@/pages/platform/SuspendSchoolDialog'
 import { RenewLicenseDialog } from '@/pages/platform/RenewLicenseDialog'
 import { CustomDomainDialog } from '@/pages/platform/CustomDomainDialog'
+import { EditSchoolDialog } from '@/pages/platform/EditSchoolDialog'
 import { licenseStatus, type LicenseTier } from '@/lib/license'
 
 const STATUS_VARIANT: Record<School['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -63,6 +64,7 @@ export function SchoolsPage() {
   const [suspendTarget, setSuspendTarget] = useState<School | null>(null)
   const [renewTarget, setRenewTarget] = useState<School | null>(null)
   const [domainTarget, setDomainTarget] = useState<School | null>(null)
+  const [editTarget, setEditTarget] = useState<School | null>(null)
 
   function handleApprove(school: School) {
     approveSchool.mutate(school.id, {
@@ -98,6 +100,9 @@ export function SchoolsPage() {
               <TableHead>Status</TableHead>
               <TableHead>City</TableHead>
               <TableHead>Users</TableHead>
+              <TableHead>Students</TableHead>
+              <TableHead>Teachers</TableHead>
+              <TableHead>Parents</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>License</TableHead>
               <TableHead className="w-12" />
@@ -106,21 +111,21 @@ export function SchoolsPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={12} className="text-center text-muted-foreground">
                   Loading schools…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-destructive">
+                <TableCell colSpan={12} className="text-center text-destructive">
                   Could not load schools.
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={12} className="text-center text-muted-foreground">
                   No schools registered yet.
                 </TableCell>
               </TableRow>
@@ -156,6 +161,24 @@ export function SchoolsPage() {
                     {school.users_count ?? '—'}
                   </div>
                 </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <GraduationCap className="size-3.5 text-muted-foreground" />
+                    {school.students_count ?? '—'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <UserRound className="size-3.5 text-muted-foreground" />
+                    {school.teachers_count ?? '—'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <UserRound className="size-3.5 text-muted-foreground" />
+                    {school.parents_count ?? '—'}
+                  </div>
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {new Date(school.created_at).toLocaleDateString()}
                 </TableCell>
@@ -175,6 +198,9 @@ export function SchoolsPage() {
                         onClick={() => handleApprove(school)}
                       >
                         Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEditTarget(school)}>
+                        Edit school
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setRenewTarget(school)}>
                         Renew license
@@ -197,6 +223,14 @@ export function SchoolsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {editTarget && (
+        <EditSchoolDialog
+          school={editTarget}
+          open={Boolean(editTarget)}
+          onOpenChange={(open) => !open && setEditTarget(null)}
+        />
+      )}
 
       {suspendTarget && (
         <SuspendSchoolDialog

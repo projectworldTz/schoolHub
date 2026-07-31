@@ -37,6 +37,25 @@ export async function createSchool(payload: CreateSchoolPayload): Promise<School
   return data.data
 }
 
+export interface UpdateSchoolPayload {
+  name?: string
+  slug?: string
+  type?: School['type']
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  city?: string | null
+  country?: string | null
+  timezone?: string | null
+  currency?: string | null
+  subscription_plan?: string | null
+}
+
+export async function updateSchool(id: string, payload: UpdateSchoolPayload): Promise<School> {
+  const { data } = await apiClient.put<{ data: School }>(`/platform/schools/${id}`, payload)
+  return data.data
+}
+
 export async function approveSchool(id: string): Promise<School> {
   const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/approve`)
   return data.data

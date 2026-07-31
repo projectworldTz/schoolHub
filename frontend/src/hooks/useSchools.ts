@@ -7,8 +7,10 @@ import {
   renewSchoolLicense,
   setSchoolCustomDomain,
   suspendSchool,
+  updateSchool,
   type CreateSchoolPayload,
   type ListSchoolsParams,
+  type UpdateSchoolPayload,
 } from '@/api/schools'
 import type { LicenseDurationMonths } from '@/types/school'
 
@@ -44,6 +46,17 @@ export function useCreateSchool() {
 
   return useMutation({
     mutationFn: (payload: CreateSchoolPayload) => createSchool(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useUpdateSchool() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateSchoolPayload }) => updateSchool(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
     },

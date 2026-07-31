@@ -53,6 +53,16 @@ class School extends Model
         return $this->hasMany(User::class);
     }
 
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    public function guardians(): HasMany
+    {
+        return $this->hasMany(Guardian::class);
+    }
+
     public function owner(): HasOne
     {
         return $this->hasOne(User::class)->whereHas(
