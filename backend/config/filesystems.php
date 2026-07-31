@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        // Used to store encrypted daily database backups off-server. The
+        // service account key file lives outside the repo and outside the
+        // public docroot — see backend's .env.example for setup notes.
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+            'key_file_path' => env('GOOGLE_CLOUD_KEY_FILE'),
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+            'path_prefix' => env('GOOGLE_CLOUD_STORAGE_PATH_PREFIX'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
     ],
 
     /*
