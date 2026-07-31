@@ -35,6 +35,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'is_active',
+        'must_change_password',
         'announcements_last_seen_at',
     ];
 
@@ -59,6 +60,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'announcements_last_seen_at' => 'datetime',
         ];
     }

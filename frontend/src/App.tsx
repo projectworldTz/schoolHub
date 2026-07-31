@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { ActivateAccountPage } from '@/pages/auth/ActivateAccountPage'
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage'
 import { SchoolsPage } from '@/pages/platform/SchoolsPage'
 import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { DashboardPage } from '@/pages/school/DashboardPage'
@@ -57,10 +60,13 @@ function App() {
       <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/activate-account" element={<ActivateAccountPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/notice-board/:slug" element={<NoticeBoardPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomeRedirect />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
 
         <Route element={<ProtectedRoute requireRole="Super Admin" />}>
           <Route element={<PlatformLayout />}>

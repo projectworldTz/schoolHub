@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Mail\AccountActivationMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\SetsUpTenant;
 use Tests\TestCase;
 
@@ -16,17 +14,18 @@ use Tests\TestCase;
  * derives school_id from the caller's own account, which doesn't exist yet
  * for a brand-new school). This covers the current flow: the Super Admin
  * provides the owner's name/email/phone in the same request that registers
- * the school, and the system emails the owner an activation link instead of
- * the Super Admin choosing/sharing a password directly (see
- * AccountActivationTest for redeeming that link).
+ * the school, and the system generates a temporary password shown once in
+ * the response (for the Super Admin to relay directly) rather than emailing
+ * anything — the owner logs in with it and is forced to change it before
+ * doing anything else (see EnsurePasswordHasBeenChanged and
+ * AuthController::changePassword).
  */
 class PlatformSchoolOnboardingTest extends TestCase
 {
     use RefreshDatabase, SetsUpTenant;
 
-    public function test_registering_a_school_creates_the_owner_and_emails_an_activation_link(): void
+    public function test_registering_a_school_creates_the_owner_with_a_one_time_temporary_password(): void
     {
-        Mail::fake();
         $this->seedPermissions();
 
         $superAdmin = $this->createUser($this->createSchool(), 'Super Admin');
@@ -45,23 +44,23 @@ class PlatformSchoolOnboardingTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.owner.name', 'Amina Owner');
         $response->assertJsonPath('data.owner.email', 'amina@riverside.test');
+        $temporaryPassword = $response->json('data.owner.temporary_password');
+        $this->assertNotEmpty($temporaryPassword);
 
         $owner = User::withoutGlobalScopes()->where('email', 'amina@riverside.test')->firstOrFail();
         $this->assertTrue($owner->hasRole('School Owner'));
+        $this->assertTrue($owner->must_change_password);
+        $this->assertTrue(Hash::check($temporaryPassword, $owner->password));
         $this->assertSame(
             $response->json('data.id'),
             $owner->school_id,
             'the owner must belong to the school just created, not the Super Admin\'s own school'
         );
-
-        Mail::assertSent(AccountActivationMail::class, fn ($mail) => $mail->hasTo($owner->email));
     }
 
-    public function test_the_new_owner_cannot_log_in_before_activating_their_account(): void
+    public function test_a_school_list_response_never_leaks_the_temporary_password(): void
     {
-        Mail::fake();
         $this->seedPermissions();
-
         $superAdmin = $this->createUser($this->createSchool(), 'Super Admin');
 
         $this->actingAs($superAdmin, 'web')->postJson('/api/platform/schools', [
@@ -73,23 +72,75 @@ class PlatformSchoolOnboardingTest extends TestCase
             'owner_email' => 'amina@riverside.test',
         ]);
 
-        $owner = User::withoutGlobalScopes()->where('email', 'amina@riverside.test')->firstOrFail();
-        $this->assertFalse(Hash::check('password', $owner->password));
+        $index = $this->actingAs($superAdmin, 'web')->getJson('/api/platform/schools');
 
-        // Nobody knows this password — it was randomly generated and never
-        // communicated — so there is no password that logs this owner in
-        // until they activate via the emailed link.
+        $index->assertOk();
+        $school = collect($index->json('data'))->firstWhere('name', 'Riverside Academy');
+        $this->assertArrayHasKey('temporary_password', $school['owner']);
+        $this->assertNull($school['owner']['temporary_password']);
+    }
+
+    public function test_the_owner_can_log_in_with_the_temporary_password_but_must_change_it_first(): void
+    {
+        $this->seedPermissions();
+        $superAdmin = $this->createUser($this->createSchool(), 'Super Admin');
+
+        $create = $this->actingAs($superAdmin, 'web')->postJson('/api/platform/schools', [
+            'name' => 'Riverside Academy',
+            'slug' => 'riverside-academy',
+            'type' => 'secondary',
+            'license_duration_months' => 12,
+            'owner_name' => 'Amina Owner',
+            'owner_email' => 'amina@riverside.test',
+        ]);
+        $temporaryPassword = $create->json('data.owner.temporary_password');
+
         $login = $this->withHeader('Referer', 'http://localhost:5173')
             ->postJson('/api/auth/login', [
                 'email' => 'amina@riverside.test',
-                'password' => 'password',
+                'password' => $temporaryPassword,
+            ]);
+        $login->assertOk();
+        $login->assertJsonPath('data.must_change_password', true);
+
+        // Blocked from the rest of the app until they change it...
+        $blocked = $this->withHeader('Referer', 'http://localhost:5173')->getJson('/api/school/profile');
+        $blocked->assertStatus(423);
+
+        // ...but changing it unblocks everything, immediately, same session.
+        $change = $this->withHeader('Referer', 'http://localhost:5173')
+            ->postJson('/api/auth/change-password', ['password' => 'a-brand-new-password']);
+        $change->assertOk();
+        $change->assertJsonPath('data.must_change_password', false);
+
+        $unblocked = $this->withHeader('Referer', 'http://localhost:5173')->getJson('/api/school/profile');
+        $unblocked->assertOk();
+    }
+
+    public function test_a_wrong_temporary_password_is_rejected(): void
+    {
+        $this->seedPermissions();
+        $superAdmin = $this->createUser($this->createSchool(), 'Super Admin');
+
+        $this->actingAs($superAdmin, 'web')->postJson('/api/platform/schools', [
+            'name' => 'Riverside Academy',
+            'slug' => 'riverside-academy',
+            'type' => 'secondary',
+            'license_duration_months' => 12,
+            'owner_name' => 'Amina Owner',
+            'owner_email' => 'amina@riverside.test',
+        ]);
+
+        $login = $this->withHeader('Referer', 'http://localhost:5173')
+            ->postJson('/api/auth/login', [
+                'email' => 'amina@riverside.test',
+                'password' => 'definitely-not-it',
             ]);
         $login->assertUnprocessable();
     }
 
     public function test_owner_email_must_be_unique_across_schools(): void
     {
-        Mail::fake();
         $this->seedPermissions();
 
         $this->createUser($this->createSchool(), 'School Owner', ['email' => 'taken@example.com']);
@@ -110,7 +161,6 @@ class PlatformSchoolOnboardingTest extends TestCase
 
     public function test_a_non_super_admin_cannot_register_a_school(): void
     {
-        Mail::fake();
         $this->seedPermissions();
 
         $owner = $this->createUser($this->createSchool(), 'School Owner');

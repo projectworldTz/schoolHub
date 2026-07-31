@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useCurrentUser } from '@/hooks/useAuth'
 
 interface ProtectedRouteProps {
@@ -7,6 +7,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ requireRole }: ProtectedRouteProps) {
   const { data: user, isLoading, isError } = useCurrentUser()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -18,6 +19,14 @@ export function ProtectedRoute({ requireRole }: ProtectedRouteProps) {
 
   if (isError || !user) {
     return <Navigate to="/login" replace />
+  }
+
+  // A temporary password (SchoolService::create()) must be replaced before
+  // anything else is reachable — the backend enforces this too
+  // (EnsurePasswordHasBeenChanged), this is just so the UI doesn't dead-end
+  // on a 423 from the first API call the destination page makes.
+  if (user.must_change_password && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />
   }
 
   if (requireRole && !user.roles?.includes(requireRole)) {

@@ -1,11 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   activateAccount as activateAccountRequest,
+  changePassword as changePasswordRequest,
   fetchCurrentUser,
+  forgotPassword as forgotPasswordRequest,
   login as loginRequest,
   logout as logoutRequest,
+  resetPassword as resetPasswordRequest,
 } from '@/api/auth'
-import type { ActivateAccountPayload, LoginPayload } from '@/api/auth'
+import type {
+  ActivateAccountPayload,
+  ChangePasswordPayload,
+  ForgotPasswordPayload,
+  LoginPayload,
+  ResetPasswordPayload,
+} from '@/api/auth'
 
 export const AUTH_QUERY_KEY = ['auth', 'me'] as const
 
@@ -34,6 +43,34 @@ export function useActivateAccount() {
 
   return useMutation({
     mutationFn: (payload: ActivateAccountPayload) => activateAccountRequest(payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, user)
+    },
+  })
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (payload: ForgotPasswordPayload) => forgotPasswordRequest(payload),
+  })
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ResetPasswordPayload) => resetPasswordRequest(payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, user)
+    },
+  })
+}
+
+export function useChangePassword() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ChangePasswordPayload) => changePasswordRequest(payload),
     onSuccess: (user) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, user)
     },

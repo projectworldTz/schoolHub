@@ -43,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'auth.token' => \App\Http\Middleware\EnsureApiTokenAuthenticated::class,
+            'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -4,6 +4,7 @@ export interface User {
   name: string
   email: string
   is_active: boolean
+  must_change_password: boolean
   roles: string[]
   permissions: string[]
   created_at: string

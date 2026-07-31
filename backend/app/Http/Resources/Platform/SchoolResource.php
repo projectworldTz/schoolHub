@@ -33,8 +33,16 @@ class SchoolResource extends JsonResource
             'owner' => $this->whenLoaded('owner', fn () => $this->owner ? [
                 'name' => $this->owner->name,
                 'email' => $this->owner->email,
+                // Only set on the in-memory instance returned by
+                // SchoolService::create() — a plain database re-fetch (index,
+                // show, update) never has this attribute, so it only ever
+                // appears in the one response right after creation.
+                'temporary_password' => $this->owner->temporary_password ?? null,
             ] : null),
             'users_count' => $this->whenCounted('users'),
+            'students_count' => $this->whenCounted('students'),
+            'teachers_count' => $this->whenCounted('teachers_count'),
+            'parents_count' => $this->whenCounted('parents_count'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

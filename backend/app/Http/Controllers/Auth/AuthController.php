@@ -4,13 +4,19 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ActivateAccountRequest;
+use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\PasswordResetMail;
 use App\Models\User;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -62,22 +68,71 @@ class AuthController extends Controller
      */
     public function activate(ActivateAccountRequest $request)
     {
-        $credentials = $request->validated();
-        $activatedUser = null;
+        return $this->redeemPasswordResetToken(
+            $request,
+            invalidTokenMessage: 'This activation link is invalid or has expired.',
+        );
+    }
 
-        // The owner's school_id isn't known until the broker resolves them
-        // by email below — same chicken-and-egg reason login() uses
+    /**
+     * Requests a password-reset email for an existing account. Always
+     * responds the same way whether or not the email is registered, so this
+     * public endpoint can't be used to enumerate accounts.
+     */
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        $email = $request->validated()['email'];
+
+        // Same cross-tenant reasoning as login()/activate(): which school
+        // this email belongs to (if any) isn't known yet.
+        Tenant::runAsPlatform(function () use ($email) {
+            $user = User::where('email', $email)->first();
+
+            if (! $user) {
+                return;
+            }
+
+            $token = Password::broker()->createToken($user);
+
+            Mail::to($user)->send(new PasswordResetMail($user, $token));
+        });
+
+        return response()->json([
+            'message' => 'If an account exists for that email, a password reset link has been sent.',
+        ]);
+    }
+
+    /**
+     * Redeems the link forgotPassword() emailed, sets a new password, and
+     * signs the user in — the redemption side is identical to activate(),
+     * just for an account that already existed.
+     */
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        return $this->redeemPasswordResetToken(
+            $request,
+            invalidTokenMessage: 'This reset link is invalid or has expired.',
+        );
+    }
+
+    private function redeemPasswordResetToken(FormRequest $request, string $invalidTokenMessage)
+    {
+        $credentials = $request->validated();
+        $resetUser = null;
+
+        // The user's school_id isn't known until the broker resolves them by
+        // email below — same chicken-and-egg reason login() uses
         // runAsPlatform(), since Tenant isn't set yet on this public route.
-        $status = Tenant::runAsPlatform(function () use ($credentials, &$activatedUser) {
+        $status = Tenant::runAsPlatform(function () use ($credentials, &$resetUser) {
             return Password::broker()->reset(
                 [
                     'email' => $credentials['email'],
                     'token' => $credentials['token'],
                     'password' => $credentials['password'],
                 ],
-                function (User $user, string $password) use (&$activatedUser) {
+                function (User $user, string $password) use (&$resetUser) {
                     $user->forceFill(['password' => Hash::make($password)])->save();
-                    $activatedUser = $user;
+                    $resetUser = $user;
                 }
             );
         });
@@ -87,15 +142,15 @@ class AuthController extends Controller
                 'token' => match ($status) {
                     Password::INVALID_USER => 'We could not find an account for that email.',
                     Password::RESET_THROTTLED => 'Please wait a moment before trying again.',
-                    default => 'This activation link is invalid or has expired.',
+                    default => $invalidTokenMessage,
                 },
             ]);
         }
 
-        Auth::login($activatedUser);
-        Tenant::set($activatedUser->school_id);
+        Auth::login($resetUser);
+        Tenant::set($resetUser->school_id);
 
-        if (! $activatedUser->is_active) {
+        if (! $resetUser->is_active) {
             Auth::logout();
 
             throw ValidationException::withMessages([
@@ -105,7 +160,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return new UserResource($activatedUser);
+        return new UserResource($resetUser);
     }
 
     public function logout(Request $request)
@@ -121,5 +176,25 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return new UserResource($request->user());
+    }
+
+    /**
+     * Redeems the temporary password an admin generated (SchoolService::
+     * create()) for a real one the user chose themselves. No old-password
+     * confirmation is required — they've already proven who they are by
+     * signing in with the temporary one to reach this point, and
+     * EnsurePasswordHasBeenChanged blocks everything else in the app until
+     * this is done.
+     */
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        $user->forceFill([
+            'password' => Hash::make($request->validated()['password']),
+            'must_change_password' => false,
+        ])->save();
+
+        return new UserResource($user);
     }
 }

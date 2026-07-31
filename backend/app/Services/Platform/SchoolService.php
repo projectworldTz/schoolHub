@@ -2,15 +2,12 @@
 
 namespace App\Services\Platform;
 
-use App\Mail\AccountActivationMail;
 use App\Models\School;
 use App\Models\User;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class SchoolService
@@ -26,19 +23,23 @@ class SchoolService
         $data['status'] = 'pending';
         $data['license_expires_at'] = now()->addMonths($licenseDurationMonths);
 
-        $school = DB::transaction(function () use ($data, $ownerName, $ownerEmail, $ownerPhone) {
+        // Shown once in the platform admin UI so it can be relayed to the
+        // owner directly (phone/WhatsApp/email) — never persisted in
+        // plaintext or emailed automatically by this app.
+        $temporaryPassword = Str::password(12);
+
+        $school = DB::transaction(function () use ($data, $ownerName, $ownerEmail, $ownerPhone, $temporaryPassword) {
             $school = School::create($data);
 
-            $owner = Tenant::runAsPlatform(function () use ($school, $ownerName, $ownerEmail, $ownerPhone) {
-                // Random, never-communicated password — the account can't
-                // be logged into until the owner activates it below.
+            $owner = Tenant::runAsPlatform(function () use ($school, $ownerName, $ownerEmail, $ownerPhone, $temporaryPassword) {
                 $user = User::create([
                     'school_id' => $school->id,
                     'name' => $ownerName,
                     'email' => $ownerEmail,
                     'phone' => $ownerPhone,
-                    'password' => Hash::make(Str::random(40)),
+                    'password' => Hash::make($temporaryPassword),
                     'is_active' => true,
+                    'must_change_password' => true,
                     'email_verified_at' => now(),
                 ]);
 
@@ -50,15 +51,9 @@ class SchoolService
             return $school->setRelation('owner', $owner);
         });
 
-        // Outside the transaction — a mail failure must not roll back the
-        // school/owner that were just successfully created.
-        $token = Password::broker()->createToken($school->owner);
-        Mail::to($school->owner)->send(new AccountActivationMail(
-            $school->owner,
-            $school,
-            $token,
-            "the owner of **{$school->name}**",
-        ));
+        // Not a real column — lives only on this in-memory instance so
+        // SchoolResource can surface it in this one response.
+        $school->owner->temporary_password = $temporaryPassword;
 
         return $school;
     }

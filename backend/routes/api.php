@@ -79,6 +79,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/activate-account', [AuthController::class, 'activate']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:6,1');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:6,1');
 
 // The entire school route surface is shared verbatim between the SPA
 // (session-cookie, 'auth:web' below) and the versioned public API
@@ -306,23 +308,28 @@ $parentRoutes = function () {
 Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRoutes) {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    // Reachable even while must_change_password is true — it's the one way
+    // out of that state. Everything below the password.changed gate isn't.
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
-    // Self-service API key management — mint/revoke personal access tokens
-    // for the 'v1' group below, from the dashboard.
-    Route::apiResource('tokens', ApiTokenController::class)->only(['index', 'store', 'destroy']);
+    Route::middleware('password.changed')->group(function () use ($schoolRoutes, $parentRoutes) {
+        // Self-service API key management — mint/revoke personal access
+        // tokens for the 'v1' group below, from the dashboard.
+        Route::apiResource('tokens', ApiTokenController::class)->only(['index', 'store', 'destroy']);
 
-    Route::middleware('role:Super Admin')->prefix('platform')->group(function () {
-        Route::get('dashboard', [PlatformDashboardController::class, 'index']);
-        Route::apiResource('schools', PlatformSchoolController::class);
-        Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
-        Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
-        Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
-        Route::post('schools/{school}/custom-domain', [PlatformSchoolController::class, 'setCustomDomain']);
+        Route::middleware('role:Super Admin')->prefix('platform')->group(function () {
+            Route::get('dashboard', [PlatformDashboardController::class, 'index']);
+            Route::apiResource('schools', PlatformSchoolController::class);
+            Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
+            Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
+            Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
+            Route::post('schools/{school}/custom-domain', [PlatformSchoolController::class, 'setCustomDomain']);
+        });
+
+        Route::prefix('school')->group($schoolRoutes);
+
+        Route::middleware('role:Parent')->prefix('parent')->group($parentRoutes);
     });
-
-    Route::prefix('school')->group($schoolRoutes);
-
-    Route::middleware('role:Parent')->prefix('parent')->group($parentRoutes);
 });
 
 // Versioned public API — personal-access-token clients (mobile apps,

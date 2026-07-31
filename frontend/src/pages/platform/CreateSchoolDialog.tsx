@@ -4,12 +4,14 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
+import { Check, Copy } from 'lucide-react'
 import { useCreateSchool } from '@/hooks/useSchools'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { School } from '@/types/school'
 
 const SCHOOL_TYPES = [
   'nursery',
@@ -67,8 +70,47 @@ const createSchoolSchema = z.object({
 
 type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>
 
+function TemporaryPasswordReveal({ school, onDone }: { school: School; onDone: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const temporaryPassword = school.owner?.temporary_password ?? ''
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(temporaryPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{school.name} is registered</DialogTitle>
+        <DialogDescription>
+          Share this temporary password with {school.owner?.name} directly (phone, WhatsApp, email — your
+          choice). Copy it now — for security, it won't be shown again. They'll be required to set their own
+          password the first time they sign in.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">
+          Email: <span className="font-medium text-foreground">{school.owner?.email}</span>
+        </p>
+        <div className="flex items-center gap-2 rounded-md border bg-muted p-3">
+          <code className="flex-1 break-all text-sm">{temporaryPassword}</code>
+          <Button size="icon" variant="ghost" onClick={handleCopy} type="button">
+            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+          </Button>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button onClick={onDone}>Done</Button>
+      </DialogFooter>
+    </>
+  )
+}
+
 export function CreateSchoolDialog() {
   const [open, setOpen] = useState(false)
+  const [createdSchool, setCreatedSchool] = useState<School | null>(null)
   const createSchool = useCreateSchool()
 
   const form = useForm<CreateSchoolFormValues>({
@@ -92,10 +134,9 @@ export function CreateSchoolDialog() {
     createSchool.mutate(
       { ...values, license_duration_months: Number(values.license_duration_months) as 1 | 3 | 6 | 12 },
       {
-        onSuccess: () => {
-          toast.success('School registered')
+        onSuccess: (school) => {
           form.reset()
-          setOpen(false)
+          setCreatedSchool(school)
         },
         onError: (error) => {
           const message = isAxiosError(error)
@@ -107,12 +148,23 @@ export function CreateSchoolDialog() {
     )
   }
 
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      setCreatedSchool(null)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>Register school</Button>
       </DialogTrigger>
       <DialogContent>
+        {createdSchool ? (
+          <TemporaryPasswordReveal school={createdSchool} onDone={() => handleOpenChange(false)} />
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>Register a new school</DialogTitle>
         </DialogHeader>
@@ -249,8 +301,8 @@ export function CreateSchoolDialog() {
             <div className="space-y-4 border-t pt-4">
               <p className="text-sm font-medium">School Owner account</p>
               <p className="text-muted-foreground text-sm">
-                Creates the school's first login. We'll email them an activation link to set their
-                own password — no password to share here.
+                Creates the school's first login with a one-time temporary password, shown to you once
+                registration completes so you can relay it to the owner yourself.
               </p>
               <FormField
                 control={form.control}
@@ -299,6 +351,8 @@ export function CreateSchoolDialog() {
             </DialogFooter>
           </form>
         </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
