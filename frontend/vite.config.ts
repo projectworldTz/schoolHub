@@ -24,13 +24,23 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
       },
       manifest: {
+        // Stable app identity independent of start_url — without this,
+        // Chrome's Android WebAPK minting/update logic has to infer
+        // identity from the URL, which is a known source of install/update
+        // quirks (including "app not installed"-style failures) on older
+        // Chrome builds. Recommended by the current manifest spec for
+        // exactly this reason.
+        id: '/',
         name: 'SchoolHub Africa',
         short_name: 'SchoolHub',
         description: 'Multi-tenant School ERP for African schools',
+        lang: 'en',
+        categories: ['education', 'productivity'],
         theme_color: '#863bff',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
+        scope: '/',
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
