@@ -45,7 +45,11 @@ return [
     // one is what actually switches the assistant over to Gemini.
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        // The "-latest" alias always resolves to Google's current
+        // recommended flash model — a pinned dated model name (e.g.
+        // gemini-2.5-flash) eventually gets retired for new API keys and
+        // starts 404ing with no warning until someone notices.
+        'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
     ],
 
 ];
