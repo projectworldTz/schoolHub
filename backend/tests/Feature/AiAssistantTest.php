@@ -10,10 +10,15 @@ use Tests\TestCase;
 
 /**
  * The AI Assistant deliberately degrades to a clear "not configured" state
- * (503, not a crash) when no ANTHROPIC_API_KEY is set — the default in
- * every environment until a school's platform admin adds one, same as the
- * payment-gateway/SMS work. Http::fake() stands in for the real Anthropic
- * API in every "configured" test, so these never make a real network call.
+ * (503, not a crash) when neither ANTHROPIC_API_KEY nor GEMINI_API_KEY is
+ * set — the default in every environment until a school's platform admin
+ * adds one, same as the payment-gateway/SMS work. Http::fake() stands in
+ * for the real provider APIs in every "configured" test, so these never
+ * make a real network call. Most scenarios are only exercised against
+ * Anthropic (the default provider when both keys are unset); Gemini gets
+ * its own request/response-shape tests further down rather than a full
+ * duplicate of every scenario, since AiAssistantService::call() routes to
+ * provider-specific methods that share no logic worth re-covering twice.
  */
 class AiAssistantTest extends TestCase
 {
@@ -153,5 +158,52 @@ class AiAssistantTest extends TestCase
         ]);
 
         $response->assertNotFound();
+    }
+
+    public function test_chat_uses_gemini_when_only_a_gemini_key_is_configured(): void
+    {
+        Config::set('services.anthropic.key', null);
+        Config::set('services.gemini.key', 'test-gemini-key');
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['role' => 'model', 'parts' => [['text' => 'Try a quick multiplication drill.']]]],
+                ],
+            ]),
+        ]);
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $teacher = $this->createUser($school, 'Teacher');
+
+        $response = $this->actingAs($teacher, 'web')->postJson('/api/school/ai-assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Give me a warm-up activity for algebra.']],
+        ]);
+
+        $response->assertOk()->assertJson(['data' => ['reply' => 'Try a quick multiplication drill.']]);
+        Http::assertSent(fn ($request) => $request->hasHeader('x-goog-api-key', 'test-gemini-key'));
+    }
+
+    public function test_anthropic_is_preferred_when_both_provider_keys_are_set(): void
+    {
+        Config::set('services.anthropic.key', 'test-anthropic-key');
+        Config::set('services.gemini.key', 'test-gemini-key');
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'From Anthropic.']],
+            ]),
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [['content' => ['parts' => [['text' => 'From Gemini.']]]]],
+            ]),
+        ]);
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $teacher = $this->createUser($school, 'Teacher');
+
+        $response = $this->actingAs($teacher, 'web')->postJson('/api/school/ai-assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Hello']],
+        ]);
+
+        $response->assertOk()->assertJson(['data' => ['reply' => 'From Anthropic.']]);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generativelanguage.googleapis.com'));
     }
 }

@@ -9,19 +9,20 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * A thin wrapper around Anthropic's Messages API. Deliberately stateless —
- * every call carries its own full conversation/prompt, nothing is persisted
- * server-side — so there's no new data-retention surface to reason about.
- * Grounded only in the school's name and the asking user's name/role; it is
- * never given raw student/financial data to reason over, so there is no
- * cross-tenant leak risk even though the same API key is shared by every
- * school on the platform.
+ * A thin wrapper around Anthropic's Messages API and/or Google's Gemini
+ * API — whichever has a key configured (see provider()). Deliberately
+ * stateless — every call carries its own full conversation/prompt, nothing
+ * is persisted server-side — so there's no new data-retention surface to
+ * reason about. Grounded only in the school's name and the asking user's
+ * name/role; it is never given raw student/financial data to reason over,
+ * so there is no cross-tenant leak risk even though the same API key is
+ * shared by every school on the platform.
  */
 class AiAssistantService
 {
     public function isConfigured(): bool
     {
-        return filled(config('services.anthropic.key'));
+        return filled(config('services.anthropic.key')) || filled(config('services.gemini.key'));
     }
 
     /**
@@ -29,9 +30,7 @@ class AiAssistantService
      */
     public function chat(array $messages, School $school, User $user): string
     {
-        $response = $this->call($this->systemPrompt($school, $user), $messages);
-
-        return $this->extractText($response);
+        return $this->call($this->systemPrompt($school, $user), $messages);
     }
 
     /**
@@ -57,8 +56,8 @@ class AiAssistantService
             filled($params['notes']) ? "\nAdditional notes from the teacher: {$params['notes']}" : '',
         );
 
-        $response = $this->call($system, [['role' => 'user', 'content' => $prompt]]);
-        $text = $this->stripCodeFences($this->extractText($response));
+        $reply = $this->call($system, [['role' => 'user', 'content' => $prompt]]);
+        $text = $this->stripCodeFences($reply);
 
         $plan = json_decode($text, true);
 
@@ -70,10 +69,28 @@ class AiAssistantService
     }
 
     /**
-     * @param  array<int, array{role: string, content: string}>  $messages
-     * @return array<string, mixed>
+     * Anthropic wins if both keys are set — this is the only place that
+     * decides, so switching providers is just filling in one env var
+     * instead of the other, nothing else in this class cares which.
      */
-    protected function call(string $system, array $messages): array
+    protected function provider(): string
+    {
+        return filled(config('services.anthropic.key')) ? 'anthropic' : 'gemini';
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    protected function call(string $system, array $messages): string
+    {
+        return match ($this->provider()) {
+            'gemini' => $this->callGemini($system, $messages),
+            default => $this->callAnthropic($system, $messages),
+        };
+    }
+
+    /** @param  array<int, array{role: string, content: string}>  $messages */
+    protected function callAnthropic(string $system, array $messages): string
     {
         $response = Http::withHeaders([
             'x-api-key' => config('services.anthropic.key'),
@@ -88,19 +105,50 @@ class AiAssistantService
             ]);
 
         if ($response->failed()) {
-            Log::warning('AI assistant call failed', ['status' => $response->status(), 'body' => $response->body()]);
+            Log::warning('AI assistant call failed', ['provider' => 'anthropic', 'status' => $response->status(), 'body' => $response->body()]);
 
             throw new RuntimeException('The AI assistant is temporarily unavailable. Please try again shortly.');
         }
 
-        return $response->json();
+        return collect($response->json('content') ?? [])
+            ->where('type', 'text')
+            ->pluck('text')
+            ->implode('');
     }
 
-    /** @param  array<string, mixed>  $response */
-    protected function extractText(array $response): string
+    /**
+     * Gemini has no separate "system" message slot in the chat history and
+     * uses "model" rather than "assistant" for its own turns — both
+     * translated here so the rest of this class stays provider-agnostic.
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    protected function callGemini(string $system, array $messages): string
     {
-        return collect($response['content'] ?? [])
-            ->where('type', 'text')
+        $contents = collect($messages)->map(fn (array $message) => [
+            'role' => $message['role'] === 'assistant' ? 'model' : 'user',
+            'parts' => [['text' => $message['content']]],
+        ])->all();
+
+        $model = config('services.gemini.model');
+
+        $response = Http::withHeaders([
+            'x-goog-api-key' => config('services.gemini.key'),
+        ])
+            ->timeout(45)
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
+                'systemInstruction' => ['parts' => [['text' => $system]]],
+                'contents' => $contents,
+                'generationConfig' => ['maxOutputTokens' => 2000],
+            ]);
+
+        if ($response->failed()) {
+            Log::warning('AI assistant call failed', ['provider' => 'gemini', 'status' => $response->status(), 'body' => $response->body()]);
+
+            throw new RuntimeException('The AI assistant is temporarily unavailable. Please try again shortly.');
+        }
+
+        return collect($response->json('candidates.0.content.parts') ?? [])
             ->pluck('text')
             ->implode('');
     }

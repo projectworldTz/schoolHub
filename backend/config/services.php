@@ -40,4 +40,12 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-5'),
     ],
 
+    // Alternative AI Assistant provider — see AiAssistantService::provider().
+    // Anthropic wins if both keys happen to be set, so filling in only this
+    // one is what actually switches the assistant over to Gemini.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
 ];
