@@ -1,3 +1,11 @@
+<IfModule mod_mime.c>
+  # Truehost's default Apache config doesn't know this extension and falls
+  # back to application/octet-stream, which fails strict PWA installability
+  # checks (including Chrome's Android app-install/WebAPK logic) even
+  # though the file's actual JSON content is valid.
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
