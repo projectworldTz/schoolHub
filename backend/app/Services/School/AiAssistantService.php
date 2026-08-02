@@ -4,6 +4,8 @@ namespace App\Services\School;
 
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -89,13 +91,30 @@ class AiAssistantService
         };
     }
 
+    /**
+     * Both providers' free/shared tiers return 429 (rate limited) or a 5xx
+     * ("high demand", gateway hiccups) under normal, expected load — worth
+     * retrying automatically rather than making the user notice and resend
+     * by hand. Not retried: 4xx other than 429 (bad request, bad auth,
+     * unknown model) — those fail identically every time, so retrying is
+     * just a slower way to get the same error.
+     */
+    protected function withTransientRetry(): PendingRequest
+    {
+        return Http::retry(2, 500, function (\Throwable $exception) {
+            return $exception instanceof RequestException
+                && ($exception->response->status() === 429 || $exception->response->status() >= 500);
+        }, throw: false);
+    }
+
     /** @param  array<int, array{role: string, content: string}>  $messages */
     protected function callAnthropic(string $system, array $messages): string
     {
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-        ])
+        $response = $this->withTransientRetry()
+            ->withHeaders([
+                'x-api-key' => config('services.anthropic.key'),
+                'anthropic-version' => '2023-06-01',
+            ])
             ->timeout(45)
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => config('services.anthropic.model'),
@@ -132,9 +151,10 @@ class AiAssistantService
 
         $model = config('services.gemini.model');
 
-        $response = Http::withHeaders([
-            'x-goog-api-key' => config('services.gemini.key'),
-        ])
+        $response = $this->withTransientRetry()
+            ->withHeaders([
+                'x-goog-api-key' => config('services.gemini.key'),
+            ])
             ->timeout(45)
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'systemInstruction' => ['parts' => [['text' => $system]]],

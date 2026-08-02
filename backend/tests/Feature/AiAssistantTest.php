@@ -110,6 +110,42 @@ class AiAssistantTest extends TestCase
         $response->assertStatus(502);
     }
 
+    public function test_chat_retries_and_recovers_from_a_transient_provider_error(): void
+    {
+        Config::set('services.anthropic.key', 'test-key');
+        Http::fake([
+            'api.anthropic.com/*' => Http::sequence()
+                ->push(['error' => 'high demand'], 503)
+                ->push(['content' => [['type' => 'text', 'text' => 'Recovered on retry.']]]),
+        ]);
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $teacher = $this->createUser($school, 'Teacher');
+
+        $response = $this->actingAs($teacher, 'web')->postJson('/api/school/ai-assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Hello']],
+        ]);
+
+        $response->assertOk()->assertJson(['data' => ['reply' => 'Recovered on retry.']]);
+        Http::assertSentCount(2);
+    }
+
+    public function test_chat_does_not_retry_a_permanent_provider_error(): void
+    {
+        Config::set('services.anthropic.key', 'test-key');
+        Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'invalid api key'], 401)]);
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $teacher = $this->createUser($school, 'Teacher');
+
+        $response = $this->actingAs($teacher, 'web')->postJson('/api/school/ai-assistant/chat', [
+            'messages' => [['role' => 'user', 'content' => 'Hello']],
+        ]);
+
+        $response->assertStatus(502);
+        Http::assertSentCount(1);
+    }
+
     public function test_lesson_plan_generates_a_structured_plan_when_configured(): void
     {
         Config::set('services.anthropic.key', 'test-key');
