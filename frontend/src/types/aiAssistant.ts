@@ -1,3 +1,14 @@
+export interface AiAccess {
+  status: 'not_granted' | 'active' | 'suspended' | 'expired'
+  code: string | null
+  message: string | null
+}
+
+export interface AiAssistantStatus {
+  configured: boolean
+  access: AiAccess
+}
+
 export interface GeneratedReport {
   id: string
   title: string

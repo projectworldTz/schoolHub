@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\GrantSchoolAiAccessRequest;
 use App\Http\Requests\Platform\RenewSchoolLicenseRequest;
 use App\Http\Requests\Platform\SetSchoolCustomDomainRequest;
 use App\Http\Requests\Platform\StoreSchoolRequest;
+use App\Http\Requests\Platform\SuspendSchoolAiAccessRequest;
 use App\Http\Requests\Platform\SuspendSchoolRequest;
 use App\Http\Requests\Platform\UpdateSchoolRequest;
 use App\Http\Resources\Platform\SchoolResource;
@@ -13,6 +15,7 @@ use App\Models\School;
 use App\Services\Platform\SchoolService;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class SchoolController extends Controller
 {
@@ -118,5 +121,39 @@ class SchoolController extends Controller
         $school->update(['custom_domain' => $request->validated('custom_domain')]);
 
         return new SchoolResource($school);
+    }
+
+    public function grantAiAccess(GrantSchoolAiAccessRequest $request, School $school)
+    {
+        $data = $request->validated();
+
+        $school = $this->schools->grantAiAccess(
+            $school,
+            $request->user()->id,
+            isset($data['activated_at']) ? Carbon::parse($data['activated_at']) : null,
+            isset($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
+            $data['monthly_request_limit'] ?? null,
+        );
+
+        return new SchoolResource($school);
+    }
+
+    public function suspendAiAccess(SuspendSchoolAiAccessRequest $request, School $school)
+    {
+        return new SchoolResource($this->schools->suspendAiAccess($school, $request->validated('reason'), $request->user()->id));
+    }
+
+    public function reactivateAiAccess(Request $request, School $school)
+    {
+        $this->authorize('manageAi', $school);
+
+        return new SchoolResource($this->schools->reactivateAiAccess($school, $request->user()->id));
+    }
+
+    public function revokeAiAccess(Request $request, School $school)
+    {
+        $this->authorize('manageAi', $school);
+
+        return new SchoolResource($this->schools->revokeAiAccess($school, $request->user()->id));
     }
 }

@@ -333,6 +333,10 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
             Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
             Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
             Route::post('schools/{school}/custom-domain', [PlatformSchoolController::class, 'setCustomDomain']);
+            Route::post('schools/{school}/ai-access/grant', [PlatformSchoolController::class, 'grantAiAccess']);
+            Route::post('schools/{school}/ai-access/suspend', [PlatformSchoolController::class, 'suspendAiAccess']);
+            Route::post('schools/{school}/ai-access/reactivate', [PlatformSchoolController::class, 'reactivateAiAccess']);
+            Route::post('schools/{school}/ai-access/revoke', [PlatformSchoolController::class, 'revokeAiAccess']);
         });
 
         Route::prefix('school')->group($schoolRoutes);

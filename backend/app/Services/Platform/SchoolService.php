@@ -100,4 +100,62 @@ class SchoolService
 
         return $school;
     }
+
+    /**
+     * Also used to renew/adjust an already-active grant — re-granting
+     * clears any suspension and keeps the original ai_activated_at if one
+     * is not explicitly supplied, so "extend the expiry" doesn't reset the
+     * school's activation history.
+     */
+    public function grantAiAccess(School $school, ?string $updatedByUserId, ?Carbon $activatedAt, ?Carbon $expiresAt, ?int $monthlyRequestLimit): School
+    {
+        $school->update([
+            'ai_enabled' => true,
+            'ai_activated_at' => $activatedAt ?? $school->ai_activated_at ?? Carbon::now(),
+            'ai_expires_at' => $expiresAt,
+            'ai_suspended_at' => null,
+            'ai_suspension_reason' => null,
+            'ai_monthly_request_limit' => $monthlyRequestLimit,
+            'ai_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function suspendAiAccess(School $school, string $reason, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'ai_suspended_at' => Carbon::now(),
+            'ai_suspension_reason' => $reason,
+            'ai_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function reactivateAiAccess(School $school, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'ai_suspended_at' => null,
+            'ai_suspension_reason' => null,
+            'ai_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function revokeAiAccess(School $school, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'ai_enabled' => false,
+            'ai_activated_at' => null,
+            'ai_expires_at' => null,
+            'ai_suspended_at' => null,
+            'ai_suspension_reason' => null,
+            'ai_monthly_request_limit' => null,
+            'ai_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
 }

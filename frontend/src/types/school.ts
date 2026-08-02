@@ -1,5 +1,7 @@
 export type SchoolStatus = 'pending' | 'approved' | 'suspended' | 'rejected'
 
+export type AiAccessStatus = 'not_granted' | 'active' | 'suspended' | 'expired'
+
 export type LicenseDurationMonths = 1 | 3 | 6 | 12
 
 export type SchoolType =
@@ -31,6 +33,14 @@ export interface School {
   approved_at: string | null
   suspended_at: string | null
   suspension_reason: string | null
+  ai_enabled: boolean
+  ai_activated_at: string | null
+  ai_expires_at: string | null
+  ai_suspended_at: string | null
+  ai_suspension_reason: string | null
+  ai_monthly_request_limit: number | null
+  ai_access_status: AiAccessStatus
+  ai_requests_this_month: number
   owner?: { name: string; email: string; temporary_password?: string | null } | null
   users_count?: number
   students_count?: number

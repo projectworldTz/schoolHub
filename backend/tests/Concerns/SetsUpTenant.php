@@ -47,12 +47,21 @@ trait SetsUpTenant
         $this->seed(Phase8PermissionsSeeder::class);
     }
 
+    /**
+     * ai_enabled/ai_activated_at default to "granted, active" so every
+     * existing test fixture keeps working under the premium AI gate
+     * (App\Services\AI\AiPremiumAccessService) without each test having to
+     * opt in — tests that specifically exercise the gate override these via
+     * $attributes (e.g. ['ai_enabled' => false]).
+     */
     protected function createSchool(array $attributes = []): School
     {
         return School::create(array_merge([
             'name' => 'Test School '.Str::random(6),
             'slug' => 'test-school-'.Str::lower(Str::random(8)),
             'status' => 'approved',
+            'ai_enabled' => true,
+            'ai_activated_at' => now(),
         ], $attributes));
     }
 

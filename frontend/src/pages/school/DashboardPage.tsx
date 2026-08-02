@@ -28,6 +28,7 @@ import { lmsTerm } from '@/lib/schoolTerms'
 import { licenseStatus } from '@/lib/license'
 import { MODULE_CARDS } from '@/config/nav'
 import { cn } from '@/lib/utils'
+import { AiAccessIndicator } from '@/pages/school/AiAccessIndicator'
 import type { LucideIcon } from 'lucide-react'
 
 function greeting(): string {
@@ -234,6 +235,13 @@ export function DashboardPage() {
             <span className="rounded-full border border-white/20 bg-white/15 px-3 py-1.5 font-medium backdrop-blur-sm">
               {user?.roles?.[0] ?? 'Member'}
             </span>
+            {school && (
+              <AiAccessIndicator
+                status={school.ai_access_status}
+                expiresAt={school.ai_expires_at}
+                suspensionReason={school.ai_suspension_reason}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

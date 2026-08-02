@@ -212,3 +212,24 @@
 .animate-sheen {
   animation: sheen 5s ease-in-out infinite;
 }
+
+@keyframes ai-glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+/* Used only for the "not granted" premium AI indicator — a slow, gentle
+   blink meant to say "locked" without nagging. Explicitly disabled for
+   prefers-reduced-motion rather than relying on a Tailwind motion-safe
+   variant, since this is a plain CSS animation, not a utility class. */
+.animate-ai-glow {
+  animation: ai-glow 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-ai-glow {
+    animation: none;
+  }
+}

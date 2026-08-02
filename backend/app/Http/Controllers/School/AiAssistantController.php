@@ -8,27 +8,42 @@ use App\Http\Requests\School\GenerateLessonPlanRequest;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Subject;
+use App\Services\AI\AiPremiumAccessService;
 use App\Services\School\AiAssistantService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
 
 class AiAssistantController extends Controller
 {
-    public function __construct(protected AiAssistantService $assistant) {}
+    public function __construct(
+        protected AiAssistantService $assistant,
+        protected AiPremiumAccessService $premiumAccess,
+    ) {}
 
     public function status(Request $request)
     {
         abort_unless($request->user()->can('ai-assistant.use'), 403);
 
-        return response()->json(['data' => ['configured' => $this->assistant->isConfigured()]]);
+        $access = $this->premiumAccess->evaluate($this->currentSchool($request));
+
+        return response()->json(['data' => [
+            'configured' => $this->assistant->isConfigured(),
+            'access' => $access,
+        ]]);
     }
 
     public function chat(AiChatRequest $request)
     {
         $this->ensureConfigured();
+        $school = $this->currentSchool($request);
+
+        if ($denied = $this->accessDenialResponse($school)) {
+            return $denied;
+        }
 
         try {
-            $result = $this->assistant->chat($request->validated('messages'), $this->currentSchool($request), $request->user());
+            $result = $this->assistant->chat($request->validated('messages'), $school, $request->user());
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
@@ -39,6 +54,11 @@ class AiAssistantController extends Controller
     public function lessonPlan(GenerateLessonPlanRequest $request)
     {
         $this->ensureConfigured();
+        $school = $this->currentSchool($request);
+
+        if ($denied = $this->accessDenialResponse($school)) {
+            return $denied;
+        }
 
         $data = $request->validated();
 
@@ -55,7 +75,7 @@ class AiAssistantController extends Controller
                 'topic' => $data['topic'],
                 'duration_minutes' => $data['duration_minutes'],
                 'notes' => $data['notes'] ?? null,
-            ], $this->currentSchool($request), $request->user());
+            ], $school, $request->user());
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
@@ -70,6 +90,25 @@ class AiAssistantController extends Controller
             503,
             'The AI Assistant is not configured yet. Ask your platform administrator to add an API key.'
         );
+    }
+
+    /**
+     * Backend enforcement of the premium AI gate — checked here, not just
+     * hidden in the frontend. Returns null when the request may proceed.
+     */
+    protected function accessDenialResponse(School $school): ?JsonResponse
+    {
+        $access = $this->premiumAccess->evaluate($school);
+
+        if ($access['code'] === null) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'code' => $access['code'],
+            'message' => $access['message'],
+        ], $access['code'] === 'AI_USAGE_LIMIT_REACHED' ? 429 : 403);
     }
 
     protected function currentSchool(Request $request): School

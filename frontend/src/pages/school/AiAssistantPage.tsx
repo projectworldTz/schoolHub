@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
-import { Bot, Clock, Copy, Download, FileText, Loader2, NotebookPen, Send, Sparkles, User } from 'lucide-react'
+import { AlertTriangle, Bot, Clock, Copy, Download, FileText, Loader2, Lock, NotebookPen, Send, Sparkles, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAiAssistantStatus, useAiChat, useGenerateLessonPlan } from '@/hooks/useAiAssistant'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { cn } from '@/lib/utils'
-import type { ChatMessage, GeneratedReport, LessonPlan } from '@/types/aiAssistant'
+import type { AiAccess, ChatMessage, GeneratedReport, LessonPlan } from '@/types/aiAssistant'
 
 const SUGGESTIONS = [
   'Suggest three ways to make fractions fun for 10-year-olds',
@@ -41,6 +41,35 @@ function NotConfiguredNotice() {
             Ask your platform administrator to add an AI provider API key to the server. Once that's done, this page
             unlocks a chat assistant and a lesson-plan generator immediately — no other setup needed.
           </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const LOCKED_TITLE: Record<Exclude<AiAccess['status'], 'active'>, string> = {
+  not_granted: 'AI Assistant is a premium feature',
+  suspended: 'AI Assistant access is suspended',
+  expired: 'AI Assistant access has expired',
+}
+
+function AiAccessLockedNotice({ access }: { access: AiAccess }) {
+  const isProblem = access.status === 'suspended' || access.status === 'expired'
+
+  return (
+    <Card className="shadow-premium border-none">
+      <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
+        <span
+          className={cn(
+            'flex size-14 items-center justify-center rounded-2xl text-white shadow-lg',
+            isProblem ? 'bg-destructive shadow-destructive/25' : 'bg-gradient-brand shadow-primary/25'
+          )}
+        >
+          {isProblem ? <AlertTriangle className="size-7" /> : <Lock className="size-7" />}
+        </span>
+        <div>
+          <p className="font-display text-lg font-semibold">{LOCKED_TITLE[access.status as Exclude<AiAccess['status'], 'active'>]}</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{access.message}</p>
         </div>
       </CardContent>
     </Card>
@@ -415,9 +444,11 @@ export function AiAssistantPage() {
         <p className="mt-1 text-sm text-muted-foreground">Lesson planning and quick answers, grounded in your school.</p>
       </div>
 
-      {isLoading ? (
+      {isLoading || !status ? (
         <Skeleton className="h-96 w-full rounded-2xl" />
-      ) : !status?.configured ? (
+      ) : status.access.status !== 'active' ? (
+        <AiAccessLockedNotice access={status.access} />
+      ) : !status.configured ? (
         <NotConfiguredNotice />
       ) : (
         <Tabs defaultValue="chat">

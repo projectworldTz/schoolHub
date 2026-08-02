@@ -77,3 +77,28 @@ export async function setSchoolCustomDomain(id: string, customDomain: string | n
   })
   return data.data
 }
+
+export interface GrantAiAccessPayload {
+  expires_at?: string | null
+  monthly_request_limit?: number | null
+}
+
+export async function grantSchoolAiAccess(id: string, payload: GrantAiAccessPayload): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/ai-access/grant`, payload)
+  return data.data
+}
+
+export async function suspendSchoolAiAccess(id: string, reason: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/ai-access/suspend`, { reason })
+  return data.data
+}
+
+export async function reactivateSchoolAiAccess(id: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/ai-access/reactivate`)
+  return data.data
+}
+
+export async function revokeSchoolAiAccess(id: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/ai-access/revoke`)
+  return data.data
+}
