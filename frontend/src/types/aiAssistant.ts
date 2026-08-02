@@ -1,6 +1,21 @@
+export interface GeneratedReport {
+  id: string
+  title: string
+  format: 'pdf' | 'xlsx' | 'csv'
+  status: string
+  expires_at: string | null
+  download_url: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  report?: GeneratedReport | null
+}
+
+export interface ChatResult {
+  reply: string
+  report: GeneratedReport | null
 }
 
 export interface LessonPlanActivity {

@@ -15,3 +15,5 @@ Artisan::command('inspire', function () {
 // do the same thing if that cron is ever added instead.
 Schedule::command('backup:run --only-db')->dailyAt('02:00');
 Schedule::command('backup:clean')->dailyAt('02:30');
+
+Schedule::command('ai-reports:cleanup')->dailyAt('03:00');

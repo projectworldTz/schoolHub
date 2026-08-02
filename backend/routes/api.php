@@ -8,6 +8,7 @@ use App\Http\Controllers\Platform\SchoolController as PlatformSchoolController;
 use App\Http\Controllers\Public\NoticeBoardController;
 use App\Http\Controllers\School\AcademicYearController;
 use App\Http\Controllers\School\AiAssistantController;
+use App\Http\Controllers\School\AiReportDownloadController;
 use App\Http\Controllers\School\ActivityLogController;
 use App\Http\Controllers\School\AdmissionApplicationController;
 use App\Http\Controllers\School\AdmissionDocumentController;
@@ -279,6 +280,14 @@ $schoolRoutes = function () {
         Route::get('ai-assistant/status', [AiAssistantController::class, 'status']);
         Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->middleware('throttle:ai-assistant');
         Route::post('ai-assistant/lesson-plan', [AiAssistantController::class, 'lessonPlan'])->middleware('throttle:ai-assistant');
+
+        // Signed on top of the surrounding auth:web + password.changed group
+        // — the signature alone proves this exact URL was legitimately
+        // issued, not that the current session still has permission, so the
+        // controller re-verifies ownership/status/expiry itself regardless.
+        Route::get('ai-reports/{report}/download', [AiReportDownloadController::class, 'download'])
+            ->middleware('signed')
+            ->name('ai.reports.download');
 };
 
 $parentRoutes = function () {

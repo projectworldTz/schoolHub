@@ -57,6 +57,47 @@ class AiIntentRouter
             'params' => ['class_name' => "optional, another class's timetable"],
         ];
 
+        return array_merge($tools, $this->availableReportTools($user));
+    }
+
+    /**
+     * Same permission gates as the matching data-query tool above — a
+     * report is just a downloadable version of the same authorized view.
+     *
+     * @return array<int, array{name: string, description: string, params: array<string, string>}>
+     */
+    protected function availableReportTools(User $user): array
+    {
+        $tools = [];
+
+        if ($this->authorization->canUseFeesTool($user)) {
+            $tools[] = [
+                'name' => 'reports.outstanding_fees',
+                'description' => 'Generate a downloadable PDF, Excel, or CSV file listing students with outstanding fee balances.',
+                'params' => ['format' => 'pdf, xlsx, or csv — optional', 'class_name' => 'optional'],
+            ];
+        }
+
+        if ($this->authorization->canUseAttendanceTool($user)) {
+            $tools[] = [
+                'name' => 'reports.attendance',
+                'description' => 'Generate a downloadable PDF, Excel, or CSV file listing absent students for a date, date range, or class.',
+                'params' => [
+                    'format' => 'pdf, xlsx, or csv — optional',
+                    'date' => 'YYYY-MM-DD, optional',
+                    'date_from' => 'YYYY-MM-DD, optional',
+                    'date_to' => 'YYYY-MM-DD, optional',
+                    'class_name' => 'optional',
+                ],
+            ];
+        }
+
+        $tools[] = [
+            'name' => 'reports.timetable',
+            'description' => "Generate a downloadable PDF of the asking user's own weekly timetable, or — for classes.manage holders — a named class's timetable.",
+            'params' => ['class_name' => "optional, another class's timetable"],
+        ];
+
         return $tools;
     }
 

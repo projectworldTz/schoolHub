@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AI\AiAuditService;
 use App\Services\AI\AiContextBuilder;
 use App\Services\AI\AiIntentRouter;
+use App\Services\AI\Reports\AiReportGenerator;
 use App\Services\AI\Tools\AttendanceTool;
 use App\Services\AI\Tools\ExamPerformanceSummaryTool;
 use App\Services\AI\Tools\OutstandingFeesTool;
@@ -15,6 +16,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use RuntimeException;
 
 /**
@@ -45,6 +47,7 @@ class AiAssistantService
         protected ExamPerformanceSummaryTool $examTool,
         protected TimetableTool $timetableTool,
         protected ExamService $examService,
+        protected AiReportGenerator $reportGenerator,
     ) {}
 
     public function isConfigured(): bool
@@ -54,8 +57,9 @@ class AiAssistantService
 
     /**
      * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array{reply: string, report: ?array<string, mixed>}
      */
-    public function chat(array $messages, School $school, User $user): string
+    public function chat(array $messages, School $school, User $user): array
     {
         $context = $this->contextBuilder->build($user, $school);
         $tools = $this->intentRouter->availableTools($user);
@@ -74,7 +78,11 @@ class AiAssistantService
             $reply = $this->call($this->systemPrompt($school, $user), $messages);
             $this->audit->record($user, $school, 'success', intent: 'general');
 
-            return $reply;
+            return ['reply' => $reply, 'report' => null];
+        }
+
+        if (str_starts_with($intent, 'reports.')) {
+            return $this->handleReportIntent($intent, $parameters, $messages, $user, $school);
         }
 
         ['data' => $data, 'denied' => $denied] = $this->executeTool($intent, $parameters, $user, $school);
@@ -82,7 +90,7 @@ class AiAssistantService
         if ($denied !== null) {
             $this->audit->record($user, $school, 'denied', intent: $intent, toolName: $intent, parameters: $parameters, errorMessage: $denied);
 
-            return $denied;
+            return ['reply' => $denied, 'report' => null];
         }
 
         $finalSystem = $this->systemPrompt($school, $user)."\n\n".
@@ -96,7 +104,53 @@ class AiAssistantService
 
         $this->audit->record($user, $school, 'success', intent: $intent, toolName: $intent, parameters: $parameters);
 
-        return $reply;
+        return ['reply' => $reply, 'report' => null];
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array{reply: string, report: ?array<string, mixed>}
+     */
+    protected function handleReportIntent(string $intent, array $parameters, array $messages, User $user, School $school): array
+    {
+        $reportType = substr($intent, strlen('reports.'));
+
+        ['report' => $report, 'denied' => $denied] = $this->reportGenerator->generate($reportType, $parameters, $user, $school);
+
+        if ($denied !== null) {
+            $this->audit->record($user, $school, 'denied', intent: $intent, toolName: $intent, parameters: $parameters, errorMessage: $denied);
+
+            return ['reply' => $denied, 'report' => null];
+        }
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'ai.reports.download',
+            now()->addMinutes(config('ai-reports.download_expiry_minutes')),
+            ['report' => $report->id]
+        );
+
+        $finalSystem = $this->systemPrompt($school, $user)."\n\n".
+            'The SchoolHub backend has already generated the report the user asked for — tell them it\'s ready in a '.
+            'short, friendly sentence. Do not describe its contents in detail, since the user will open the file '.
+            'themselves. Do not invent, restate, or format a download link yourself — one is shown separately by '.
+            "the interface.\n\nReport title: {$report->title}\nFormat: ".strtoupper($report->format);
+
+        $reply = $this->call($finalSystem, $messages);
+
+        $this->audit->record($user, $school, 'success', intent: $intent, toolName: $intent, parameters: $parameters);
+
+        return [
+            'reply' => $reply,
+            'report' => [
+                'id' => $report->id,
+                'title' => $report->title,
+                'format' => $report->format,
+                'status' => $report->status,
+                'expires_at' => $report->expires_at?->toIso8601String(),
+                'download_url' => $downloadUrl,
+            ],
+        ];
     }
 
     /**

@@ -28,12 +28,12 @@ class AiAssistantController extends Controller
         $this->ensureConfigured();
 
         try {
-            $reply = $this->assistant->chat($request->validated('messages'), $this->currentSchool($request), $request->user());
+            $result = $this->assistant->chat($request->validated('messages'), $this->currentSchool($request), $request->user());
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
 
-        return response()->json(['data' => ['reply' => $reply]]);
+        return response()->json(['data' => $result]);
     }
 
     public function lessonPlan(GenerateLessonPlanRequest $request)

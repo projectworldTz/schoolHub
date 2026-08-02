@@ -1,14 +1,14 @@
 import { apiClient } from '@/api/client'
-import type { ChatMessage, LessonPlan, LessonPlanParams } from '@/types/aiAssistant'
+import type { ChatMessage, ChatResult, LessonPlan, LessonPlanParams } from '@/types/aiAssistant'
 
 export async function fetchAiAssistantStatus(): Promise<{ configured: boolean }> {
   const { data } = await apiClient.get<{ data: { configured: boolean } }>('/school/ai-assistant/status')
   return data.data
 }
 
-export async function sendAiChat(messages: ChatMessage[]): Promise<string> {
-  const { data } = await apiClient.post<{ data: { reply: string } }>('/school/ai-assistant/chat', { messages })
-  return data.data.reply
+export async function sendAiChat(messages: ChatMessage[]): Promise<ChatResult> {
+  const { data } = await apiClient.post<{ data: ChatResult }>('/school/ai-assistant/chat', { messages })
+  return data.data
 }
 
 export async function generateLessonPlan(params: LessonPlanParams): Promise<LessonPlan> {

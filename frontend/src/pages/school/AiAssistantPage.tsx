@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
-import { Bot, Copy, Loader2, NotebookPen, Send, Sparkles, User } from 'lucide-react'
+import { Bot, Clock, Copy, Download, FileText, Loader2, NotebookPen, Send, Sparkles, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAiAssistantStatus, useAiChat, useGenerateLessonPlan } from '@/hooks/useAiAssistant'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { cn } from '@/lib/utils'
-import type { ChatMessage, LessonPlan } from '@/types/aiAssistant'
+import type { ChatMessage, GeneratedReport, LessonPlan } from '@/types/aiAssistant'
 
 const SUGGESTIONS = [
   'Suggest three ways to make fractions fun for 10-year-olds',
@@ -47,6 +47,41 @@ function NotConfiguredNotice() {
   )
 }
 
+function ReportDownloadCard({ report }: { report: GeneratedReport }) {
+  const isReady = report.status === 'completed'
+  const expiresAt = report.expires_at ? new Date(report.expires_at) : null
+  const isExpired = expiresAt !== null && expiresAt.getTime() < Date.now()
+
+  return (
+    <div className="mt-2 max-w-[80%] rounded-xl border bg-card p-3">
+      <div className="flex items-center gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <FileText className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{report.title}</p>
+          <Badge variant="outline" className="mt-0.5 text-[10px] uppercase">
+            {report.format}
+          </Badge>
+        </div>
+      </div>
+      {isReady && !isExpired && (
+        <Button asChild size="sm" className="mt-3 w-full gap-1.5">
+          <a href={report.download_url} target="_blank" rel="noreferrer">
+            <Download className="size-3.5" /> Download
+          </a>
+        </Button>
+      )}
+      {isReady && isExpired && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="size-3.5" /> This link has expired — ask again to generate a new one.
+        </p>
+      )}
+      {!isReady && <p className="mt-2 text-xs text-muted-foreground">This report could not be generated.</p>}
+    </div>
+  )
+}
+
 function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
@@ -59,7 +94,8 @@ function ChatPanel() {
     setMessages(next)
     setDraft('')
     chat.mutate(next, {
-      onSuccess: (reply) => setMessages((prev) => [...prev, { role: 'assistant', content: reply }]),
+      onSuccess: (result) =>
+        setMessages((prev) => [...prev, { role: 'assistant', content: result.reply, report: result.report }]),
       onError: (error) => toast.error(errorMessage(error, 'The assistant could not respond')),
     })
   }
@@ -105,23 +141,26 @@ function ChatPanel() {
           ) : (
             <div className="space-y-4">
               {messages.map((m, i) => (
-                <div key={i} className={cn('flex items-start gap-2.5', m.role === 'user' && 'flex-row-reverse')}>
-                  <span
-                    className={cn(
-                      'flex size-7 shrink-0 items-center justify-center rounded-full',
-                      m.role === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-gradient-brand text-white'
-                    )}
-                  >
-                    {m.role === 'user' ? <User className="size-3.5" /> : <Bot className="size-3.5" />}
-                  </span>
-                  <div
-                    className={cn(
-                      'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap',
-                      m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    )}
-                  >
-                    {m.content}
+                <div key={i} className={cn('flex flex-col', m.role === 'user' && 'items-end')}>
+                  <div className={cn('flex items-start gap-2.5', m.role === 'user' && 'flex-row-reverse')}>
+                    <span
+                      className={cn(
+                        'flex size-7 shrink-0 items-center justify-center rounded-full',
+                        m.role === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-gradient-brand text-white'
+                      )}
+                    >
+                      {m.role === 'user' ? <User className="size-3.5" /> : <Bot className="size-3.5" />}
+                    </span>
+                    <div
+                      className={cn(
+                        'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap',
+                        m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      )}
+                    >
+                      {m.content}
+                    </div>
                   </div>
+                  {m.report && <ReportDownloadCard report={m.report} />}
                 </div>
               ))}
               {chat.isPending && (
