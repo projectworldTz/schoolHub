@@ -114,7 +114,11 @@ class AiAssistantTest extends TestCase
     {
         Config::set('services.anthropic.key', 'test-key');
         Http::fake([
+            // chat() always routes first (see AiAssistantService::chat()) —
+            // the routing call succeeds cleanly, then the retry/recovery
+            // being tested here happens on the actual answer call.
             'api.anthropic.com/*' => Http::sequence()
+                ->push(['content' => [['type' => 'text', 'text' => json_encode(['intent' => 'general', 'parameters' => []])]]])
                 ->push(['error' => 'high demand'], 503)
                 ->push(['content' => [['type' => 'text', 'text' => 'Recovered on retry.']]]),
         ]);
@@ -127,7 +131,7 @@ class AiAssistantTest extends TestCase
         ]);
 
         $response->assertOk()->assertJson(['data' => ['reply' => 'Recovered on retry.']]);
-        Http::assertSentCount(2);
+        Http::assertSentCount(3);
     }
 
     public function test_chat_does_not_retry_a_permanent_provider_error(): void
