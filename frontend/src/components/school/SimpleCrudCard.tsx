@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 export interface FieldDef {
   name: string
@@ -100,6 +101,7 @@ export function SimpleCrudCard<T extends { id: string }>({
 }: SimpleCrudCardProps<T>) {
   const [open, setOpen] = useQuickAddTrigger(quickAddKey ?? '__unused__')
   const [submitting, setSubmitting] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<T | null>(null)
 
   async function handleSubmit(values: FieldValues) {
     setSubmitting(true)
@@ -128,6 +130,8 @@ export function SimpleCrudCard<T extends { id: string }>({
         ? (error.response?.data?.message ?? 'Could not delete')
         : 'Something went wrong'
       toast.error(message)
+    } finally {
+      setPendingDelete(null)
     }
   }
 
@@ -246,7 +250,7 @@ export function SimpleCrudCard<T extends { id: string }>({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(item)}
+                          onClick={() => setPendingDelete(item)}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -259,6 +263,13 @@ export function SimpleCrudCard<T extends { id: string }>({
           </TableBody>
         </Table>
       </CardContent>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(next) => !next && setPendingDelete(null)}
+        title={`Delete this ${title.replace(/s$/, '').toLowerCase()}?`}
+        description="This can't be undone."
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete)}
+      />
     </Card>
   )
 }

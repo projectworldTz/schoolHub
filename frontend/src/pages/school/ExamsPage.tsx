@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -46,6 +47,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useCreateExam, useDeleteExam, useExams } from '@/hooks/useExams'
 import { useExamEditRequests, useDeleteExamEditRequest, useReviewExamEditRequest } from '@/hooks/useExamEditRequests'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
@@ -310,6 +312,7 @@ function ExamEditRequestsCard() {
 export function ExamsPage() {
   const { data: exams, isLoading } = useExams()
   const remove = useDeleteExam()
+  const [pendingDeleteExamId, setPendingDeleteExamId] = useState<string | null>(null)
 
   return (
     <div className="space-y-6">
@@ -375,7 +378,10 @@ export function ExamsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="text-destructive" onClick={() => remove.mutate(exam.id)}>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setPendingDeleteExamId(exam.id)}
+                        >
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -389,6 +395,17 @@ export function ExamsPage() {
       </Card>
 
       <ExamEditRequestsCard />
+
+      <ConfirmDialog
+        open={pendingDeleteExamId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteExamId(null)}
+        title="Delete this exam?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteExamId) remove.mutate(pendingDeleteExamId)
+          setPendingDeleteExamId(null)
+        }}
+      />
     </div>
   )
 }

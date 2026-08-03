@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Select,
   SelectContent,
@@ -475,6 +476,7 @@ export function ExamDetailPage() {
   const examId = id ?? ''
   const { data: exam, isLoading } = useExam(examId)
   const removeSubject = useDeleteExamSubject(examId)
+  const [pendingRemoveSubjectId, setPendingRemoveSubjectId] = useState<string | null>(null)
 
   if (isLoading || !exam) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
@@ -533,7 +535,7 @@ export function ExamDetailPage() {
                   <TableCell>{subject.pass_marks ?? '—'}</TableCell>
                   <TableCell>{subject.exam_date ?? '—'}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => removeSubject.mutate(subject.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => setPendingRemoveSubjectId(subject.id)}>
                       <Trash2 className="size-4" />
                     </Button>
                   </TableCell>
@@ -546,6 +548,17 @@ export function ExamDetailPage() {
 
       {(exam.subjects?.length ?? 0) > 0 && <ReportCardsCard exam={exam} />}
       {(exam.subjects?.length ?? 0) > 0 && <TeacherPerformanceCard examId={exam.id} />}
+
+      <ConfirmDialog
+        open={pendingRemoveSubjectId !== null}
+        onOpenChange={(open) => !open && setPendingRemoveSubjectId(null)}
+        title="Remove this subject from the exam?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingRemoveSubjectId) removeSubject.mutate(pendingRemoveSubjectId)
+          setPendingRemoveSubjectId(null)
+        }}
+      />
     </div>
   )
 }

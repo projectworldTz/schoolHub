@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -47,6 +48,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useCourses, useCreateCourse, useDeleteCourse } from '@/hooks/useLms'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { useStaffList } from '@/hooks/useStaff'
@@ -215,6 +217,7 @@ function CreateCourseDialog({ term }: { term: string }) {
 export function LmsPage() {
   const { data: courses, isLoading } = useCourses()
   const remove = useDeleteCourse()
+  const [pendingDeleteCourseId, setPendingDeleteCourseId] = useState<string | null>(null)
   const { data: school } = useSchoolProfile()
   const term = lmsTerm(school?.type)
 
@@ -284,7 +287,10 @@ export function LmsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="text-destructive" onClick={() => remove.mutate(course.id)}>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setPendingDeleteCourseId(course.id)}
+                        >
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -296,6 +302,17 @@ export function LmsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDeleteCourseId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteCourseId(null)}
+        title="Delete this course?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteCourseId) remove.mutate(pendingDeleteCourseId)
+          setPendingDeleteCourseId(null)
+        }}
+      />
     </div>
   )
 }

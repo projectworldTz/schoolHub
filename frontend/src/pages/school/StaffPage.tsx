@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Select,
   SelectContent,
@@ -781,6 +782,7 @@ function LeaveRequestsTab() {
   const remove = useDeleteLeaveRequest()
   const { data: currentUser } = useCurrentUser()
   const canManage = currentUser?.permissions.includes('staff.manage')
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null)
 
   return (
     <Card>
@@ -856,7 +858,7 @@ function LeaveRequestsTab() {
                     </>
                   )}
                   {!canManage && leave.status === 'pending' && (
-                    <Button size="sm" variant="ghost" onClick={() => remove.mutate(leave.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => setPendingCancelId(leave.id)}>
                       Cancel
                     </Button>
                   )}
@@ -866,6 +868,17 @@ function LeaveRequestsTab() {
           </TableBody>
         </Table>
       </CardContent>
+      <ConfirmDialog
+        open={pendingCancelId !== null}
+        onOpenChange={(open) => !open && setPendingCancelId(null)}
+        title="Cancel this leave request?"
+        description="This can't be undone."
+        confirmLabel="Cancel request"
+        onConfirm={() => {
+          if (pendingCancelId) remove.mutate(pendingCancelId)
+          setPendingCancelId(null)
+        }}
+      />
     </Card>
   )
 }

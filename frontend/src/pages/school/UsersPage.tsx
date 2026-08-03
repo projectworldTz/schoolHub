@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -175,6 +176,7 @@ export function UsersPage() {
   const { data, isLoading } = useSchoolUsers(search)
   const updateUser = useUpdateSchoolUser()
   const deleteUser = useDeleteSchoolUser()
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   function toggleActive(userId: string, isActive: boolean) {
     updateUser.mutate(
@@ -272,7 +274,7 @@ export function UsersPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(user.id)}
+                          onClick={() => setPendingDeleteId(user.id)}
                         >
                           Remove
                         </DropdownMenuItem>
@@ -285,6 +287,17 @@ export function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Remove this user's account?"
+        description="This can't be undone."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          if (pendingDeleteId) handleDelete(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

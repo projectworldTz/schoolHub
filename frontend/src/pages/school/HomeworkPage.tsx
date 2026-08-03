@@ -48,6 +48,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useHomeworks, useHomework, useCreateHomework, useDeleteHomework, useGradeSubmission } from '@/hooks/useHomework'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
@@ -266,6 +267,7 @@ function CreateHomeworkDialog() {
 export function HomeworkListPage() {
   const { data: homeworks, isLoading } = useHomeworks()
   const remove = useDeleteHomework()
+  const [pendingDeleteHomeworkId, setPendingDeleteHomeworkId] = useState<string | null>(null)
 
   return (
     <div className="space-y-6">
@@ -329,7 +331,10 @@ export function HomeworkListPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="text-destructive" onClick={() => remove.mutate(hw.id)}>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setPendingDeleteHomeworkId(hw.id)}
+                        >
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -341,6 +346,17 @@ export function HomeworkListPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDeleteHomeworkId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteHomeworkId(null)}
+        title="Delete this homework assignment?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteHomeworkId) remove.mutate(pendingDeleteHomeworkId)
+          setPendingDeleteHomeworkId(null)
+        }}
+      />
     </div>
   )
 }

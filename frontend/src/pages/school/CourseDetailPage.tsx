@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -130,6 +131,7 @@ export function CourseDetailPage() {
   const courseId = id ?? ''
   const { data: course, isLoading } = useCourse(courseId)
   const removeLesson = useDeleteLesson(courseId)
+  const [pendingDeleteLessonId, setPendingDeleteLessonId] = useState<string | null>(null)
 
   if (isLoading || !course) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
@@ -167,13 +169,24 @@ export function CourseDetailPage() {
                 <p className="text-sm font-medium">{lesson.title}</p>
                 {lesson.content && <p className="mt-1 text-sm text-muted-foreground">{lesson.content}</p>}
               </div>
-              <Button variant="ghost" size="icon" onClick={() => removeLesson.mutate(lesson.id)}>
+              <Button variant="ghost" size="icon" onClick={() => setPendingDeleteLessonId(lesson.id)}>
                 <Trash2 className="size-4" />
               </Button>
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDeleteLessonId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteLessonId(null)}
+        title="Delete this lesson?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteLessonId) removeLesson.mutate(pendingDeleteLessonId)
+          setPendingDeleteLessonId(null)
+        }}
+      />
     </div>
   )
 }

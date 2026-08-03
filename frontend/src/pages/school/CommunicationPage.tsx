@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Select,
   SelectContent,
@@ -234,6 +236,7 @@ const AUDIENCE_LABEL: Record<AnnouncementAudience, string> = {
 export function CommunicationPage() {
   const { data: announcements, isLoading } = useAnnouncements.useList()
   const remove = useAnnouncements.useRemove()
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   return (
     <div className="space-y-6">
@@ -271,7 +274,10 @@ export function CommunicationPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="text-destructive" onClick={() => remove.mutate(a.id)}>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => setPendingDeleteId(a.id)}
+                  >
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -283,6 +289,17 @@ export function CommunicationPage() {
           </Card>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete this announcement?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteId) remove.mutate(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

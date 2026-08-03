@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { apiOrigin } from '@/api/client'
 import {
   DropdownMenu,
@@ -375,6 +376,7 @@ function DocumentsCard({ studentId }: { studentId: string }) {
   const { data: documents, isLoading } = useStudentDocuments(studentId)
   const upload = useUploadStudentDocument(studentId)
   const remove = useDeleteDocument(studentId)
+  const [pendingDeleteDocId, setPendingDeleteDocId] = useState<string | null>(null)
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -410,12 +412,22 @@ function DocumentsCard({ studentId }: { studentId: string }) {
         {documents?.map((doc) => (
           <div key={doc.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
             <span>{doc.name}</span>
-            <Button variant="ghost" size="icon" onClick={() => remove.mutate(doc.id)}>
+            <Button variant="ghost" size="icon" onClick={() => setPendingDeleteDocId(doc.id)}>
               <Trash2 className="size-4" />
             </Button>
           </div>
         ))}
       </CardContent>
+      <ConfirmDialog
+        open={pendingDeleteDocId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteDocId(null)}
+        title="Delete this document?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (pendingDeleteDocId) remove.mutate(pendingDeleteDocId)
+          setPendingDeleteDocId(null)
+        }}
+      />
     </Card>
   )
 }
@@ -665,6 +677,7 @@ export function StudentDetailPage() {
   const { data: student, isLoading } = useStudent(studentId)
   const { data: enrollments } = useEnrollments(studentId)
   const detachGuardian = useDetachGuardian(studentId)
+  const [pendingDetachGuardianId, setPendingDetachGuardianId] = useState<string | null>(null)
 
   if (isLoading || !student) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
@@ -782,7 +795,11 @@ export function StudentDetailPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => detachGuardian.mutate(guardian.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPendingDetachGuardianId(guardian.id)}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </TableCell>
@@ -791,6 +808,17 @@ export function StudentDetailPage() {
             </TableBody>
           </Table>
         </CardContent>
+        <ConfirmDialog
+          open={pendingDetachGuardianId !== null}
+          onOpenChange={(open) => !open && setPendingDetachGuardianId(null)}
+          title="Remove this guardian from the student?"
+          description="This can't be undone."
+          confirmLabel="Remove"
+          onConfirm={() => {
+            if (pendingDetachGuardianId) detachGuardian.mutate(pendingDetachGuardianId)
+            setPendingDetachGuardianId(null)
+          }}
+        />
       </Card>
 
       <Card>
