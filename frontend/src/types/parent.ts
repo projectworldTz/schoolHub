@@ -43,6 +43,7 @@ export interface ParentResultGroup {
   exam_id: string
   exam_name: string
   exam_type: string
+  exam_date: string | null
   subjects: ParentResultSubject[]
   average_percentage: number | null
   overall_grade: string | null

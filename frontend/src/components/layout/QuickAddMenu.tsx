@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import { hasPermission } from '@/lib/permissions'
 import { QUICK_ACTIONS } from '@/config/quickActions'
 import { cn } from '@/lib/utils'
 
-export function QuickAddMenu({ floating = false }: { floating?: boolean }) {
+export function QuickAddMenu({ floating = false, expanded = false }: { floating?: boolean; expanded?: boolean }) {
   const { data: user } = useCurrentUser()
   const navigate = useNavigate()
 
@@ -30,6 +30,12 @@ export function QuickAddMenu({ floating = false }: { floating?: boolean }) {
           >
             <Plus className="size-6" />
             <span className="sr-only">Quick add</span>
+          </Button>
+        ) : expanded ? (
+          <Button className="bg-gradient-brand gap-1.5 rounded-full pl-3.5 pr-3 text-white shadow-sm hover:opacity-90">
+            <Plus className="size-4" />
+            Quick Add
+            <ChevronDown className="size-3.5 opacity-80" />
           </Button>
         ) : (
           <Button size="icon" variant="ghost" className="rounded-full">

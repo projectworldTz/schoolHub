@@ -42,7 +42,7 @@ export function MobileNav() {
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-5rem)]">
           <div className="space-y-5 p-4">
-            {NAV_SECTIONS.map((section) =>
+            {NAV_SECTIONS.filter((section) => hasPermission(user, section.permission)).map((section) =>
               section.to ? (
                 <Link
                   key={section.key}

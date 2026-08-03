@@ -210,6 +210,7 @@ class AnalyticsController extends Controller
                 'by_subject' => [],
                 'grade_distribution' => [],
                 'pass_rate' => null,
+                'top_students' => [],
                 'radar' => [],
                 'exam_trend' => [],
             ]]);
@@ -248,6 +249,37 @@ class AnalyticsController extends Controller
             ->first();
 
         $passRate = $passFail && $passFail->total > 0 ? round($passFail->passed / $passFail->total * 100, 1) : null;
+
+        // Same average-percentage calculation as $bySubject, grouped by
+        // student instead — for a school-wide "top performers" ranking
+        // rather than a per-class one (useClassRanking already covers the
+        // per-class case elsewhere).
+        $topStudents = ExamResult::query()
+            ->whereHas('examSubject', fn ($q) => $q->where('exam_id', $examId))
+            ->join('exam_subjects', 'exam_subjects.id', '=', 'exam_results.exam_subject_id')
+            ->join('school_classes', 'school_classes.id', '=', 'exam_subjects.school_class_id')
+            ->join('students', 'students.id', '=', 'exam_results.student_id')
+            ->whereNotNull('exam_results.marks_obtained')
+            ->selectRaw(
+                // No CONCAT/'||' here — SQLite lacks the former and MySQL's
+                // '||' means OR unless PIPES_AS_CONCAT is set, so the name is
+                // built from separate columns in PHP below instead.
+                'students.id as student_id,
+                students.first_name as first_name,
+                students.last_name as last_name,
+                max(school_classes.name) as class_name,
+                avg(exam_results.marks_obtained * 1.0 / exam_subjects.max_marks * 100) as average_percentage'
+            )
+            ->groupBy('students.id', 'students.first_name', 'students.last_name')
+            ->orderByDesc('average_percentage')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => [
+                'student_id' => $row->student_id,
+                'student_name' => "{$row->first_name} {$row->last_name}",
+                'class_name' => $row->class_name,
+                'average_percentage' => round((float) $row->average_percentage, 1),
+            ]);
 
         // Radar: average % per subject, split by class — lets the dashboard
         // compare classes' academic strengths/weaknesses at a glance instead
@@ -295,6 +327,7 @@ class AnalyticsController extends Controller
             'by_subject' => $bySubject,
             'grade_distribution' => $gradeDistribution,
             'pass_rate' => $passRate,
+            'top_students' => $topStudents,
             'radar' => $radar,
             'radar_series' => $radarClasses,
             'exam_trend' => $examTrend,

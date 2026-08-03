@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import {
-  GraduationCap,
-  LayoutGrid,
-  Settings,
-  UsersRound,
-  type LucideIcon,
-} from 'lucide-react'
+import { GraduationCap, UsersRound, type LucideIcon } from 'lucide-react'
 import {
   CommandDialog,
   CommandEmpty,
@@ -70,18 +64,16 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     navigate(to)
   }
 
-  const staticEntries: StaticEntry[] = [
-    { label: 'Dashboard', description: 'Overview & quick stats', to: '/app/dashboard', icon: LayoutGrid },
-    ...NAV_SECTIONS.flatMap((section) =>
-      (section.links ?? []).map((link) => ({
-        label: link.label,
-        description: link.description,
-        to: link.to,
-        icon: link.icon,
-      }))
-    ),
-    { label: 'Settings', description: 'School profile & configuration', to: '/app/settings', icon: Settings },
-  ].filter((entry, index, all) => all.findIndex((e) => e.to === entry.to && e.label === entry.label) === index)
+  const staticEntries: StaticEntry[] = NAV_SECTIONS.flatMap((section) =>
+    section.to
+      ? [{ label: section.label, description: `Open ${section.label}`, to: section.to, icon: section.icon }]
+      : (section.links ?? []).map((link) => ({
+          label: link.label,
+          description: link.description,
+          to: link.to,
+          icon: link.icon,
+        }))
+  ).filter((entry, index, all) => all.findIndex((e) => e.to === entry.to && e.label === entry.label) === index)
 
   const filteredStatic = query.trim().length === 0
     ? staticEntries.slice(0, 8)

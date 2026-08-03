@@ -131,6 +131,7 @@ class ParentPortalController extends Controller
                     'exam_id' => $exam->id,
                     'exam_name' => $exam->name,
                     'exam_type' => $exam->exam_type,
+                    'exam_date' => $exam->start_date,
                     'subjects' => $group->map(fn ($r) => [
                         'subject_name' => $r->examSubject->subject->name,
                         'marks_obtained' => $r->marks_obtained,

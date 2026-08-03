@@ -36,16 +36,9 @@ import {
 } from '@/hooks/useParentPortal'
 import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
+import { PerformanceTrendChart } from '@/components/school/PerformanceTrendChart'
+import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import type { Student } from '@/types/students'
-import type { InvoiceStatus } from '@/types/finance'
-
-const INVOICE_STATUS_VARIANT: Record<InvoiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  unpaid: 'secondary',
-  partial: 'outline',
-  paid: 'default',
-  overdue: 'destructive',
-  cancelled: 'secondary',
-}
 
 const ATTENDANCE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   present: 'default',
@@ -173,7 +166,7 @@ function ChildOverview({ student }: { student: Student }) {
                   <TableCell>{Number(inv.amount_paid).toLocaleString()}</TableCell>
                   <TableCell>{Number(inv.balance).toLocaleString()}</TableCell>
                   <TableCell>
-                    <Badge variant={INVOICE_STATUS_VARIANT[inv.status]}>{inv.status}</Badge>
+                    <InvoiceStatusBadge status={inv.status} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -255,6 +248,16 @@ function ChildOverview({ student }: { student: Student }) {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance trend</CardTitle>
+          <CardDescription>{student.first_name}'s average score across every graded exam, oldest to newest.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!resultsLoading && <PerformanceTrendChart results={results ?? []} />}
         </CardContent>
       </Card>
 

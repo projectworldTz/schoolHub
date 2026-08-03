@@ -82,11 +82,19 @@ export interface ExamTrendPoint {
   average_percentage: number
 }
 
+export interface TopStudentRow {
+  student_id: string
+  student_name: string
+  class_name: string
+  average_percentage: number
+}
+
 export interface AcademicsReport {
   exam_id: string | null
   by_subject: SubjectAverage[]
   grade_distribution: LabelCount[]
   pass_rate: number | null
+  top_students: TopStudentRow[]
   radar: RadarPoint[]
   radar_series: string[]
   exam_trend: ExamTrendPoint[]

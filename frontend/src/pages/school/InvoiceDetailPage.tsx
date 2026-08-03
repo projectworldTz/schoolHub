@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -42,16 +41,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import { useInvoice, useRecordPayment } from '@/hooks/useFinance'
-import type { InvoiceStatus, PaymentMethod } from '@/types/finance'
-
-const STATUS_VARIANT: Record<InvoiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  unpaid: 'secondary',
-  partial: 'outline',
-  paid: 'default',
-  overdue: 'destructive',
-  cancelled: 'secondary',
-}
+import type { PaymentMethod } from '@/types/finance'
 
 const paymentSchema = z.object({
   amount: z.string().min(1, 'Required'),
@@ -235,7 +227,7 @@ export function InvoiceDetailPage() {
       <Breadcrumbs extra={invoice.invoice_number} />
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-semibold">{invoice.invoice_number}</h1>
-        <Badge variant={STATUS_VARIANT[invoice.status]}>{invoice.status}</Badge>
+        <InvoiceStatusBadge status={invoice.status} />
       </div>
       <p className="text-sm text-muted-foreground">
         {invoice.student_name} (#{invoice.admission_number}) · {invoice.academic_year_name}

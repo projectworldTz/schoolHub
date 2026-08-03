@@ -12,7 +12,7 @@ const TREND_TEXT_CLASS = {
   flat: 'text-muted-foreground',
 }
 
-function formatValue(value: number, format: Kpi['format']): string {
+export function formatKpiValue(value: number, format: Kpi['format']): string {
   if (format === 'currency') {
     return value >= 1_000_000
       ? `${(value / 1_000_000).toFixed(1)}M`
@@ -31,7 +31,7 @@ export function KpiCard({ icon: Icon, kpi }: { icon: LucideIcon; kpi: Kpi }) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
-            <p className="font-display mt-1 text-2xl font-semibold">{formatValue(kpi.value, kpi.format)}</p>
+            <p className="font-display mt-1 text-2xl font-semibold">{formatKpiValue(kpi.value, kpi.format)}</p>
           </div>
           <span className="bg-gradient-brand flex size-9 shrink-0 items-center justify-center rounded-lg text-white">
             <Icon className="size-4" />

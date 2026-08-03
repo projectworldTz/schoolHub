@@ -30,51 +30,63 @@
   --chart-3: oklch(0.72 0.16 175);
   --chart-4: oklch(0.769 0.188 70.08);
   --chart-5: oklch(0.65 0.22 25);
-  --sidebar: oklch(0.995 0.002 285);
-  --sidebar-foreground: oklch(0.18 0.015 285);
+  /* The topbar/module-nav "chrome" is intentionally fixed dark navy in both
+     light and dark mode (matches the admin-panel reference design) — these
+     --sidebar-* tokens were unused boilerplate (no sidebar component is
+     installed) so they're repurposed here instead of adding new ones. Kept
+     byte-for-byte identical in the .dark block below so the chrome never
+     shifts with the theme toggle; only the content area (--background etc.)
+     follows the toggle. */
+  --sidebar: oklch(0.21 0.038 266);
+  --sidebar-foreground: oklch(0.97 0.01 250);
   --sidebar-primary: oklch(0.541 0.229 293.4);
   --sidebar-primary-foreground: oklch(0.99 0.005 293);
-  --sidebar-accent: oklch(0.94 0.012 285);
-  --sidebar-accent-foreground: oklch(0.28 0.02 285);
-  --sidebar-border: oklch(0.9 0.012 285);
-  --sidebar-ring: oklch(0.541 0.229 293.4 / 40%);
+  --sidebar-accent: oklch(0.29 0.038 266);
+  --sidebar-accent-foreground: oklch(0.97 0.01 250);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.685 0.15 237.3 / 45%);
   --brand-from: oklch(0.541 0.229 293.4);
   --brand-via: oklch(0.6 0.2 280);
   --brand-to: oklch(0.685 0.15 237.3);
 }
 
 .dark {
-  --background: oklch(0.16 0.014 285);
-  --foreground: oklch(0.96 0.006 285);
-  --card: oklch(0.2 0.016 285);
-  --card-foreground: oklch(0.96 0.006 285);
-  --popover: oklch(0.2 0.016 285);
-  --popover-foreground: oklch(0.96 0.006 285);
+  /* A deliberately-tinted dark navy/indigo, not a near-neutral gray — plain
+     low-chroma dark themes read as "just black"; keeping chroma up around
+     0.03-0.045 here (vs. the previous 0.014-0.018) is what makes it read as
+     a color instead. */
+  --background: oklch(0.2 0.032 267);
+  --foreground: oklch(0.96 0.008 260);
+  --card: oklch(0.26 0.036 266);
+  --card-foreground: oklch(0.96 0.008 260);
+  --popover: oklch(0.26 0.036 266);
+  --popover-foreground: oklch(0.96 0.008 260);
   --primary: oklch(0.72 0.19 293.4);
   --primary-foreground: oklch(0.16 0.02 293);
-  --secondary: oklch(0.27 0.018 285);
-  --secondary-foreground: oklch(0.96 0.006 285);
-  --muted: oklch(0.25 0.016 285);
-  --muted-foreground: oklch(0.68 0.015 285);
+  --secondary: oklch(0.32 0.04 266);
+  --secondary-foreground: oklch(0.96 0.008 260);
+  --muted: oklch(0.3 0.036 266);
+  --muted-foreground: oklch(0.72 0.02 265);
   --accent: oklch(0.72 0.13 237.3);
   --accent-foreground: oklch(0.16 0.02 237);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
   --ring: oklch(0.72 0.19 293.4 / 45%);
   --chart-1: oklch(0.72 0.19 293.4);
   --chart-2: oklch(0.72 0.13 237.3);
   --chart-3: oklch(0.72 0.16 175);
   --chart-4: oklch(0.769 0.188 70.08);
   --chart-5: oklch(0.65 0.22 25);
-  --sidebar: oklch(0.19 0.015 285);
-  --sidebar-foreground: oklch(0.96 0.006 285);
-  --sidebar-primary: oklch(0.72 0.19 293.4);
-  --sidebar-primary-foreground: oklch(0.16 0.02 293);
-  --sidebar-accent: oklch(0.27 0.018 285);
-  --sidebar-accent-foreground: oklch(0.96 0.006 285);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.19 293.4 / 45%);
+  /* Deliberately identical to :root's --sidebar-* — see the comment there. */
+  --sidebar: oklch(0.21 0.038 266);
+  --sidebar-foreground: oklch(0.97 0.01 250);
+  --sidebar-primary: oklch(0.541 0.229 293.4);
+  --sidebar-primary-foreground: oklch(0.99 0.005 293);
+  --sidebar-accent: oklch(0.29 0.038 266);
+  --sidebar-accent-foreground: oklch(0.97 0.01 250);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.685 0.15 237.3 / 45%);
   --brand-from: oklch(0.72 0.19 293.4);
   --brand-via: oklch(0.65 0.19 280);
   --brand-to: oklch(0.72 0.13 237.3);

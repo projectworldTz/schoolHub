@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
-import { TopHeader } from '@/components/layout/TopHeader'
+import { TopBar } from '@/components/layout/TopBar'
+import { ModuleNavBar } from '@/components/layout/ModuleNavBar'
 import { CommandPalette } from '@/components/layout/CommandPalette'
 import { QuickAddMenu } from '@/components/layout/QuickAddMenu'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
@@ -14,7 +15,10 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-background">
-      <TopHeader onOpenSearch={() => setSearchOpen(true)} />
+      <div className="sticky top-0 z-30 shadow-md shadow-black/5">
+        <TopBar onOpenSearch={() => setSearchOpen(true)} />
+        <ModuleNavBar />
+      </div>
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
         {!id && <Breadcrumbs />}

@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -43,20 +42,13 @@ import {
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCard'
+import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import { useFeeCategories, useFeeStructures, useGenerateInvoices, useInvoices } from '@/hooks/useFinance'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses } from '@/hooks/useAcademics'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import type { FeeCategoryPayload, FeeStructurePayload } from '@/api/finance'
-import type { FeeCategory, FeeStructure, InvoiceStatus } from '@/types/finance'
-
-const STATUS_VARIANT: Record<InvoiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  unpaid: 'secondary',
-  partial: 'outline',
-  paid: 'default',
-  overdue: 'destructive',
-  cancelled: 'secondary',
-}
+import type { FeeCategory, FeeStructure } from '@/types/finance'
 
 const feeCategoryDefaults = { name: '', description: '' }
 const feeCategorySchema = z.object({
@@ -422,7 +414,7 @@ function InvoicesTab() {
                 <TableCell>{Number(invoice.amount_paid).toLocaleString()}</TableCell>
                 <TableCell>{Number(invoice.balance).toLocaleString()}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[invoice.status]}>{invoice.status}</Badge>
+                  <InvoiceStatusBadge status={invoice.status} />
                 </TableCell>
               </TableRow>
             ))}

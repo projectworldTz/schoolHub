@@ -40,7 +40,7 @@ const persister = createSyncStoragePersister({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000, buster: PERSIST_CACHE_BUSTER }}
