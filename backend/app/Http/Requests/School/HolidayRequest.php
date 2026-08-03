@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class HolidayRequest extends FormRequest
         return [
             'academic_year_id' => [
                 'nullable', 'uuid',
-                Rule::exists('academic_years', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('academic_years', 'id')->where('school_id', Tenant::id()),
             ],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],

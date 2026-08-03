@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,7 @@ class AttachGuardianRequest extends FormRequest
         return [
             'guardian_id' => [
                 'nullable', 'uuid',
-                Rule::exists('guardians', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('guardians', 'id')->where('school_id', Tenant::id()),
             ],
             'name' => ['required_without:guardian_id', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],

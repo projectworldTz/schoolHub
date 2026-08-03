@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class StaffContractRequest extends FormRequest
         return [
             'user_id' => [
                 'required', 'uuid',
-                Rule::exists('users', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('users', 'id')->where('school_id', Tenant::id()),
             ],
             'contract_type' => ['required', 'string', 'max:100'],
             'start_date' => ['required', 'date'],

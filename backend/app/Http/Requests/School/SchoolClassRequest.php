@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,13 +19,13 @@ class SchoolClassRequest extends FormRequest
             'name' => [
                 'required', 'string', 'max:255',
                 Rule::unique('school_classes', 'name')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('class')),
             ],
             'level' => ['required', 'integer', 'min:0', 'max:65535'],
             'branch_id' => [
                 'nullable', 'uuid',
-                Rule::exists('branches', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('branches', 'id')->where('school_id', Tenant::id()),
             ],
         ];
     }

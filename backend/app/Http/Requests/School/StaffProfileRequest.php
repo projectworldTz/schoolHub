@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,7 @@ class StaffProfileRequest extends FormRequest
 
     public function rules(): array
     {
-        $schoolId = $this->user()->school_id;
+        $schoolId = Tenant::id();
 
         return [
             'user_id' => [

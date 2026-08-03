@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Finance;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class PayrollRunRequest extends FormRequest
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'year' => [
                 'required', 'integer', 'min:2020', 'max:2100',
-                Rule::unique('payroll_runs')->where('school_id', $this->user()->school_id)->where('month', $this->input('month')),
+                Rule::unique('payroll_runs')->where('school_id', Tenant::id())->where('month', $this->input('month')),
             ],
         ];
     }

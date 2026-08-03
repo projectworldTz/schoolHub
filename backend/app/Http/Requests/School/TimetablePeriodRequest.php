@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class TimetablePeriodRequest extends FormRequest
             'name' => [
                 'required', 'string', 'max:100',
                 Rule::unique('timetable_periods', 'name')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('timetable_period')),
             ],
             'start_time' => ['required', 'date_format:H:i'],

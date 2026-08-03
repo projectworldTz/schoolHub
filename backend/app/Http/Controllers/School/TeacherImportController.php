@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\School;
 
 use App\Http\Controllers\Controller;
+use App\Models\School;
 use App\Services\School\TeacherImportService;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 
 class TeacherImportController extends Controller
@@ -22,7 +24,7 @@ class TeacherImportController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
         ]);
 
-        $result = $this->importer->process($data['file'], ! $request->boolean('dry_run', true), $request->user()->school);
+        $result = $this->importer->process($data['file'], ! $request->boolean('dry_run', true), School::find(Tenant::id()));
 
         return response()->json(['data' => $result]);
     }

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\School;
 
+use App\Models\School;
 use App\Support\SchoolRoles;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -21,7 +23,7 @@ class CreateSchoolUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $allowedRoles = SchoolRoles::forType($this->user()->school?->type);
+        $allowedRoles = SchoolRoles::forType(School::find(Tenant::id())?->type);
 
         return [
             'name' => ['required', 'string', 'max:255'],

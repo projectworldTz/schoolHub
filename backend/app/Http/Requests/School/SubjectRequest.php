@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,12 +18,12 @@ class SubjectRequest extends FormRequest
         return [
             'department_id' => [
                 'nullable', 'uuid',
-                Rule::exists('departments', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('departments', 'id')->where('school_id', Tenant::id()),
             ],
             'name' => [
                 'required', 'string', 'max:255',
                 Rule::unique('subjects', 'name')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('subject')),
             ],
             'code' => ['nullable', 'string', 'max:50'],

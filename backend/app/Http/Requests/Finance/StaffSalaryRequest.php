@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Finance;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class StaffSalaryRequest extends FormRequest
             'user_id' => [
                 'required', 'uuid', 'exists:users,id',
                 Rule::unique('staff_salaries', 'user_id')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('staff_salary')),
             ],
             'basic_salary' => ['required', 'numeric', 'min:0'],

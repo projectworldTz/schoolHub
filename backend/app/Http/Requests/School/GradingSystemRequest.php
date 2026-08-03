@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +24,7 @@ class GradingSystemRequest extends FormRequest
             'name' => [
                 'required', 'string', 'max:255',
                 Rule::unique('grading_systems', 'name')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('grading_system')),
             ],
             'is_default' => ['sometimes', 'boolean'],

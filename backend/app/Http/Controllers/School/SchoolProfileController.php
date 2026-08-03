@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\School\UpdateSchoolProfileRequest;
 use App\Http\Resources\Platform\SchoolResource;
 use App\Models\School;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 
 class SchoolProfileController extends Controller
@@ -25,8 +26,8 @@ class SchoolProfileController extends Controller
 
     protected function currentSchool(Request $request): School
     {
-        abort_unless($request->user()->school_id, 403, 'This account is not attached to a school.');
+        abort_unless(Tenant::id(), 403, 'This account is not attached to a school.');
 
-        return School::findOrFail($request->user()->school_id);
+        return School::findOrFail(Tenant::id());
     }
 }

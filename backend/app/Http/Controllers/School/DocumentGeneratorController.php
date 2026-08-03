@@ -8,6 +8,7 @@ use App\Models\GradingSystem;
 use App\Models\School;
 use App\Models\StaffContract;
 use App\Models\Student;
+use App\Support\Tenancy\Tenant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -123,8 +124,8 @@ class DocumentGeneratorController extends Controller
 
     protected function currentSchool(Request $request): School
     {
-        abort_unless($request->user()->school_id, 403, 'This account is not attached to a school.');
+        abort_unless(Tenant::id(), 403, 'This account is not attached to a school.');
 
-        return School::findOrFail($request->user()->school_id);
+        return School::findOrFail(Tenant::id());
     }
 }

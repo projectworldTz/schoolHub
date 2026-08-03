@@ -280,7 +280,7 @@ export function SchoolsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEnterSchool(school)}>
-                        Enter school
+                        View as Owner
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={school.status === 'approved'}

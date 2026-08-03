@@ -10,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Services\AI\AiPremiumAccessService;
 use App\Services\School\AiAssistantService;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -113,8 +114,8 @@ class AiAssistantController extends Controller
 
     protected function currentSchool(Request $request): School
     {
-        abort_unless($request->user()->school_id, 403, 'This account is not attached to a school.');
+        abort_unless(Tenant::id(), 403, 'This account is not attached to a school.');
 
-        return School::findOrFail($request->user()->school_id);
+        return School::findOrFail(Tenant::id());
     }
 }

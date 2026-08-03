@@ -4,6 +4,7 @@ namespace App\Http\Requests\School;
 
 use App\Models\ExamEditRequest;
 use App\Models\ExamSubject;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -21,7 +22,7 @@ class ExamEditRequestRequest extends FormRequest
         return [
             'exam_subject_id' => [
                 'required', 'uuid',
-                Rule::exists('exam_subjects', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('exam_subjects', 'id')->where('school_id', Tenant::id()),
             ],
             'reason' => ['required', 'string', 'max:2000'],
         ];

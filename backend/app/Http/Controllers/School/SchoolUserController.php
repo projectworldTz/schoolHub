@@ -7,8 +7,10 @@ use App\Http\Requests\School\CreateSchoolUserRequest;
 use App\Http\Requests\School\UpdateSchoolUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\ActivityLog;
+use App\Models\School;
 use App\Models\User;
 use App\Support\SchoolRoles;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +36,7 @@ class SchoolUserController extends Controller
 
         $user = DB::transaction(function () use ($data, $request) {
             $user = User::create([
-                'school_id' => $request->user()->school_id,
+                'school_id' => Tenant::id(),
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
@@ -101,7 +103,7 @@ class SchoolUserController extends Controller
     {
         abort_unless($request->user()->can('users.manage'), 403);
 
-        $allowed = SchoolRoles::forType($request->user()->school?->type);
+        $allowed = SchoolRoles::forType(School::find(Tenant::id())?->type);
 
         return response()->json([
             'data' => Role::query()->whereIn('name', $allowed)->orderBy('name')->pluck('name'),

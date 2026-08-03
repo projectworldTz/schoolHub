@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\School;
 
+use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,13 +19,13 @@ class DepartmentRequest extends FormRequest
             'name' => [
                 'required', 'string', 'max:255',
                 Rule::unique('departments', 'name')
-                    ->where('school_id', $this->user()->school_id)
+                    ->where('school_id', Tenant::id())
                     ->ignore($this->route('department')),
             ],
             'code' => ['nullable', 'string', 'max:50'],
             'head_user_id' => [
                 'nullable', 'uuid',
-                Rule::exists('users', 'id')->where('school_id', $this->user()->school_id),
+                Rule::exists('users', 'id')->where('school_id', Tenant::id()),
             ],
         ];
     }
