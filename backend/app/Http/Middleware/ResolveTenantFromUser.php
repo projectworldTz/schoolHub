@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\School;
+use App\Models\User;
 use App\Support\Tenancy\Tenant;
 use Closure;
 use Illuminate\Http\Request;
@@ -74,7 +75,7 @@ class ResolveTenantFromUser
             Auth::guard('web')->setUser($user);
         }
 
-        Tenant::set($user?->school_id ?? $this->resolveSchoolIdFromDomain($request));
+        Tenant::set($this->resolveActingSchoolId($request, $user) ?? $user?->school_id ?? $this->resolveSchoolIdFromDomain($request));
 
         return $next($request);
     }
@@ -84,5 +85,29 @@ class ResolveTenantFromUser
         return Tenant::runAsPlatform(
             fn () => School::where('custom_domain', $request->getHost())->value('id')
         );
+    }
+
+    /**
+     * A Super Admin's own school_id is always NULL, so without this,
+     * BelongsToSchool's deny-by-default state would apply on every
+     * school/* route for them. Platform\SchoolController::enter()/
+     * exitSchool() let a Super Admin explicitly "enter" one school by
+     * stashing its id in their session; while that's set, every
+     * tenant-scoped query behaves exactly as if they belonged to that
+     * school, without ever touching their own school_id.
+     *
+     * Session-only, and therefore SPA-only: hasSession() is false for the
+     * v1 token API (no 'web' middleware group — see
+     * EnsureFrontendRequestsAreStateful), so token clients never pick this
+     * up, which is correct — impersonation is a dashboard affordance, not
+     * something a personal-access-token client should silently inherit.
+     */
+    protected function resolveActingSchoolId(Request $request, ?User $user): ?string
+    {
+        if (! $user || ! $request->hasSession() || ! $user->hasRole('Super Admin')) {
+            return null;
+        }
+
+        return $request->session()->get('platform_acting_school_id');
     }
 }

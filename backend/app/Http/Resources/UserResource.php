@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\School;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,7 +21,31 @@ class UserResource extends JsonResource
             'must_change_password' => $this->must_change_password,
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name'),
+            'acting_school' => $this->when($this->hasRole('Super Admin'), fn () => $this->actingSchool($request)),
             'created_at' => $this->created_at,
         ];
+    }
+
+    /**
+     * Which school (if any) a Super Admin has currently "entered" — see
+     * Platform\SchoolController::enter(). Read straight from the session
+     * rather than Tenant::id(), since a non-Super-Admin's Tenant::id() is
+     * their own school and has nothing to do with this field.
+     */
+    protected function actingSchool(Request $request): ?array
+    {
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        $schoolId = $request->session()->get('platform_acting_school_id');
+
+        if (! $schoolId) {
+            return null;
+        }
+
+        return Tenant::runAsPlatform(
+            fn () => School::query()->select('id', 'name')->find($schoolId)?->only(['id', 'name'])
+        );
     }
 }

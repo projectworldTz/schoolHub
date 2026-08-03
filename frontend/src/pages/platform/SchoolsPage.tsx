@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import {
   useApproveSchool,
+  useEnterSchool,
   useReactivateSchoolAiAccess,
   useRevokeSchoolAiAccess,
   useSchools,
@@ -96,8 +98,10 @@ function LicenseBadge({ expiresAt }: { expiresAt: string | null }) {
 export function SchoolsPage() {
   const { data, isLoading, isError } = useSchools()
   const approveSchool = useApproveSchool()
+  const enterSchool = useEnterSchool()
   const reactivateAiAccess = useReactivateSchoolAiAccess()
   const revokeAiAccess = useRevokeSchoolAiAccess()
+  const navigate = useNavigate()
   const [suspendTarget, setSuspendTarget] = useState<School | null>(null)
   const [renewTarget, setRenewTarget] = useState<School | null>(null)
   const [domainTarget, setDomainTarget] = useState<School | null>(null)
@@ -123,6 +127,21 @@ export function SchoolsPage() {
       onError: (error) => {
         const message = isAxiosError(error)
           ? (error.response?.data?.message ?? 'Could not reactivate AI access')
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    })
+  }
+
+  function handleEnterSchool(school: School) {
+    enterSchool.mutate(school.id, {
+      onSuccess: () => {
+        toast.success(`Now viewing ${school.name} with full access`)
+        navigate('/app/dashboard')
+      },
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? 'Could not enter school')
           : 'Something went wrong'
         toast.error(message)
       },
@@ -260,6 +279,9 @@ export function SchoolsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEnterSchool(school)}>
+                        Enter school
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={school.status === 'approved'}
                         onClick={() => handleApprove(school)}

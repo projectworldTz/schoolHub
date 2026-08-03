@@ -14,6 +14,12 @@ export function HomeRedirect() {
   }
 
   if (user?.roles?.includes('Super Admin')) {
+    // Acting as a school (see SchoolsPage "Enter school") takes them
+    // straight back into that school's dashboard instead of platform home.
+    if (user.acting_school) {
+      return <Navigate to="/app/dashboard" replace />
+    }
+
     return <Navigate to="/platform/dashboard" replace />
   }
 

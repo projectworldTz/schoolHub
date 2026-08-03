@@ -48,6 +48,7 @@ import {
   useSchoolUsers,
   useUpdateSchoolUser,
 } from '@/hooks/useSchoolUsers'
+import { useCurrentUser } from '@/hooks/useAuth'
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -174,6 +175,7 @@ function CreateUserDialog() {
 export function UsersPage() {
   const [search, setSearch] = useState('')
   const { data, isLoading } = useSchoolUsers(search)
+  const { data: currentUser } = useCurrentUser()
   const updateUser = useUpdateSchoolUser()
   const deleteUser = useDeleteSchoolUser()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -272,12 +274,14 @@ export function UsersPage() {
                         <DropdownMenuItem onClick={() => toggleActive(user.id, user.is_active)}>
                           {user.is_active ? 'Deactivate' : 'Activate'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setPendingDeleteId(user.id)}
-                        >
-                          Remove
-                        </DropdownMenuItem>
+                        {user.id !== currentUser?.id && (
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setPendingDeleteId(user.id)}
+                          >
+                            Remove
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

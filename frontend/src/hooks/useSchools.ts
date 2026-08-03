@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   approveSchool,
   createSchool,
+  enterSchool,
+  exitActingSchool,
   fetchPlatformDashboard,
   grantSchoolAiAccess,
   listSchools,
@@ -17,6 +19,7 @@ import {
   type ListSchoolsParams,
   type UpdateSchoolPayload,
 } from '@/api/schools'
+import { AUTH_QUERY_KEY } from '@/hooks/useAuth'
 import type { LicenseDurationMonths } from '@/types/school'
 
 const SCHOOLS_QUERY_KEY = ['platform', 'schools'] as const
@@ -141,6 +144,31 @@ export function useRevokeSchoolAiAccess() {
     mutationFn: (id: string) => revokeSchoolAiAccess(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+// Both mutations invalidate the auth query (not SCHOOLS_QUERY_KEY) because
+// what actually changes is the current user's acting_school, which
+// useCurrentUser() reads from /auth/me — see UserResource::actingSchool().
+export function useEnterSchool() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => enterSchool(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
+    },
+  })
+}
+
+export function useExitActingSchool() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => exitActingSchool(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
     },
   })
 }

@@ -102,3 +102,11 @@ export async function revokeSchoolAiAccess(id: string): Promise<School> {
   const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/ai-access/revoke`)
   return data.data
 }
+
+export async function enterSchool(id: string): Promise<void> {
+  await apiClient.post(`/platform/schools/${id}/enter`)
+}
+
+export async function exitActingSchool(): Promise<void> {
+  await apiClient.post('/platform/exit-school')
+}

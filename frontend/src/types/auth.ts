@@ -7,5 +7,7 @@ export interface User {
   must_change_password: boolean
   roles: string[]
   permissions: string[]
+  /** Super Admin only: the school they've currently "entered", if any. */
+  acting_school?: { id: string; name: string } | null
   created_at: string
 }

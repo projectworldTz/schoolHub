@@ -156,4 +156,27 @@ class SchoolController extends Controller
 
         return new SchoolResource($this->schools->revokeAiAccess($school, $request->user()->id));
     }
+
+    /**
+     * "Enter" a school: stash its id in the Super Admin's own session so
+     * App\Http\Middleware\ResolveTenantFromUser scopes every subsequent
+     * school/* request to it, giving full access to that school's
+     * dashboard without altering the admin's own account or any school
+     * data. See exitSchool() for the reverse.
+     */
+    public function enter(Request $request, School $school)
+    {
+        $this->authorize('view', $school);
+
+        $request->session()->put('platform_acting_school_id', $school->id);
+
+        return response()->noContent();
+    }
+
+    public function exitSchool(Request $request)
+    {
+        $request->session()->forget('platform_acting_school_id');
+
+        return response()->noContent();
+    }
 }
