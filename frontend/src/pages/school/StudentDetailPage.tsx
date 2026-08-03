@@ -443,7 +443,7 @@ function GrantPortalAccessDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState(guardianEmail ?? '')
-  const [result, setResult] = useState<{ email: string; temporary_password: string } | null>(null)
+  const [result, setResult] = useState<{ email: string } | null>(null)
   const grant = useGrantGuardianPortalAccess(studentId)
 
   function handleSubmit() {
@@ -484,18 +484,9 @@ function GrantPortalAccessDialog({
         {result ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Share these credentials with the parent directly — there's no email/SMS delivery yet, so this is
-              shown once.
+              An activation email was sent to <span className="font-medium text-foreground">{result.email}</span>.
+              The parent sets their own password by following the link inside — nothing to relay by hand.
             </p>
-            <div className="space-y-2 rounded-lg border p-3 text-sm">
-              <p>
-                <span className="text-muted-foreground">Email:</span> {result.email}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Temporary password:</span>{' '}
-                <span className="font-mono">{result.temporary_password}</span>
-              </p>
-            </div>
             <DialogFooter>
               <Button onClick={() => setOpen(false)}>Done</Button>
             </DialogFooter>

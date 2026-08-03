@@ -62,7 +62,6 @@ export async function detachGuardian(studentId: string, guardianId: string): Pro
 export interface GuardianPortalAccess {
   user_id: string
   email: string
-  temporary_password: string
 }
 
 export async function grantGuardianPortalAccess(guardianId: string, email: string): Promise<GuardianPortalAccess> {
