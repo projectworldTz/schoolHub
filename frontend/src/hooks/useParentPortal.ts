@@ -8,6 +8,7 @@ import {
   fetchParentAnnouncements,
   fetchParentConversationMessages,
   fetchParentConversations,
+  fetchScannedStudent,
   sendParentMessage,
 } from '@/api/parent'
 
@@ -15,6 +16,15 @@ const PARENT_CONVERSATIONS_KEY = ['parent', 'conversations'] as const
 
 export function useMyChildren() {
   return useQuery({ queryKey: ['parent', 'children'], queryFn: fetchMyChildren })
+}
+
+export function useScannedStudent(qrCode: string) {
+  return useQuery({
+    queryKey: ['parent', 'scan', qrCode],
+    queryFn: () => fetchScannedStudent(qrCode),
+    enabled: Boolean(qrCode),
+    retry: false,
+  })
 }
 
 export function useChildAttendance(studentId: string) {

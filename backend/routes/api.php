@@ -292,6 +292,9 @@ $schoolRoutes = function () {
 
 $parentRoutes = function () {
     Route::get('children', [ParentPortalController::class, 'children']);
+    // {qrCode} is deliberately a plain string, not route-model-bound — see
+    // ParentPortalController::scan() for why.
+    Route::get('scan/{qrCode}', [ParentPortalController::class, 'scan']);
     Route::get('children/{student}/attendance', [ParentPortalController::class, 'attendance']);
     Route::get('children/{student}/homework', [ParentPortalController::class, 'homework']);
     Route::get('children/{student}/results', [ParentPortalController::class, 'results']);

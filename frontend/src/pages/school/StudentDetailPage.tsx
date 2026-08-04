@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { Trash2, Upload } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -736,8 +737,23 @@ export function StudentDetailPage() {
             <p className="text-muted-foreground">Emergency contact</p>
             <p>{student.emergency_contact_name ?? '—'}</p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Student QR code</CardTitle>
+          <CardDescription>
+            Print this on the student's ID card or a report — scanning it takes a parent straight to this
+            student's performance and fees, once they sign in as a linked guardian.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center gap-4">
+          <div className="rounded-lg border bg-white p-3">
+            <QRCodeSVG value={`${window.location.origin}/scan/${student.qr_code}`} size={112} />
+          </div>
           <div>
-            <p className="text-muted-foreground">QR code</p>
+            <p className="text-xs text-muted-foreground">Code</p>
             <p className="font-mono text-xs">{student.qr_code}</p>
           </div>
         </CardContent>

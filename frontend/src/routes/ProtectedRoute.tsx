@@ -18,7 +18,10 @@ export function ProtectedRoute({ requireRole }: ProtectedRouteProps) {
   }
 
   if (isError || !user) {
-    return <Navigate to="/login" replace />
+    // Preserve where they were headed (e.g. a scanned QR link,
+    // /scan/:qrCode) so LoginPage can send them back there instead of
+    // always landing on the role's default home.
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   // A temporary password (SchoolService::create()) must be replaced before

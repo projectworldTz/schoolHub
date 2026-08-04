@@ -11,6 +11,11 @@ export async function fetchMyChildren(): Promise<Student[]> {
   return data.data
 }
 
+export async function fetchScannedStudent(qrCode: string): Promise<Student> {
+  const { data } = await apiClient.get<{ data: Student }>(`/parent/scan/${qrCode}`)
+  return data.data
+}
+
 export async function fetchChildAttendance(studentId: string): Promise<ParentAttendanceHistory> {
   const { data } = await apiClient.get<{ data: ParentAttendanceRecord[]; meta: { trend: AttendanceTrendPoint[] } }>(
     `/parent/children/${studentId}/attendance`

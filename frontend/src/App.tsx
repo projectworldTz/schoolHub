@@ -45,6 +45,7 @@ import { ReportDetailPage } from '@/pages/school/ReportDetailPage'
 import { AuditLogPage } from '@/pages/school/AuditLogPage'
 import { AiAssistantPage } from '@/pages/school/AiAssistantPage'
 import { ParentDashboardPage } from '@/pages/parent/ParentDashboardPage'
+import { ScanStudentPage } from '@/pages/parent/ScanStudentPage'
 import { NoticeBoardPage } from '@/pages/public/NoticeBoardPage'
 import { PlatformLayout } from '@/components/layout/PlatformLayout'
 import { AppShell } from '@/components/layout/AppShell'
@@ -78,6 +79,7 @@ function App() {
         <Route element={<ProtectedRoute requireRole="Parent" />}>
           <Route element={<ParentLayout />}>
             <Route path="/parent/dashboard" element={<ParentDashboardPage />} />
+            <Route path="/scan/:qrCode" element={<ScanStudentPage />} />
           </Route>
         </Route>
 

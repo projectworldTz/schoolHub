@@ -79,6 +79,30 @@ class ParentPortalController extends Controller
         return InvoiceResource::collection($invoices);
     }
 
+    /**
+     * Resolves a student's printed/ID-card QR code (Student::$qr_code, a
+     * UUID, see Student::bootStudent()) to that student, for the "scan the
+     * code, see their performance and fees" flow. Deliberately NOT a public
+     * lookup — {qrCode} isn't route-model-bound (Student's route key is
+     * still its primary key everywhere else), so a stranger who finds/scans
+     * a printed card still hits this same auth:web + role:Parent + linked-
+     * guardian gate as every other student-scoped endpoint in this
+     * controller. school_id isolation comes for free from Student's
+     * BelongsToSchool scope (the requesting parent's own tenant), and
+     * authorizeChild() then confirms this parent is actually linked to this
+     * specific child before anything is returned.
+     */
+    public function scan(Request $request, string $qrCode)
+    {
+        $student = Student::where('qr_code', $qrCode)
+            ->with(['currentEnrollment.academicYear', 'currentEnrollment.schoolClass', 'currentEnrollment.stream'])
+            ->firstOrFail();
+
+        $this->authorizeChild($request, $student);
+
+        return new StudentResource($student);
+    }
+
     public function homework(Request $request, Student $student)
     {
         $this->authorizeChild($request, $student);

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { useLogin } from '@/hooks/useAuth'
@@ -32,7 +32,12 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const loginMutation = useLogin()
+  // ProtectedRoute stashes where an unauthenticated visit was headed (e.g.
+  // a scanned QR link, /scan/:qrCode) — send them back there instead of
+  // always landing on the role's default home.
+  const from = (location.state as { from?: { pathname: string; search: string } } | null)?.from
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,7 +48,7 @@ export function LoginPage() {
     loginMutation.mutate(values, {
       onSuccess: (user) => {
         toast.success(`Welcome back, ${user.name}`)
-        navigate('/')
+        navigate(from ? `${from.pathname}${from.search}` : '/')
       },
       onError: (error) => {
         const message = isAxiosError(error)

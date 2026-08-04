@@ -37,7 +37,9 @@ import {
 import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
 import { PerformanceTrendChart } from '@/components/school/PerformanceTrendChart'
-import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
+import { ParentRewardCard } from '@/components/parent/ParentRewardCard'
+import { FeesTable } from '@/components/parent/FeesTable'
+import { ExamResultsList } from '@/components/parent/ExamResultsList'
 import type { Student } from '@/types/students'
 
 const ATTENDANCE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -72,6 +74,10 @@ function ChildOverview({ student }: { student: Student }) {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {!invoicesLoading && invoices && (
+        <ParentRewardCard studentName={student.first_name} invoices={invoices} />
+      )}
 
       {latestResult?.performance_message && (
         <Card className="border-none bg-gradient-brand text-white shadow-md shadow-primary/20">
@@ -136,44 +142,7 @@ function ChildOverview({ student }: { student: Student }) {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fees</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Paid</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!invoicesLoading && invoices?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No invoices yet.
-                  </TableCell>
-                </TableRow>
-              )}
-              {invoices?.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-medium">{inv.invoice_number}</TableCell>
-                  <TableCell>{Number(inv.total_amount).toLocaleString()}</TableCell>
-                  <TableCell>{Number(inv.amount_paid).toLocaleString()}</TableCell>
-                  <TableCell>{Number(inv.balance).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <InvoiceStatusBadge status={inv.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <FeesTable invoices={invoices} loading={invoicesLoading} />
 
       <Card>
         <CardHeader>
@@ -261,50 +230,7 @@ function ChildOverview({ student }: { student: Student }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exam results</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!resultsLoading && results?.length === 0 && (
-            <p className="text-sm text-muted-foreground">No exam results yet.</p>
-          )}
-          {results?.map((group) => (
-            <div key={group.exam_id} className="rounded-lg border p-3">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium">{group.exam_name}</p>
-                <div className="flex items-center gap-2 text-sm">
-                  {group.overall_grade && <Badge>{group.overall_grade}</Badge>}
-                  <span className="text-muted-foreground">
-                    {group.average_percentage !== null ? `${group.average_percentage}%` : '—'}
-                    {group.class_position ? ` · ranked ${group.class_position} of ${group.class_size}` : ''}
-                  </span>
-                </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Marks</TableHead>
-                    <TableHead>Grade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {group.subjects.map((s) => (
-                    <TableRow key={s.subject_name}>
-                      <TableCell>{s.subject_name}</TableCell>
-                      <TableCell>
-                        {s.marks_obtained ?? '—'} / {s.max_marks}
-                      </TableCell>
-                      <TableCell>{s.grade ? <Badge>{s.grade}</Badge> : '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <ExamResultsList results={results} loading={resultsLoading} />
     </div>
   )
 }
