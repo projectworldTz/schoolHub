@@ -16,12 +16,14 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Grants a guardian a login to the Parent Portal. Mirrors
- * GuardianImportService's bulk-import flow: the account gets an unguessable
- * random password (never shown to anyone) and the guardian is emailed an
- * activation link to set their own — rather than the admin being handed a
- * temporary password to relay by phone/WhatsApp, which was the previous,
- * error-prone behavior here.
+ * Grants a guardian a login to the Parent Portal. Sends the same activation
+ * email as GuardianImportService's bulk-import flow (a link to set their own
+ * password) — but unlike that bulk flow, this one is triggered one guardian
+ * at a time by an admin who's watching the result, so the generated
+ * temporary password is also usable and returned once in the response: the
+ * admin can log in as the parent themselves to verify access works, without
+ * waiting on (or being blocked by) mail delivery. must_change_password is
+ * set so that password can't just linger unrotated if it's ever used.
  */
 class GuardianPortalController extends Controller
 {
@@ -40,13 +42,16 @@ class GuardianPortalController extends Controller
             ],
         ]);
 
-        $user = DB::transaction(function () use ($guardian, $data) {
+        $temporaryPassword = Str::password(12);
+
+        $user = DB::transaction(function () use ($guardian, $data, $temporaryPassword) {
             $user = User::create([
                 'school_id' => $guardian->school_id,
                 'name' => $guardian->name,
                 'email' => $data['email'],
-                'password' => Hash::make(Str::random(40)),
+                'password' => Hash::make($temporaryPassword),
                 'is_active' => true,
+                'must_change_password' => true,
             ]);
 
             $user->assignRole('Parent');
@@ -67,6 +72,7 @@ class GuardianPortalController extends Controller
             'data' => [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'temporary_password' => $temporaryPassword,
             ],
         ]);
     }

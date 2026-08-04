@@ -13,9 +13,9 @@ use Tests\TestCase;
 
 /**
  * Guards GuardianPortalController@store — granting a guardian a Parent
- * Portal login must actually deliver a working credential (an activation
- * email with a set-password link), not just hand the admin a password to
- * relay by hand.
+ * Portal login must both email an activation link AND hand the admin a
+ * working temporary password directly, so they can verify access
+ * themselves without depending on (or waiting for) mail delivery.
  */
 class GuardianPortalAccessTest extends TestCase
 {
@@ -56,7 +56,7 @@ class GuardianPortalAccessTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.email', 'hassan@example.com');
-        $this->assertArrayNotHasKey('temporary_password', $response->json('data'));
+        $this->assertNotEmpty($response->json('data.temporary_password'));
 
         $guardian->refresh();
         $this->assertNotNull($guardian->user_id);
@@ -65,6 +65,29 @@ class GuardianPortalAccessTest extends TestCase
         $this->assertTrue($portalUser->hasRole('Parent'));
 
         Mail::assertSent(AccountActivationMail::class, fn ($mail) => $mail->hasTo('hassan@example.com'));
+    }
+
+    public function test_the_returned_temporary_password_actually_logs_the_parent_in(): void
+    {
+        Mail::fake();
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+        $guardian = $this->makeGuardian($school);
+
+        $granted = $this->actingAs($owner, 'web')->postJson(
+            "/api/school/guardians/{$guardian->id}/portal-access",
+            ['email' => 'hassan@example.com']
+        );
+        $temporaryPassword = $granted->json('data.temporary_password');
+
+        $login = $this->withHeader('Referer', 'http://localhost:5173')->postJson('/api/auth/login', [
+            'email' => 'hassan@example.com',
+            'password' => $temporaryPassword,
+        ]);
+
+        $login->assertOk();
+        $login->assertJsonPath('data.must_change_password', true);
     }
 
     public function test_a_guardian_who_already_has_access_cannot_be_granted_it_again(): void

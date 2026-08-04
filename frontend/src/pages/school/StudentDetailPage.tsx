@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { Trash2, Upload } from 'lucide-react'
+import { Check, Copy, Trash2, Upload } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -444,8 +444,16 @@ function GrantPortalAccessDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState(guardianEmail ?? '')
-  const [result, setResult] = useState<{ email: string } | null>(null)
+  const [result, setResult] = useState<{ email: string; temporary_password: string } | null>(null)
+  const [copied, setCopied] = useState(false)
   const grant = useGrantGuardianPortalAccess(studentId)
+
+  async function handleCopy() {
+    if (!result) return
+    await navigator.clipboard.writeText(result.temporary_password)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   function handleSubmit() {
     grant.mutate(
@@ -485,9 +493,17 @@ function GrantPortalAccessDialog({
         {result ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              An activation email was sent to <span className="font-medium text-foreground">{result.email}</span>.
-              The parent sets their own password by following the link inside — nothing to relay by hand.
+              An activation email was sent to <span className="font-medium text-foreground">{result.email}</span> —
+              the parent can set their own password by following the link inside. You can also log in as them
+              directly with this one-time password, e.g. to test access yourself; copy it now, it won't be shown
+              again, and they'll be asked to set their own on first use.
             </p>
+            <div className="flex items-center gap-2 rounded-md border bg-muted p-3">
+              <code className="flex-1 break-all text-sm">{result.temporary_password}</code>
+              <Button size="icon" variant="ghost" onClick={handleCopy} type="button">
+                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              </Button>
+            </div>
             <DialogFooter>
               <Button onClick={() => setOpen(false)}>Done</Button>
             </DialogFooter>
