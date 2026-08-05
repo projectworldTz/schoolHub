@@ -103,6 +103,30 @@ export async function revokeSchoolAiAccess(id: string): Promise<School> {
   return data.data
 }
 
+export interface GrantWebsiteAccessPayload {
+  expires_at?: string | null
+}
+
+export async function grantSchoolWebsiteAccess(id: string, payload: GrantWebsiteAccessPayload): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/website-access/grant`, payload)
+  return data.data
+}
+
+export async function suspendSchoolWebsiteAccess(id: string, reason: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/website-access/suspend`, { reason })
+  return data.data
+}
+
+export async function reactivateSchoolWebsiteAccess(id: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/website-access/reactivate`)
+  return data.data
+}
+
+export async function revokeSchoolWebsiteAccess(id: string): Promise<School> {
+  const { data } = await apiClient.post<{ data: School }>(`/platform/schools/${id}/website-access/revoke`)
+  return data.data
+}
+
 export async function enterSchool(id: string): Promise<void> {
   await apiClient.post(`/platform/schools/${id}/enter`)
 }

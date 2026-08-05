@@ -5,6 +5,7 @@ import {
   Bell,
   Check,
   ChevronDown,
+  Globe,
   LogOut,
   MessageSquare,
   Search,
@@ -30,7 +31,7 @@ import { QuickAddMenu } from '@/components/layout/QuickAddMenu'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useAcademicYears, useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { hasPermission } from '@/lib/permissions'
-import { AI_ASSISTANT_LINK } from '@/config/nav'
+import { AI_ASSISTANT_LINK, WEBSITE_BUILDER_LINK } from '@/config/nav'
 import { cn } from '@/lib/utils'
 
 function initials(name: string): string {
@@ -177,6 +178,18 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             >
               <Sparkles className="size-4" />
               <span className="sr-only">AI Assistant</span>
+            </Button>
+          )}
+
+          {hasPermission(user, WEBSITE_BUILDER_LINK.permission) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-sidebar-accent rounded-full text-white hover:text-white"
+              onClick={() => navigate(WEBSITE_BUILDER_LINK.to)}
+            >
+              <Globe className="size-4" />
+              <span className="sr-only">Website Builder</span>
             </Button>
           )}
 

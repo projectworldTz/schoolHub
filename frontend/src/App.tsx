@@ -44,9 +44,11 @@ import { ReportLibraryPage } from '@/pages/school/ReportLibraryPage'
 import { ReportDetailPage } from '@/pages/school/ReportDetailPage'
 import { AuditLogPage } from '@/pages/school/AuditLogPage'
 import { AiAssistantPage } from '@/pages/school/AiAssistantPage'
+import { WebsiteBuilderPage } from '@/pages/school/WebsiteBuilderPage'
 import { ParentDashboardPage } from '@/pages/parent/ParentDashboardPage'
 import { ScanStudentPage } from '@/pages/parent/ScanStudentPage'
 import { NoticeBoardPage } from '@/pages/public/NoticeBoardPage'
+import { SchoolWebsitePage } from '@/pages/public/SchoolWebsitePage'
 import { PlatformLayout } from '@/components/layout/PlatformLayout'
 import { AppShell } from '@/components/layout/AppShell'
 import { ParentLayout } from '@/components/layout/ParentLayout'
@@ -64,6 +66,7 @@ function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/notice-board/:slug" element={<NoticeBoardPage />} />
+      <Route path="/site/:slug" element={<SchoolWebsitePage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomeRedirect />} />
@@ -122,6 +125,7 @@ function App() {
           <Route path="/app/reports/:key" element={<ReportDetailPage />} />
           <Route path="/app/audit-log" element={<AuditLogPage />} />
           <Route path="/app/ai-assistant" element={<AiAssistantPage />} />
+          <Route path="/app/website-builder" element={<WebsiteBuilderPage />} />
           <Route path="/app/users" element={<UsersPage />} />
         </Route>
       </Route>

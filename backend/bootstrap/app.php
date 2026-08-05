@@ -17,6 +17,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
 
+        // statefulApi() applies Sanctum's session/CSRF handling to every
+        // route in routes/api.php based on the request's Origin (any
+        // SANCTUM_STATEFUL_DOMAINS match), not on whether a session
+        // actually exists — so an anonymous visitor's browser still gets
+        // CSRF-checked. The public website's view-tracking beacon
+        // (Public\WebsiteTrackingController) is a POST with no session to
+        // protect and no XSRF cookie fetched (it's meant to work for
+        // completely anonymous visitors), so it needs an explicit
+        // exception or every beacon call 419s. Same reasoning would apply
+        // to any future public POST endpoint under public/site/*.
+        $middleware->validateCsrfTokens(except: [
+            'api/public/site/*',
+        ]);
+
         // Runs on every API request, after Sanctum's stateful/session setup.
         // See App\Http\Middleware\ResolveTenantFromUser and
         // App\Auth\TenantAwareUserProvider — the latter is what makes user
@@ -44,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'auth.token' => \App\Http\Middleware\EnsureApiTokenAuthenticated::class,
             'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
+            'website-builder.access' => \App\Http\Middleware\EnsureWebsiteBuilderAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

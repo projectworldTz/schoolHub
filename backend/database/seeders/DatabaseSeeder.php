@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             Phase6PermissionsSeeder::class,
             Phase7PermissionsSeeder::class,
             Phase8PermissionsSeeder::class,
+            Phase9PermissionsSeeder::class,
         ]);
     }
 }

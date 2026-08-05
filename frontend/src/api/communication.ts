@@ -8,6 +8,7 @@ export interface AnnouncementPayload {
   school_class_id?: string
   role?: string
   published_at?: string
+  is_public_website?: boolean
 }
 
 export const announcementsApi = createCrudApi<Announcement, AnnouncementPayload>('announcements')

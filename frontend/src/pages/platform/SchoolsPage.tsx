@@ -6,10 +6,12 @@ import {
   useApproveSchool,
   useEnterSchool,
   useReactivateSchoolAiAccess,
+  useReactivateSchoolWebsiteAccess,
   useRevokeSchoolAiAccess,
+  useRevokeSchoolWebsiteAccess,
   useSchools,
 } from '@/hooks/useSchools'
-import type { AiAccessStatus, School } from '@/types/school'
+import type { AiAccessStatus, School, WebsiteAccessStatus } from '@/types/school'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +36,8 @@ import { CustomDomainDialog } from '@/pages/platform/CustomDomainDialog'
 import { EditSchoolDialog } from '@/pages/platform/EditSchoolDialog'
 import { GrantAiAccessDialog } from '@/pages/platform/GrantAiAccessDialog'
 import { SuspendAiAccessDialog } from '@/pages/platform/SuspendAiAccessDialog'
+import { GrantWebsiteAccessDialog } from '@/pages/platform/GrantWebsiteAccessDialog'
+import { SuspendWebsiteAccessDialog } from '@/pages/platform/SuspendWebsiteAccessDialog'
 import { licenseStatus, type LicenseTier } from '@/lib/license'
 
 const STATUS_VARIANT: Record<School['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -64,6 +68,20 @@ const AI_ACCESS_LABEL: Record<AiAccessStatus, string> = {
   expired: 'Expired',
 }
 
+const WEBSITE_ACCESS_VARIANT: Record<WebsiteAccessStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  not_granted: 'outline',
+  active: 'default',
+  suspended: 'destructive',
+  expired: 'destructive',
+}
+
+const WEBSITE_ACCESS_LABEL: Record<WebsiteAccessStatus, string> = {
+  not_granted: 'Not granted',
+  active: 'Active',
+  suspended: 'Suspended',
+  expired: 'Expired',
+}
+
 function AiAccessBadge({ school }: { school: School }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -75,6 +93,14 @@ function AiAccessBadge({ school }: { school: School }) {
         </span>
       )}
     </div>
+  )
+}
+
+function WebsiteAccessBadge({ school }: { school: School }) {
+  return (
+    <Badge variant={WEBSITE_ACCESS_VARIANT[school.website_access_status]}>
+      {WEBSITE_ACCESS_LABEL[school.website_access_status]}
+    </Badge>
   )
 }
 
@@ -101,6 +127,8 @@ export function SchoolsPage() {
   const enterSchool = useEnterSchool()
   const reactivateAiAccess = useReactivateSchoolAiAccess()
   const revokeAiAccess = useRevokeSchoolAiAccess()
+  const reactivateWebsiteAccess = useReactivateSchoolWebsiteAccess()
+  const revokeWebsiteAccess = useRevokeSchoolWebsiteAccess()
   const navigate = useNavigate()
   const [suspendTarget, setSuspendTarget] = useState<School | null>(null)
   const [renewTarget, setRenewTarget] = useState<School | null>(null)
@@ -108,6 +136,8 @@ export function SchoolsPage() {
   const [editTarget, setEditTarget] = useState<School | null>(null)
   const [grantAiTarget, setGrantAiTarget] = useState<School | null>(null)
   const [suspendAiTarget, setSuspendAiTarget] = useState<School | null>(null)
+  const [grantWebsiteTarget, setGrantWebsiteTarget] = useState<School | null>(null)
+  const [suspendWebsiteTarget, setSuspendWebsiteTarget] = useState<School | null>(null)
 
   function handleApprove(school: School) {
     approveSchool.mutate(school.id, {
@@ -160,6 +190,30 @@ export function SchoolsPage() {
     })
   }
 
+  function handleReactivateWebsiteAccess(school: School) {
+    reactivateWebsiteAccess.mutate(school.id, {
+      onSuccess: () => toast.success(`Website Builder access reactivated for ${school.name}`),
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? 'Could not reactivate Website Builder access')
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    })
+  }
+
+  function handleRevokeWebsiteAccess(school: School) {
+    revokeWebsiteAccess.mutate(school.id, {
+      onSuccess: () => toast.success(`Website Builder access revoked for ${school.name}`),
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? 'Could not revoke Website Builder access')
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -188,27 +242,28 @@ export function SchoolsPage() {
               <TableHead>Created</TableHead>
               <TableHead>License</TableHead>
               <TableHead>AI Access</TableHead>
+              <TableHead>Website Access</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={13} className="text-center text-muted-foreground">
+                <TableCell colSpan={14} className="text-center text-muted-foreground">
                   Loading schools…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={13} className="text-center text-destructive">
+                <TableCell colSpan={14} className="text-center text-destructive">
                   Could not load schools.
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={13} className="text-center text-muted-foreground">
+                <TableCell colSpan={14} className="text-center text-muted-foreground">
                   No schools registered yet.
                 </TableCell>
               </TableRow>
@@ -272,6 +327,9 @@ export function SchoolsPage() {
                   <AiAccessBadge school={school} />
                 </TableCell>
                 <TableCell>
+                  <WebsiteAccessBadge school={school} />
+                </TableCell>
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -325,6 +383,29 @@ export function SchoolsPage() {
                           className="text-destructive"
                         >
                           Revoke AI access
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => setGrantWebsiteTarget(school)}>
+                        {school.website_access_status === 'not_granted' ? 'Grant Website access' : 'Adjust Website access'}
+                      </DropdownMenuItem>
+                      {school.website_access_status === 'suspended' ? (
+                        <DropdownMenuItem onClick={() => handleReactivateWebsiteAccess(school)}>
+                          Reactivate Website access
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          disabled={school.website_access_status !== 'active'}
+                          onClick={() => setSuspendWebsiteTarget(school)}
+                        >
+                          Suspend Website access
+                        </DropdownMenuItem>
+                      )}
+                      {school.website_access_status !== 'not_granted' && (
+                        <DropdownMenuItem
+                          onClick={() => handleRevokeWebsiteAccess(school)}
+                          className="text-destructive"
+                        >
+                          Revoke Website access
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -386,6 +467,23 @@ export function SchoolsPage() {
           schoolName={suspendAiTarget.name}
           open={Boolean(suspendAiTarget)}
           onOpenChange={(open) => !open && setSuspendAiTarget(null)}
+        />
+      )}
+
+      {grantWebsiteTarget && (
+        <GrantWebsiteAccessDialog
+          school={grantWebsiteTarget}
+          open={Boolean(grantWebsiteTarget)}
+          onOpenChange={(open) => !open && setGrantWebsiteTarget(null)}
+        />
+      )}
+
+      {suspendWebsiteTarget && (
+        <SuspendWebsiteAccessDialog
+          schoolId={suspendWebsiteTarget.id}
+          schoolName={suspendWebsiteTarget.name}
+          open={Boolean(suspendWebsiteTarget)}
+          onOpenChange={(open) => !open && setSuspendWebsiteTarget(null)}
         />
       )}
     </div>

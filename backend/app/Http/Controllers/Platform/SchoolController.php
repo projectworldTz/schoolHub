@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\GrantSchoolAiAccessRequest;
+use App\Http\Requests\Platform\GrantSchoolWebsiteAccessRequest;
 use App\Http\Requests\Platform\RenewSchoolLicenseRequest;
 use App\Http\Requests\Platform\SetSchoolCustomDomainRequest;
 use App\Http\Requests\Platform\StoreSchoolRequest;
 use App\Http\Requests\Platform\SuspendSchoolAiAccessRequest;
 use App\Http\Requests\Platform\SuspendSchoolRequest;
+use App\Http\Requests\Platform\SuspendSchoolWebsiteAccessRequest;
 use App\Http\Requests\Platform\UpdateSchoolRequest;
 use App\Http\Resources\Platform\SchoolResource;
 use App\Models\School;
@@ -155,6 +157,39 @@ class SchoolController extends Controller
         $this->authorize('manageAi', $school);
 
         return new SchoolResource($this->schools->revokeAiAccess($school, $request->user()->id));
+    }
+
+    public function grantWebsiteAccess(GrantSchoolWebsiteAccessRequest $request, School $school)
+    {
+        $data = $request->validated();
+
+        $school = $this->schools->grantWebsiteAccess(
+            $school,
+            $request->user()->id,
+            isset($data['activated_at']) ? Carbon::parse($data['activated_at']) : null,
+            isset($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
+        );
+
+        return new SchoolResource($school);
+    }
+
+    public function suspendWebsiteAccess(SuspendSchoolWebsiteAccessRequest $request, School $school)
+    {
+        return new SchoolResource($this->schools->suspendWebsiteAccess($school, $request->validated('reason'), $request->user()->id));
+    }
+
+    public function reactivateWebsiteAccess(Request $request, School $school)
+    {
+        $this->authorize('manageWebsite', $school);
+
+        return new SchoolResource($this->schools->reactivateWebsiteAccess($school, $request->user()->id));
+    }
+
+    public function revokeWebsiteAccess(Request $request, School $school)
+    {
+        $this->authorize('manageWebsite', $school);
+
+        return new SchoolResource($this->schools->revokeWebsiteAccess($school, $request->user()->id));
     }
 
     /**

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Select,
@@ -56,6 +57,7 @@ const announcementSchema = z.object({
   audience: z.enum(['school', 'class', 'role']),
   school_class_id: z.string().optional(),
   role: z.string().optional(),
+  is_public_website: z.boolean(),
 })
 
 function CreateAnnouncementDialog() {
@@ -64,7 +66,7 @@ function CreateAnnouncementDialog() {
   const create = useAnnouncements.useCreate()
   const form = useForm({
     resolver: zodResolver(announcementSchema),
-    defaultValues: { title: '', body: '', audience: 'school' as AnnouncementAudience, school_class_id: '', role: '' },
+    defaultValues: { title: '', body: '', audience: 'school' as AnnouncementAudience, school_class_id: '', role: '', is_public_website: false },
   })
   const audience = form.watch('audience')
 
@@ -76,6 +78,7 @@ function CreateAnnouncementDialog() {
         audience: values.audience,
         school_class_id: values.audience === 'class' ? values.school_class_id : undefined,
         role: values.audience === 'role' ? values.role : undefined,
+        is_public_website: values.is_public_website,
       },
       {
         onSuccess: () => {
@@ -215,6 +218,23 @@ function CreateAnnouncementDialog() {
                 )}
               />
             )}
+            <FormField
+              control={form.control}
+              name="is_public_website"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-0.5 leading-none">
+                    <FormLabel className="font-normal">Publish Public</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Show this announcement on the school's public website (requires Website Builder).
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button type="submit" disabled={create.isPending}>
                 {create.isPending ? 'Posting…' : 'Post'}
@@ -264,6 +284,7 @@ export function CommunicationPage() {
                     {a.audience === 'class' && a.school_class_name ? `: ${a.school_class_name}` : ''}
                     {a.audience === 'role' && a.role ? `: ${a.role}` : ''}
                   </Badge>
+                  {a.is_public_website && <Badge>Public</Badge>}
                   {a.created_by_name && <span>by {a.created_by_name}</span>}
                 </div>
               </div>

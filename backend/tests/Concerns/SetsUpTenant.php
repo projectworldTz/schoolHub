@@ -20,6 +20,7 @@ use Database\Seeders\Phase4PermissionsSeeder;
 use Database\Seeders\Phase5PermissionsSeeder;
 use Database\Seeders\Phase7PermissionsSeeder;
 use Database\Seeders\Phase8PermissionsSeeder;
+use Database\Seeders\Phase9PermissionsSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Str;
 
@@ -45,6 +46,7 @@ trait SetsUpTenant
         $this->seed(Phase5PermissionsSeeder::class);
         $this->seed(Phase7PermissionsSeeder::class);
         $this->seed(Phase8PermissionsSeeder::class);
+        $this->seed(Phase9PermissionsSeeder::class);
     }
 
     /**

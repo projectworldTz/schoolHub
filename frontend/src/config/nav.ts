@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Coins,
   FileBarChart,
+  Globe,
   GraduationCap,
   HeartPulse,
   History,
@@ -182,4 +183,13 @@ export const AI_ASSISTANT_LINK: NavLink = {
   description: 'Chat & lesson plans',
   icon: Sparkles,
   permission: 'ai-assistant.use',
+}
+
+/** Same reasoning as AI_ASSISTANT_LINK — a premium, gated module kept out of the fixed 13-item bar rather than making it a 14th icon. */
+export const WEBSITE_BUILDER_LINK: NavLink = {
+  label: 'Website Builder',
+  to: '/app/website-builder',
+  description: 'Public school website',
+  icon: Globe,
+  permission: 'website-builder.manage',
 }

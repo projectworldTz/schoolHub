@@ -38,6 +38,12 @@ class SchoolResource extends JsonResource
             'ai_monthly_request_limit' => $this->ai_monthly_request_limit,
             'ai_access_status' => $this->aiAccessStatus(),
             'ai_requests_this_month' => $this->aiRequestsThisMonth(),
+            'website_enabled' => $this->website_enabled,
+            'website_activated_at' => $this->website_activated_at,
+            'website_expires_at' => $this->website_expires_at,
+            'website_suspended_at' => $this->website_suspended_at,
+            'website_suspension_reason' => $this->website_suspension_reason,
+            'website_access_status' => $this->websiteAccessStatus(),
             'owner' => $this->whenLoaded('owner', fn () => $this->owner ? [
                 'name' => $this->owner->name,
                 'email' => $this->owner->email,

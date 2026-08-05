@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToSchool;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class WebsiteCalendarEvent extends Model
+{
+    use BelongsToSchool, HasFactory, HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'school_id',
+        'title',
+        'event_type',
+        'start_date',
+        'end_date',
+        'description',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+        ];
+    }
+}

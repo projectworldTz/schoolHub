@@ -45,6 +45,12 @@ class School extends Model
         'ai_suspension_reason',
         'ai_monthly_request_limit',
         'ai_access_updated_by',
+        'website_enabled',
+        'website_activated_at',
+        'website_expires_at',
+        'website_suspended_at',
+        'website_suspension_reason',
+        'website_access_updated_by',
     ];
 
     protected function casts(): array
@@ -57,6 +63,10 @@ class School extends Model
             'ai_activated_at' => 'datetime',
             'ai_expires_at' => 'datetime',
             'ai_suspended_at' => 'datetime',
+            'website_enabled' => 'boolean',
+            'website_activated_at' => 'datetime',
+            'website_expires_at' => 'datetime',
+            'website_suspended_at' => 'datetime',
         ];
     }
 
@@ -95,6 +105,27 @@ class School extends Model
         return Tenant::runAsPlatform(fn () => AiAuditLog::where('school_id', $this->id)
             ->where('created_at', '>=', now()->startOfMonth())
             ->count());
+    }
+
+    /**
+     * Same derived-not-stored shape as aiAccessStatus() — see that method's
+     * comment for why. No usage-limit branch: Website Builder isn't metered.
+     */
+    public function websiteAccessStatus(): string
+    {
+        if (! $this->website_enabled || ! $this->website_activated_at || $this->website_activated_at->isFuture()) {
+            return 'not_granted';
+        }
+
+        if ($this->website_suspended_at) {
+            return 'suspended';
+        }
+
+        if ($this->website_expires_at && $this->website_expires_at->isPast()) {
+            return 'expired';
+        }
+
+        return 'active';
     }
 
     public function users(): HasMany

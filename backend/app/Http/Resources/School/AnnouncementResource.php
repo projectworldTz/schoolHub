@@ -21,6 +21,7 @@ class AnnouncementResource extends JsonResource
             'created_by' => $this->created_by,
             'created_by_name' => $this->whenLoaded('creator', fn () => $this->creator?->name),
             'published_at' => $this->published_at,
+            'is_public_website' => $this->is_public_website,
             'created_at' => $this->created_at,
         ];
     }

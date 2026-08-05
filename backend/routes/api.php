@@ -6,6 +6,20 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
 use App\Http\Controllers\Platform\SchoolController as PlatformSchoolController;
 use App\Http\Controllers\Public\NoticeBoardController;
+use App\Http\Controllers\Public\WebsiteController as PublicWebsiteController;
+use App\Http\Controllers\Public\WebsiteDownloadController as PublicWebsiteDownloadController;
+use App\Http\Controllers\Public\WebsiteTrackingController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAnalyticsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteBannerController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteCalendarEventController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteDownloadController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteFacilityController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryAlbumController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryImageController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteNewsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSectionController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSettingsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteTestimonialController;
 use App\Http\Controllers\School\AcademicYearController;
 use App\Http\Controllers\School\AiAssistantController;
 use App\Http\Controllers\School\AiReportDownloadController;
@@ -288,6 +302,36 @@ $schoolRoutes = function () {
         Route::get('ai-reports/{report}/download', [AiReportDownloadController::class, 'download'])
             ->middleware('signed')
             ->name('ai.reports.download');
+
+        // Website Builder (Premium) CMS — 'website-builder.access' checks
+        // BOTH the website-builder.manage permission AND the school's
+        // website_enabled premium grant before any of these run. See
+        // App\Http\Middleware\EnsureWebsiteBuilderAccess.
+        Route::middleware('website-builder.access')->prefix('website-builder')->group(function () {
+            Route::get('settings', [WebsiteSettingsController::class, 'show']);
+            Route::put('settings', [WebsiteSettingsController::class, 'update']);
+            Route::post('settings/hero-media', [WebsiteSettingsController::class, 'uploadHero']);
+
+            Route::get('sections', [WebsiteSectionController::class, 'index']);
+            Route::put('sections', [WebsiteSectionController::class, 'update']);
+
+            Route::apiResource('facilities', WebsiteFacilityController::class)->only(['index', 'store', 'update', 'destroy']);
+
+            Route::apiResource('gallery-albums', WebsiteGalleryAlbumController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::post('gallery-albums/{galleryAlbum}/images', [WebsiteGalleryImageController::class, 'store']);
+            Route::put('gallery-images/{image}', [WebsiteGalleryImageController::class, 'update']);
+            Route::delete('gallery-images/{image}', [WebsiteGalleryImageController::class, 'destroy']);
+
+            Route::apiResource('banners', WebsiteBannerController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('testimonials', WebsiteTestimonialController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('downloads', WebsiteDownloadController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('calendar-events', WebsiteCalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
+
+            Route::get('news', [WebsiteNewsController::class, 'index']);
+            Route::put('news/{news}', [WebsiteNewsController::class, 'update']);
+
+            Route::get('analytics/summary', [WebsiteAnalyticsController::class, 'summary']);
+        });
 };
 
 $parentRoutes = function () {
@@ -340,6 +384,10 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
             Route::post('schools/{school}/ai-access/suspend', [PlatformSchoolController::class, 'suspendAiAccess']);
             Route::post('schools/{school}/ai-access/reactivate', [PlatformSchoolController::class, 'reactivateAiAccess']);
             Route::post('schools/{school}/ai-access/revoke', [PlatformSchoolController::class, 'revokeAiAccess']);
+            Route::post('schools/{school}/website-access/grant', [PlatformSchoolController::class, 'grantWebsiteAccess']);
+            Route::post('schools/{school}/website-access/suspend', [PlatformSchoolController::class, 'suspendWebsiteAccess']);
+            Route::post('schools/{school}/website-access/reactivate', [PlatformSchoolController::class, 'reactivateWebsiteAccess']);
+            Route::post('schools/{school}/website-access/revoke', [PlatformSchoolController::class, 'revokeWebsiteAccess']);
             Route::post('schools/{school}/enter', [PlatformSchoolController::class, 'enter']);
             Route::post('exit-school', [PlatformSchoolController::class, 'exitSchool']);
         });
@@ -377,4 +425,15 @@ Route::prefix('public/schools/{slug}/notice-board')->middleware('throttle:notice
     Route::get('exams', [NoticeBoardController::class, 'exams']);
     Route::get('exams/{examId}/classes', [NoticeBoardController::class, 'classes']);
     Route::get('exams/{examId}/classes/{schoolClassId}/ranking', [NoticeBoardController::class, 'ranking']);
+});
+
+// Public school website (Website Builder premium module) — same
+// no-login-at-all shape as the Notice Board above. Path-based for now
+// (public/site/{slug}), not a subdomain: schoolname.schoolhub.co.tz needs
+// wildcard DNS + SSL that isn't provisioned yet. See Public\WebsiteController
+// for the 404 conditions (module not granted, or granted but unpublished).
+Route::prefix('public/site/{slug}')->middleware('throttle:public-website')->group(function () {
+    Route::get('/', [PublicWebsiteController::class, 'show']);
+    Route::post('track', [WebsiteTrackingController::class, 'track'])->middleware('throttle:public-website-track');
+    Route::get('downloads/{downloadId}', [PublicWebsiteDownloadController::class, 'show']);
 });

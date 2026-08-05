@@ -46,4 +46,9 @@ class SchoolPolicy
     {
         return $user->hasRole('Super Admin');
     }
+
+    public function manageWebsite(User $user, School $school): bool
+    {
+        return $user->hasRole('Super Admin');
+    }
 }

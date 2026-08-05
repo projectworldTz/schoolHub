@@ -6,10 +6,17 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ requireRole }: ProtectedRouteProps) {
-  const { data: user, isLoading, isError } = useCurrentUser()
+  // isPending (not isLoading): isLoading is isPending && isFetching, so it's
+  // FALSE during the brief window where PersistQueryClientProvider is still
+  // restoring the persisted cache (query has no data yet, but isn't
+  // actively fetching either). On a hard reload of any nested route, that
+  // window used to read as "definitely signed out" and bounce straight to
+  // /login before the restored session ever got a chance to render —
+  // isPending covers both "fetching" and "not started yet" so it doesn't.
+  const { data: user, isPending, isError } = useCurrentUser()
   const location = useLocation()
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading…

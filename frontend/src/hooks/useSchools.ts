@@ -6,16 +6,21 @@ import {
   exitActingSchool,
   fetchPlatformDashboard,
   grantSchoolAiAccess,
+  grantSchoolWebsiteAccess,
   listSchools,
   reactivateSchoolAiAccess,
+  reactivateSchoolWebsiteAccess,
   renewSchoolLicense,
   revokeSchoolAiAccess,
+  revokeSchoolWebsiteAccess,
   setSchoolCustomDomain,
   suspendSchool,
   suspendSchoolAiAccess,
+  suspendSchoolWebsiteAccess,
   updateSchool,
   type CreateSchoolPayload,
   type GrantAiAccessPayload,
+  type GrantWebsiteAccessPayload,
   type ListSchoolsParams,
   type UpdateSchoolPayload,
 } from '@/api/schools'
@@ -142,6 +147,50 @@ export function useRevokeSchoolAiAccess() {
 
   return useMutation({
     mutationFn: (id: string) => revokeSchoolAiAccess(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useGrantSchoolWebsiteAccess() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: GrantWebsiteAccessPayload }) => grantSchoolWebsiteAccess(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useSuspendSchoolWebsiteAccess() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => suspendSchoolWebsiteAccess(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useReactivateSchoolWebsiteAccess() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => reactivateSchoolWebsiteAccess(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+    },
+  })
+}
+
+export function useRevokeSchoolWebsiteAccess() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => revokeSchoolWebsiteAccess(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
     },

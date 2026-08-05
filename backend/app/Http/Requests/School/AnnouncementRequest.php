@@ -22,6 +22,7 @@ class AnnouncementRequest extends FormRequest
             'school_class_id' => ['required_if:audience,class', 'nullable', 'uuid', 'exists:school_classes,id'],
             'role' => ['required_if:audience,role', 'nullable', 'string', 'max:100'],
             'published_at' => ['nullable', 'date'],
+            'is_public_website' => ['sometimes', 'boolean'],
         ];
     }
 

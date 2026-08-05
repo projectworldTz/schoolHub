@@ -69,5 +69,15 @@ class AppServiceProvider extends ServiceProvider
         // throttled tighter than general API traffic and keyed per user so
         // one runaway frontend loop can't run up the whole school's bill.
         RateLimiter::for('ai-assistant', fn ($request) => Limit::perMinute(15)->by($request->user()?->id ?: $request->ip()));
+
+        // Public school website (Website Builder module, no auth at all):
+        // same reasoning as notice-board — keyed by IP, generous enough for
+        // a normal browsing session.
+        RateLimiter::for('public-website', fn ($request) => Limit::perMinute(60)->by($request->ip()));
+
+        // The page-view/section-view/download/admission-click beacon fires
+        // far more often than a normal page load (once per section scroll-
+        // into-view) — looser per-minute cap, still IP-keyed.
+        RateLimiter::for('public-website-track', fn ($request) => Limit::perMinute(120)->by($request->ip()));
     }
 }

@@ -158,4 +158,58 @@ class SchoolService
 
         return $school;
     }
+
+    /**
+     * Same re-grant/renew semantics as grantAiAccess() — see that method's
+     * comment.
+     */
+    public function grantWebsiteAccess(School $school, ?string $updatedByUserId, ?Carbon $activatedAt, ?Carbon $expiresAt): School
+    {
+        $school->update([
+            'website_enabled' => true,
+            'website_activated_at' => $activatedAt ?? $school->website_activated_at ?? Carbon::now(),
+            'website_expires_at' => $expiresAt,
+            'website_suspended_at' => null,
+            'website_suspension_reason' => null,
+            'website_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function suspendWebsiteAccess(School $school, string $reason, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'website_suspended_at' => Carbon::now(),
+            'website_suspension_reason' => $reason,
+            'website_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function reactivateWebsiteAccess(School $school, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'website_suspended_at' => null,
+            'website_suspension_reason' => null,
+            'website_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
+
+    public function revokeWebsiteAccess(School $school, ?string $updatedByUserId): School
+    {
+        $school->update([
+            'website_enabled' => false,
+            'website_activated_at' => null,
+            'website_expires_at' => null,
+            'website_suspended_at' => null,
+            'website_suspension_reason' => null,
+            'website_access_updated_by' => $updatedByUserId,
+        ]);
+
+        return $school;
+    }
 }
