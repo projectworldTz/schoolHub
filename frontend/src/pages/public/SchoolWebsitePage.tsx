@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { usePublicWebsite } from '@/hooks/usePublicWebsite'
 import { trackWebsiteEvent, websiteDownloadUrl } from '@/api/publicWebsite'
+import { cn } from '@/lib/utils'
 import type { PublicWebsiteData, WebsiteSectionKey } from '@/types/websiteBuilder'
 
 /**
@@ -141,17 +142,36 @@ function SiteNav({ school }: { school: PublicWebsiteData['school'] }) {
 function HeroSection({ slug, data }: { slug: string; data: PublicWebsiteData }) {
   const ref = useTrackSectionView(slug, 'hero')
   const { school, settings } = data
+  const hasImage = Boolean(settings.hero_image_url)
 
   return (
-    <section ref={ref} className="relative overflow-hidden px-4 py-24 text-center sm:px-8 sm:py-32">
-      {settings.hero_image_url && (
-        <div className="absolute inset-0 -z-10">
-          <img src={settings.hero_image_url} alt="" className="h-full w-full object-cover opacity-15" />
-        </div>
+    <section
+      ref={ref}
+      className={cn(
+        'relative overflow-hidden px-4 py-24 text-center sm:px-8 sm:py-40',
+        hasImage && 'text-white'
+      )}
+    >
+      {hasImage && (
+        <>
+          {/* Full-strength photo, not a faint watermark — a gradient sits
+              on top (not the image itself dimmed) so the photo stays sharp
+              everywhere except right behind the text. */}
+          <img
+            src={settings.hero_image_url!}
+            alt={`${school.name} campus`}
+            className="absolute inset-0 -z-20 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+        </>
       )}
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">{school.name}</h1>
-        {settings.motto && <p className="text-xl text-muted-foreground">{settings.motto}</p>}
+        <h1 className="text-4xl font-bold tracking-tight drop-shadow-sm sm:text-6xl">{school.name}</h1>
+        {settings.motto && (
+          <p className={cn('text-xl', hasImage ? 'text-white/90 drop-shadow-sm' : 'text-muted-foreground')}>
+            {settings.motto}
+          </p>
+        )}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <a
             href="#admissions"
@@ -162,7 +182,10 @@ function HeroSection({ slug, data }: { slug: string; data: PublicWebsiteData }) 
           </a>
           <a
             href="/login"
-            className="rounded-full border px-6 py-3 text-sm font-semibold shadow-sm transition-transform hover:scale-105"
+            className={cn(
+              'rounded-full border px-6 py-3 text-sm font-semibold shadow-sm transition-transform hover:scale-105',
+              hasImage && 'border-white/50 bg-white/10 backdrop-blur-sm'
+            )}
             style={{ borderRadius: 'var(--wb-radius)' }}
           >
             Portal Login
