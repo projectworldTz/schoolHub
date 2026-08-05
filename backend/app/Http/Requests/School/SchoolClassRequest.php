@@ -20,6 +20,7 @@ class SchoolClassRequest extends FormRequest
                 'required', 'string', 'max:255',
                 Rule::unique('school_classes', 'name')
                     ->where('school_id', Tenant::id())
+                    ->withoutTrashed()
                     ->ignore($this->route('class')),
             ],
             'level' => ['required', 'integer', 'min:0', 'max:65535'],
