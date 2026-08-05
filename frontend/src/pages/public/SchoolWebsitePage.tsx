@@ -79,11 +79,24 @@ function SiteRenderer({ slug, data }: { slug: string; data: PublicWebsiteData })
   const { school, settings, sections } = data
   const theme = settings.theme
   const primaryColor = settings.primary_color || theme?.primary_color || '#2563eb'
+  const isDark = Boolean(theme?.dark)
 
   const style: React.CSSProperties & Record<string, string> = {
     '--wb-primary': primaryColor,
     '--wb-radius': theme?.radius ?? '1rem',
     fontFamily: theme?.font_body ?? 'Inter, sans-serif',
+    // Every non-dark preset otherwise shares one identical neutral-white
+    // canvas (only --wb-primary, i.e. button color, differed) — that's
+    // what read as "just a totally white theme" regardless of which
+    // preset was picked. Tinting the canvas itself from the school's own
+    // accent color is what actually makes "Luxury" read warm/gold and
+    // "Green" read minty, not just their buttons.
+    ...(!isDark && {
+      '--background': `color-mix(in srgb, ${primaryColor} 5%, white)`,
+      '--muted': `color-mix(in srgb, ${primaryColor} 10%, white)`,
+      '--card': `color-mix(in srgb, ${primaryColor} 2%, white)`,
+      '--border': `color-mix(in srgb, ${primaryColor} 20%, white)`,
+    }),
   }
 
   const renderers: Partial<Record<WebsiteSectionKey, () => React.ReactNode>> = {
@@ -215,25 +228,25 @@ function AboutSection({ data }: { data: PublicWebsiteData }) {
       <h2 className="mb-10 text-center text-3xl font-bold">About {data.school.name}</h2>
       <div className="grid gap-6 sm:grid-cols-2">
         {settings.principal_message && (
-          <div className="rounded-2xl border p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div className="rounded-2xl border bg-card p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <h3 className="mb-2 font-semibold">{settings.principal_name ? `Message from ${settings.principal_name}` : "Principal's Message"}</h3>
             <p className="text-sm text-muted-foreground">{settings.principal_message}</p>
           </div>
         )}
         {settings.mission && (
-          <div className="rounded-2xl border p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div className="rounded-2xl border bg-card p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <h3 className="mb-2 font-semibold">Mission</h3>
             <p className="text-sm text-muted-foreground">{settings.mission}</p>
           </div>
         )}
         {settings.vision && (
-          <div className="rounded-2xl border p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div className="rounded-2xl border bg-card p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <h3 className="mb-2 font-semibold">Vision</h3>
             <p className="text-sm text-muted-foreground">{settings.vision}</p>
           </div>
         )}
         {settings.core_values && (
-          <div className="rounded-2xl border p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div className="rounded-2xl border bg-card p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <h3 className="mb-2 font-semibold">Core Values</h3>
             <p className="text-sm text-muted-foreground">{settings.core_values}</p>
           </div>
@@ -277,7 +290,7 @@ function FacilitiesSection({ data }: { data: PublicWebsiteData }) {
       <h2 className="mb-10 text-center text-3xl font-bold">Facilities</h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {data.facilities.map((f) => (
-          <div key={f.id} className="overflow-hidden rounded-2xl border shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div key={f.id} className="overflow-hidden rounded-2xl border bg-card shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             {f.image_url && <img src={f.image_url} alt={f.name} className="h-40 w-full object-cover" />}
             <div className="p-5">
               <h3 className="font-semibold">{f.name}</h3>
@@ -320,7 +333,7 @@ function NewsSection({ data }: { data: PublicWebsiteData }) {
       <h2 className="mb-10 text-center text-3xl font-bold">News &amp; Announcements</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         {data.news.slice(0, 6).map((n) => (
-          <div key={n.id} className="rounded-2xl border p-5 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div key={n.id} className="rounded-2xl border bg-card p-5 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <h3 className="font-semibold">{n.announcement.title}</h3>
             <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{n.announcement.body}</p>
             {n.announcement.published_at && (
@@ -372,7 +385,7 @@ function CalendarSection({ data }: { data: PublicWebsiteData }) {
       <h2 className="mb-10 text-center text-3xl font-bold">School Calendar</h2>
       <div className="space-y-3">
         {data.calendar_events.map((ev) => (
-          <div key={ev.id} className="flex items-center justify-between rounded-xl border px-4 py-3" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div key={ev.id} className="flex items-center justify-between rounded-xl border bg-card px-4 py-3" style={{ borderRadius: 'var(--wb-radius)' }}>
             <span className="font-medium">{ev.title}</span>
             <span className="text-sm text-muted-foreground">{ev.start_date}</span>
           </div>
@@ -390,7 +403,7 @@ function TestimonialsSection({ data }: { data: PublicWebsiteData }) {
       <h2 className="mb-10 text-center text-3xl font-bold">What People Say</h2>
       <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {data.testimonials.map((t) => (
-          <div key={t.id} className="rounded-2xl border p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
+          <div key={t.id} className="rounded-2xl border bg-card p-6 shadow-sm" style={{ borderRadius: 'var(--wb-radius)' }}>
             <p className="text-sm italic text-muted-foreground">&ldquo;{t.message}&rdquo;</p>
             <p className="mt-4 text-sm font-semibold">
               {t.author_name} <span className="font-normal text-muted-foreground capitalize">— {t.author_role}</span>
