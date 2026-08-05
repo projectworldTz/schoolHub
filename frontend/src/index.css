@@ -92,6 +92,59 @@
   --brand-to: oklch(0.72 0.13 237.3);
 }
 
+/* Public school website (SchoolWebsitePage): color scheme must be chosen by
+   the SCHOOL (website_settings.theme_key), never inherited from whatever
+   dark/light mode the *viewer* happens to have on the admin dashboard.
+   .dark on <html> only reflects next-themes' defaultTheme="dark" (see
+   main.tsx) or a staff member's own toggle — a first-time, logged-out
+   visitor to a public marketing page has no connection to that at all, but
+   without this scope they'd inherit it anyway (Tailwind's dark: variant
+   matches ANY .dark ancestor), making a school's "light" theme render as
+   dark-on-dark. These blocks redeclare the same values as :root/.dark
+   above, explicitly, so this subtree never depends on an ambient class.
+   Keep in sync with :root/.dark if the palette above ever changes. */
+.public-site {
+  --background: oklch(0.965 0.012 280);
+  --foreground: oklch(0.18 0.015 285);
+  --card: oklch(0.995 0.002 285);
+  --card-foreground: oklch(0.18 0.015 285);
+  --popover: oklch(0.995 0.002 285);
+  --popover-foreground: oklch(0.18 0.015 285);
+  --primary: oklch(0.541 0.229 293.4);
+  --primary-foreground: oklch(0.99 0.005 293);
+  --secondary: oklch(0.94 0.012 285);
+  --secondary-foreground: oklch(0.28 0.02 285);
+  --muted: oklch(0.95 0.01 285);
+  --muted-foreground: oklch(0.5 0.02 285);
+  --accent: oklch(0.685 0.15 237.3);
+  --accent-foreground: oklch(0.99 0.005 237);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.9 0.012 285);
+  --input: oklch(0.9 0.012 285);
+  --ring: oklch(0.541 0.229 293.4 / 40%);
+}
+
+.public-site.public-site--dark {
+  --background: oklch(0.2 0.032 267);
+  --foreground: oklch(0.96 0.008 260);
+  --card: oklch(0.26 0.036 266);
+  --card-foreground: oklch(0.96 0.008 260);
+  --popover: oklch(0.26 0.036 266);
+  --popover-foreground: oklch(0.96 0.008 260);
+  --primary: oklch(0.72 0.19 293.4);
+  --primary-foreground: oklch(0.16 0.02 293);
+  --secondary: oklch(0.32 0.04 266);
+  --secondary-foreground: oklch(0.96 0.008 260);
+  --muted: oklch(0.3 0.036 266);
+  --muted-foreground: oklch(0.72 0.02 265);
+  --accent: oklch(0.72 0.13 237.3);
+  --accent-foreground: oklch(0.16 0.02 237);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.19 293.4 / 45%);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

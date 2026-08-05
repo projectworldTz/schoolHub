@@ -101,7 +101,10 @@ function SiteRenderer({ slug, data }: { slug: string; data: PublicWebsiteData })
 
   return (
     <div
-      className={`min-h-screen scroll-smooth bg-background text-foreground antialiased ${theme?.dark ? 'dark' : ''}`}
+      className={cn(
+        'public-site min-h-screen scroll-smooth bg-background text-foreground antialiased',
+        theme?.dark && 'public-site--dark'
+      )}
       style={style}
     >
       <SiteNav school={school} />
@@ -148,7 +151,14 @@ function HeroSection({ slug, data }: { slug: string; data: PublicWebsiteData }) 
     <section
       ref={ref}
       className={cn(
-        'relative overflow-hidden px-4 py-24 text-center sm:px-8 sm:py-40',
+        // isolate: without it, a negative z-index on the image ends up
+        // comparing against the page's outer wrapper (which has its own
+        // opaque bg-background) instead of staying scoped to this section,
+        // so the outer wrapper's background paints over the image and
+        // hides it completely — isolate forces this section to be its own
+        // stacking context, so z-0 here really does mean "bottom of THIS
+        // section" instead of "bottom of the whole page."
+        'relative isolate overflow-hidden px-4 py-24 text-center sm:px-8 sm:py-40',
         hasImage && 'text-white'
       )}
     >
@@ -160,12 +170,12 @@ function HeroSection({ slug, data }: { slug: string; data: PublicWebsiteData }) 
           <img
             src={settings.hero_image_url!}
             alt={`${school.name} campus`}
-            className="absolute inset-0 -z-20 h-full w-full object-cover"
+            className="absolute inset-0 z-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+          <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
         </>
       )}
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="relative z-10 mx-auto max-w-3xl space-y-6">
         <h1 className="text-4xl font-bold tracking-tight drop-shadow-sm sm:text-6xl">{school.name}</h1>
         {settings.motto && (
           <p className={cn('text-xl', hasImage ? 'text-white/90 drop-shadow-sm' : 'text-muted-foreground')}>
