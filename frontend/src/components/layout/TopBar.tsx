@@ -188,7 +188,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
               className="rounded-full bg-yellow-500/15 text-yellow-300 hover:bg-yellow-500/25 hover:text-yellow-200"
               onClick={() => navigate(WEBSITE_BUILDER_LINK.to)}
             >
-              <Globe className="size-4" />
+              <Globe className="size-4 animate-spin" />
               <span className="sr-only">Website Builder</span>
             </Button>
           )}
