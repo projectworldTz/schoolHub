@@ -61,7 +61,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/40 p-4">
-      <img src="/favicon.svg" alt="SchoolHub Africa" className="h-14 w-auto" />
+      <img src="/schoolhub-emblem.png" alt="SchoolHub Africa" className="h-24 w-auto rounded-2xl shadow-lg shadow-primary/20" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
