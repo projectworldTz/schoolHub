@@ -185,7 +185,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200"
+              className="rounded-full bg-yellow-500/15 text-yellow-300 hover:bg-yellow-500/25 hover:text-yellow-200"
               onClick={() => navigate(WEBSITE_BUILDER_LINK.to)}
             >
               <Globe className="size-4" />
