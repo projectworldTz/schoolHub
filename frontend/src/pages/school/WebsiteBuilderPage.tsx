@@ -12,10 +12,13 @@ import {
   Lock,
   Newspaper,
   Palette,
+  Pencil,
   Search,
   Settings as SettingsIcon,
   Sparkles,
   Trash2,
+  Upload,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -29,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { cn } from '@/lib/utils'
 import {
@@ -47,6 +51,7 @@ import {
   useDeleteWebsiteGalleryImage,
   useDeleteWebsiteTestimonial,
   useUpdateWebsiteBanner,
+  useUpdateWebsiteGalleryImage,
   useUpdateWebsiteNews,
   useUpdateWebsiteSections,
   useUpdateWebsiteSettings,
@@ -62,7 +67,7 @@ import {
   useWebsiteSettings,
   useWebsiteTestimonials,
 } from '@/hooks/useWebsiteBuilder'
-import type { WebsiteSection, WebsiteSectionKey, WebsiteSettingsPayload, WebsiteThemeKey } from '@/types/websiteBuilder'
+import type { WebsiteGalleryImage, WebsiteSection, WebsiteSectionKey, WebsiteSettingsPayload, WebsiteThemeKey } from '@/types/websiteBuilder'
 
 function errorMessage(error: unknown, fallback: string): string {
   return isAxiosError(error) ? (error.response?.data?.message ?? fallback) : fallback
@@ -604,15 +609,29 @@ function SettingsTab() {
   )
 }
 
+interface PendingGalleryUpload {
+  albumId: string
+  file: File
+  previewUrl: string
+  caption: string
+}
+
 function GalleryTab() {
   const { data: albums, isLoading } = useWebsiteGalleryAlbums()
   const createAlbum = useCreateWebsiteGalleryAlbum()
   const deleteAlbum = useDeleteWebsiteGalleryAlbum()
   const addImage = useAddWebsiteGalleryImage()
+  const updateImage = useUpdateWebsiteGalleryImage()
   const deleteImage = useDeleteWebsiteGalleryImage()
   const [name, setName] = useState('')
   const [category, setCategory] = useState('campus')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteImageTarget, setDeleteImageTarget] = useState<string | null>(null)
+  const [pending, setPending] = useState<PendingGalleryUpload | null>(null)
+  const [editing, setEditing] = useState<WebsiteGalleryImage | null>(null)
+  const [editCaption, setEditCaption] = useState('')
+  const [editFile, setEditFile] = useState<File | null>(null)
+  const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null)
 
   function createAlbumHandler(e: FormEvent) {
     e.preventDefault()
@@ -629,14 +648,69 @@ function GalleryTab() {
     )
   }
 
-  function handleImageUpload(albumId: string, e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelected(albumId: string, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file) return
-    addImage.mutate(
-      { albumId, file },
-      { onError: (error) => toast.error(errorMessage(error, 'Could not upload image')) }
-    )
     e.target.value = ''
+    if (!file) return
+    if (pending) URL.revokeObjectURL(pending.previewUrl)
+    setPending({ albumId, file, previewUrl: URL.createObjectURL(file), caption: '' })
+  }
+
+  function cancelPending() {
+    if (pending) URL.revokeObjectURL(pending.previewUrl)
+    setPending(null)
+  }
+
+  function confirmUpload() {
+    if (!pending) return
+    addImage.mutate(
+      { albumId: pending.albumId, file: pending.file, caption: pending.caption.trim() || undefined },
+      {
+        onSuccess: () => {
+          toast.success('Photo uploaded')
+          URL.revokeObjectURL(pending.previewUrl)
+          setPending(null)
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not upload image')),
+      }
+    )
+  }
+
+  function openEdit(image: WebsiteGalleryImage) {
+    setEditing(image)
+    setEditCaption(image.caption ?? '')
+    setEditFile(null)
+    setEditPreviewUrl(null)
+  }
+
+  function closeEdit() {
+    if (editPreviewUrl) URL.revokeObjectURL(editPreviewUrl)
+    setEditing(null)
+    setEditFile(null)
+    setEditPreviewUrl(null)
+  }
+
+  function handleEditFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (editPreviewUrl) URL.revokeObjectURL(editPreviewUrl)
+    setEditFile(file)
+    setEditPreviewUrl(URL.createObjectURL(file))
+  }
+
+  function saveEdit() {
+    if (!editing) return
+    updateImage.mutate(
+      { id: editing.id, payload: { caption: editCaption.trim() || undefined, image: editFile ?? undefined } },
+      {
+        onSuccess: () => {
+          toast.success('Photo updated')
+          closeEdit()
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not update photo')),
+      }
+    )
   }
 
   if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />
@@ -686,26 +760,63 @@ function GalleryTab() {
               <Label htmlFor={`upload-${album.id}`} className="cursor-pointer text-sm font-medium text-primary">
                 Add photo
               </Label>
-              <Input id={`upload-${album.id}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(album.id, e)} />
+              <Input
+                id={`upload-${album.id}`}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFileSelected(album.id, e)}
+              />
               <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget(album.id)}>
                 <Trash2 className="size-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            {(album.images ?? []).length === 0 && <p className="text-sm text-muted-foreground">No photos yet.</p>}
-            {(album.images ?? []).map((image) => (
-              <div key={image.id} className="group relative">
-                <img src={image.image_url ?? ''} alt={image.caption ?? ''} className="h-24 w-24 rounded-lg object-cover" />
-                <button
-                  type="button"
-                  onClick={() => deleteImage.mutate(image.id)}
-                  className="absolute -right-1.5 -top-1.5 hidden size-5 items-center justify-center rounded-full bg-destructive text-white group-hover:flex"
-                >
-                  ×
-                </button>
+          <CardContent className="space-y-3">
+            {pending?.albumId === album.id && (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed p-3">
+                <img src={pending.previewUrl} alt="Selected preview" className="h-16 w-16 rounded-lg object-cover" />
+                <Input
+                  value={pending.caption}
+                  onChange={(e) => setPending({ ...pending, caption: e.target.value })}
+                  placeholder="Caption (optional)"
+                  className="min-w-48 flex-1"
+                />
+                <Button size="sm" onClick={confirmUpload} disabled={addImage.isPending} className="gap-1.5">
+                  <Upload className="size-3.5" />
+                  {addImage.isPending ? 'Uploading…' : 'Upload'}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelPending} disabled={addImage.isPending}>
+                  Cancel
+                </Button>
               </div>
-            ))}
+            )}
+            <div className="flex flex-wrap gap-3">
+              {(album.images ?? []).length === 0 && <p className="text-sm text-muted-foreground">No photos yet.</p>}
+              {(album.images ?? []).map((image) => (
+                <div key={image.id} className="group relative">
+                  <img src={image.image_url ?? ''} alt={image.caption ?? ''} className="h-24 w-24 rounded-lg object-cover" />
+                  <div className="absolute inset-x-0 -top-1.5 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(image)}
+                      className="flex size-5 items-center justify-center rounded-full bg-primary text-white"
+                      aria-label="Edit photo"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteImageTarget(image.id)}
+                      className="flex size-5 items-center justify-center rounded-full bg-destructive text-white"
+                      aria-label="Delete photo"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -721,6 +832,53 @@ function GalleryTab() {
           setDeleteTarget(null)
         }}
       />
+
+      <ConfirmDialog
+        open={deleteImageTarget !== null}
+        onOpenChange={(open) => !open && setDeleteImageTarget(null)}
+        title="Delete this photo?"
+        description="This can't be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deleteImageTarget) deleteImage.mutate(deleteImageTarget)
+          setDeleteImageTarget(null)
+        }}
+      />
+
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && closeEdit()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit photo</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <img
+                src={editPreviewUrl ?? editing.image_url ?? ''}
+                alt={editCaption}
+                className="h-40 w-full rounded-lg object-cover"
+              />
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-photo-file" className="cursor-pointer text-sm font-medium text-primary">
+                  Replace image
+                </Label>
+                <Input id="edit-photo-file" type="file" accept="image/*" className="hidden" onChange={handleEditFileSelected} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Caption</Label>
+                <Input value={editCaption} onChange={(e) => setEditCaption(e.target.value)} placeholder="Caption (optional)" />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEdit} disabled={updateImage.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit} disabled={updateImage.isPending}>
+              {updateImage.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

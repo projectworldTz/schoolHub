@@ -116,6 +116,21 @@ export async function addWebsiteGalleryImage(albumId: string, file: File, captio
   return data.data
 }
 
+export interface WebsiteGalleryImagePayload {
+  image?: File
+  caption?: string
+  sort_order?: number
+}
+
+export async function updateWebsiteGalleryImage(id: string, payload: WebsiteGalleryImagePayload): Promise<WebsiteGalleryImage> {
+  const { data } = await apiClient.post<{ data: WebsiteGalleryImage }>(
+    `${BASE}/gallery-images/${id}?_method=PUT`,
+    toFormData(payload),
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  )
+  return data.data
+}
+
 export async function deleteWebsiteGalleryImage(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/gallery-images/${id}`)
 }

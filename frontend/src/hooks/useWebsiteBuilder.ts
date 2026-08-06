@@ -26,6 +26,7 @@ import {
   fetchWebsiteTestimonials,
   updateWebsiteBanner,
   updateWebsiteFacility,
+  updateWebsiteGalleryImage,
   updateWebsiteNews,
   updateWebsiteSections,
   updateWebsiteSettings,
@@ -35,6 +36,7 @@ import {
   type WebsiteDownloadPayload,
   type WebsiteFacilityPayload,
   type WebsiteGalleryAlbumPayload,
+  type WebsiteGalleryImagePayload,
   type WebsiteTestimonialPayload,
 } from '@/api/websiteBuilder'
 import type { WebsiteSection, WebsiteSettingsPayload } from '@/types/websiteBuilder'
@@ -137,6 +139,14 @@ export function useAddWebsiteGalleryImage() {
   return useMutation({
     mutationFn: ({ albumId, file, caption }: { albumId: string; file: File; caption?: string }) =>
       addWebsiteGalleryImage(albumId, file, caption),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.galleryAlbums }),
+  })
+}
+
+export function useUpdateWebsiteGalleryImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: WebsiteGalleryImagePayload }) => updateWebsiteGalleryImage(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.galleryAlbums }),
   })
 }
