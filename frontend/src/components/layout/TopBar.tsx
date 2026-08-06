@@ -173,7 +173,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-sidebar-accent rounded-full text-white hover:text-white"
+              className="rounded-full bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 hover:text-violet-200"
               onClick={() => navigate(AI_ASSISTANT_LINK.to)}
             >
               <Sparkles className="size-4" />
@@ -185,7 +185,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-sidebar-accent rounded-full text-white hover:text-white"
+              className="rounded-full bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200"
               onClick={() => navigate(WEBSITE_BUILDER_LINK.to)}
             >
               <Globe className="size-4" />
