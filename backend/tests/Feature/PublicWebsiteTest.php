@@ -170,4 +170,76 @@ class PublicWebsiteTest extends TestCase
             $this->assertSame(0, WebsitePageView::where('school_id', $school->id)->count());
         });
     }
+
+    public function test_performance_insights_is_null_unless_stats_visibility_is_publish(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool(['website_enabled' => true, 'website_activated_at' => now()]);
+        $this->publishSite($school, ['stats_visibility' => 'summary_only']);
+
+        $response = $this->getJson("/api/public/site/{$school->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.performance_insights', null);
+    }
+
+    /**
+     * The whole point of this endpoint: numbers on the marketing page must
+     * be the school's actual exam data, not a placeholder. Verifies the
+     * pass-rate trend, per-subject average, and grade breakdown all match
+     * what was actually recorded — same math the internal analytics
+     * dashboard uses (AnalyticsController::academics()).
+     */
+    public function test_performance_insights_reflects_real_exam_data_when_published(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 4);
+        $fixture['school']->update(['website_enabled' => true, 'website_activated_at' => now()]);
+        $this->publishSite($fixture['school'], ['stats_visibility' => 'publish']);
+
+        ['examSubject' => $examSubject] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
+        );
+        [$s1, $s2, $s3, $s4] = $fixture['students'];
+        // pass_marks is 40 (see createExamWithSubject) — s3 fails, the rest pass.
+        $this->recordMark($fixture['school'], $examSubject, $s1, 90, 'A');
+        $this->recordMark($fixture['school'], $examSubject, $s2, 70, 'B');
+        $this->recordMark($fixture['school'], $examSubject, $s3, 30, 'F');
+        $this->recordMark($fixture['school'], $examSubject, $s4, 85, 'A');
+
+        $response = $this->getJson("/api/public/site/{$fixture['school']->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.performance_insights.pass_rate_trend.0.label', $fixture['academicYear']->name);
+        $response->assertJsonPath('data.performance_insights.pass_rate_trend.0.pass_rate', 75);
+        $response->assertJsonPath('data.performance_insights.subject_performance.0.label', $fixture['subject']->name);
+        $response->assertJsonPath('data.performance_insights.subject_performance.0.average_percentage', 68.8);
+
+        $grades = collect($response->json('data.performance_insights.grade_distribution'))->keyBy('label');
+        $this->assertSame(2, $grades['A']['count']);
+        $this->assertSame(1, $grades['B']['count']);
+        $this->assertSame(1, $grades['F']['count']);
+    }
+
+    public function test_performance_insights_excludes_results_from_unfinalized_exams(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        $fixture['school']->update(['website_enabled' => true, 'website_activated_at' => now()]);
+        $this->publishSite($fixture['school'], ['stats_visibility' => 'publish']);
+
+        ['examSubject' => $draftExamSubject] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject'], status: 'draft'
+        );
+        [$s1, $s2] = $fixture['students'];
+        $this->recordMark($fixture['school'], $draftExamSubject, $s1, 90, 'A');
+        $this->recordMark($fixture['school'], $draftExamSubject, $s2, 20, 'F');
+
+        $response = $this->getJson("/api/public/site/{$fixture['school']->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.performance_insights.pass_rate_trend', []);
+        $response->assertJsonPath('data.performance_insights.subject_performance', []);
+        $response->assertJsonPath('data.performance_insights.grade_distribution', []);
+    }
 }

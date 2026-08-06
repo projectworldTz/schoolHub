@@ -388,3 +388,43 @@
     animation-duration: 0.01ms;
   }
 }
+
+/* Public school website: slow-drifting blurred blobs behind an imageless
+   hero, and a one-shot fade-up entrance for the hero text/buttons. */
+@keyframes public-blob-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(3%, 4%) scale(1.08);
+  }
+  66% {
+    transform: translate(-3%, -2%) scale(0.96);
+  }
+}
+.animate-public-blob {
+  animation: public-blob-float 12s ease-in-out infinite;
+}
+
+@keyframes public-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-public-fade-up {
+  animation: public-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-public-blob {
+    animation: none;
+  }
+  .animate-public-fade-up {
+    animation-duration: 0.01ms;
+  }
+}

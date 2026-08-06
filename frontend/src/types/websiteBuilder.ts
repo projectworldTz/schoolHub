@@ -144,6 +144,12 @@ export interface PublicWebsiteStats {
   academic_average?: number | null
 }
 
+export interface PublicWebsitePerformanceInsights {
+  pass_rate_trend: { label: string; pass_rate: number }[]
+  subject_performance: { label: string; average_percentage: number }[]
+  grade_distribution: { label: string; count: number }[]
+}
+
 export interface PublicWebsiteData {
   school: {
     name: string
@@ -158,6 +164,7 @@ export interface PublicWebsiteData {
   settings: WebsiteSettings
   sections: WebsiteSectionKey[]
   stats: PublicWebsiteStats | null
+  performance_insights: PublicWebsitePerformanceInsights | null
   facilities: WebsiteFacility[]
   gallery_albums: WebsiteGalleryAlbum[]
   banners: WebsiteBanner[]

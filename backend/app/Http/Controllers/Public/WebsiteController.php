@@ -63,6 +63,7 @@ class WebsiteController extends Controller
             'settings' => new WebsiteSettingsResource($settings),
             'sections' => $sections->pluck('section_key'),
             'stats' => $this->stats($school, $settings),
+            'performance_insights' => $this->performanceInsights($school, $settings),
             'facilities' => WebsiteFacilityResource::collection(WebsiteFacility::orderBy('sort_order')->get()),
             'gallery_albums' => WebsiteGalleryAlbumResource::collection(
                 WebsiteGalleryAlbum::with('images')->withCount('images')->orderBy('sort_order')->get()
@@ -122,6 +123,87 @@ class WebsiteController extends Controller
 
             return $summary + [
                 'academic_average' => $academicAverage !== null ? round((float) $academicAverage, 1) : null,
+            ];
+        });
+    }
+
+    /**
+     * Only computed at the same 'publish' tier that already unlocks
+     * academic_average in stats() — a school that wants pass-rate/grade
+     * breakdowns public opts into the fuller trend/subject/grade charts too,
+     * rather than adding a second visibility knob. Scoped to completed or
+     * published exams only (never draft/scheduled) so a marketing page can
+     * never show results that are still being entered or aren't finalized
+     * yet, and reuses the exact join pattern AnalyticsController::academics()
+     * already uses for the admin dashboard's own charts, so the numbers
+     * here always agree with what staff see internally.
+     */
+    protected function performanceInsights(School $school, ?WebsiteSettings $settings): ?array
+    {
+        if (! $settings || $settings->stats_visibility !== 'publish') {
+            return null;
+        }
+
+        return Cache::remember("website-performance-insights:{$school->id}", 900, function () {
+            $yearRows = ExamResult::query()
+                ->join('exam_subjects', 'exam_subjects.id', '=', 'exam_results.exam_subject_id')
+                ->join('exams', 'exams.id', '=', 'exam_subjects.exam_id')
+                ->join('academic_years', 'academic_years.id', '=', 'exams.academic_year_id')
+                ->whereIn('exams.status', ['completed', 'published'])
+                ->whereNotNull('exam_results.marks_obtained')
+                ->selectRaw(
+                    'academic_years.id as year_id, academic_years.name as label, academic_years.start_date as start_date,
+                    count(*) as total,
+                    sum(case when exam_results.marks_obtained >= exam_subjects.pass_marks then 1 else 0 end) as passed'
+                )
+                ->groupBy('academic_years.id', 'academic_years.name', 'academic_years.start_date')
+                ->orderBy('academic_years.start_date')
+                ->get();
+
+            $passRateTrend = $yearRows
+                ->map(fn ($row) => ['label' => $row->label, 'pass_rate' => $row->total > 0 ? round($row->passed / $row->total * 100, 1) : null])
+                ->filter(fn ($row) => $row['pass_rate'] !== null)
+                ->slice(-6)
+                ->values();
+
+            // The most recent year that actually has finalized results —
+            // not just the latest AcademicYear row, which may be the new
+            // year with nothing graded yet.
+            $latestYearId = $yearRows->last()?->year_id;
+
+            if (! $latestYearId) {
+                return ['pass_rate_trend' => [], 'subject_performance' => [], 'grade_distribution' => []];
+            }
+
+            $subjectPerformance = ExamResult::query()
+                ->join('exam_subjects', 'exam_subjects.id', '=', 'exam_results.exam_subject_id')
+                ->join('subjects', 'subjects.id', '=', 'exam_subjects.subject_id')
+                ->join('exams', 'exams.id', '=', 'exam_subjects.exam_id')
+                ->where('exams.academic_year_id', $latestYearId)
+                ->whereIn('exams.status', ['completed', 'published'])
+                ->whereNotNull('exam_results.marks_obtained')
+                ->selectRaw('subjects.name as label, avg(exam_results.marks_obtained * 1.0 / exam_subjects.max_marks * 100) as average_percentage')
+                ->groupBy('subjects.name')
+                ->orderByDesc('average_percentage')
+                ->limit(8)
+                ->get()
+                ->map(fn ($row) => ['label' => $row->label, 'average_percentage' => round((float) $row->average_percentage, 1)]);
+
+            $gradeDistribution = ExamResult::query()
+                ->join('exam_subjects', 'exam_subjects.id', '=', 'exam_results.exam_subject_id')
+                ->join('exams', 'exams.id', '=', 'exam_subjects.exam_id')
+                ->where('exams.academic_year_id', $latestYearId)
+                ->whereIn('exams.status', ['completed', 'published'])
+                ->whereNotNull('exam_results.grade')
+                ->selectRaw('exam_results.grade as label, count(*) as count')
+                ->groupBy('exam_results.grade')
+                ->orderBy('exam_results.grade')
+                ->get();
+
+            return [
+                'pass_rate_trend' => $passRateTrend,
+                'subject_performance' => $subjectPerformance,
+                'grade_distribution' => $gradeDistribution,
             ];
         });
     }
