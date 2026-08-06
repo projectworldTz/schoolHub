@@ -5,7 +5,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { useLogin } from '@/hooks/useAuth'
-import { Logo } from '@/components/layout/Logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -62,7 +61,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/40 p-4">
-      <Logo />
+      <img src="/favicon.svg" alt="SchoolHub Africa" className="h-14 w-auto" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
