@@ -16,9 +16,14 @@ export interface StudentPayload {
   previous_school_name?: string
 }
 
-export async function listStudents(search = '', branchId?: string): Promise<PaginatedResponse<Student>> {
+export async function listStudents(
+  search = '',
+  branchId?: string,
+  page?: number,
+  perPage?: number
+): Promise<PaginatedResponse<Student>> {
   const { data } = await apiClient.get<PaginatedResponse<Student>>('/school/students', {
-    params: { search, branch_id: branchId || undefined },
+    params: { search, branch_id: branchId || undefined, page, per_page: perPage },
   })
   return data
 }

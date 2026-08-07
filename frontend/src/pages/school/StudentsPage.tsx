@@ -37,6 +37,7 @@ import {
 import { useCreateStudent, useImportGuardians, useImportStudents, useStudents } from '@/hooks/useStudents'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useBranches } from '@/hooks/useSchoolSetup'
+import { TablePagination } from '@/components/school/TablePagination'
 import type { GuardianImportResult, StudentImportResult } from '@/types/students'
 
 const studentSchema = z.object({
@@ -546,12 +547,24 @@ function ImportGuardiansDialog() {
 }
 
 const ALL_BRANCHES = '__all'
+const STUDENTS_PER_PAGE = 100
 
 export function StudentsPage() {
   const [search, setSearch] = useState('')
   const [branchId, setBranchId] = useState('')
+  const [page, setPage] = useState(1)
   const { data: branches } = useBranches.useList()
-  const { data, isLoading } = useStudents(search, branchId)
+  const { data, isLoading } = useStudents(search, branchId, page, STUDENTS_PER_PAGE)
+
+  function handleSearchChange(next: string) {
+    setSearch(next)
+    setPage(1)
+  }
+
+  function handleBranchChange(next: string) {
+    setBranchId(next)
+    setPage(1)
+  }
 
   return (
     <div className="space-y-6">
@@ -575,11 +588,14 @@ export function StudentsPage() {
               <Input
                 placeholder="Search by name or admission number…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="max-w-xs"
               />
               {branches && branches.length > 0 && (
-                <Select value={branchId || ALL_BRANCHES} onValueChange={(v) => setBranchId(v === ALL_BRANCHES ? '' : v)}>
+                <Select
+                  value={branchId || ALL_BRANCHES}
+                  onValueChange={(v) => handleBranchChange(v === ALL_BRANCHES ? '' : v)}
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="All branches" />
                   </SelectTrigger>
@@ -596,7 +612,7 @@ export function StudentsPage() {
             </div>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -642,6 +658,15 @@ export function StudentsPage() {
               ))}
             </TableBody>
           </Table>
+          {data && (
+            <TablePagination
+              page={data.meta.current_page}
+              totalPages={data.meta.last_page}
+              totalItems={data.meta.total}
+              pageSize={data.meta.per_page}
+              onPageChange={setPage}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
