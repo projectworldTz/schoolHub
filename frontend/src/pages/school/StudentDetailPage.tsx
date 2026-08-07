@@ -69,13 +69,7 @@ import { reportCardPdfUrl } from '@/api/exams'
 import { Textarea } from '@/components/ui/textarea'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
-
-const ATTENDANCE_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  present: 'default',
-  absent: 'destructive',
-  late: 'secondary',
-  excused: 'outline',
-}
+import { AttendanceStatusBadge } from '@/components/school/AttendanceStatusBadge'
 
 function AttendanceCard({ studentId }: { studentId: string }) {
   const { data, isLoading } = useStudentAttendanceHistory(studentId)
@@ -109,7 +103,7 @@ function AttendanceCard({ studentId }: { studentId: string }) {
               <TableRow key={record.id}>
                 <TableCell>{record.date}</TableCell>
                 <TableCell>
-                  <Badge variant={ATTENDANCE_STATUS_VARIANT[record.status]}>{record.status}</Badge>
+                  <AttendanceStatusBadge status={record.status} />
                 </TableCell>
                 <TableCell>{record.remarks ?? '—'}</TableCell>
               </TableRow>

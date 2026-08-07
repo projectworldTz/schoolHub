@@ -36,18 +36,12 @@ import {
 } from '@/hooks/useParentPortal'
 import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
+import { AttendanceStatusBadge } from '@/components/school/AttendanceStatusBadge'
 import { PerformanceTrendChart } from '@/components/school/PerformanceTrendChart'
 import { ParentRewardCard } from '@/components/parent/ParentRewardCard'
 import { FeesTable } from '@/components/parent/FeesTable'
 import { ExamResultsList } from '@/components/parent/ExamResultsList'
 import type { Student } from '@/types/students'
-
-const ATTENDANCE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  present: 'default',
-  absent: 'destructive',
-  late: 'secondary',
-  excused: 'outline',
-}
 
 function ChildOverview({ student }: { student: Student }) {
   const { data: attendance, isLoading: attendanceLoading } = useChildAttendance(student.id)
@@ -171,7 +165,7 @@ function ChildOverview({ student }: { student: Student }) {
                 <TableRow key={a.id}>
                   <TableCell>{a.date}</TableCell>
                   <TableCell>
-                    <Badge variant={ATTENDANCE_VARIANT[a.status]}>{a.status}</Badge>
+                    <AttendanceStatusBadge status={a.status} />
                   </TableCell>
                   <TableCell>{a.remarks ?? '—'}</TableCell>
                 </TableRow>
