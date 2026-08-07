@@ -14,12 +14,15 @@ class AttendanceRecordResource extends JsonResource
             'id' => $this->id,
             'student_id' => $this->student_id,
             'student_name' => $this->whenLoaded('student', fn () => $this->student->full_name),
+            'admission_number' => $this->whenLoaded('student', fn () => $this->student->admission_number),
             'school_class_id' => $this->school_class_id,
+            'school_class_name' => $this->whenLoaded('schoolClass', fn () => $this->schoolClass->name),
             'stream_id' => $this->stream_id,
             'date' => $this->date?->toDateString(),
             'status' => $this->status,
             'remarks' => $this->remarks,
             'marked_by' => $this->marked_by,
+            'marked_by_name' => $this->whenLoaded('markedBy', fn () => $this->markedBy?->name),
         ];
     }
 }

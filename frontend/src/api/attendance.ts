@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client'
+import type { PaginatedResponse } from '@/types/school'
 import type { AttendanceHistory, AttendanceRecord, AttendanceRosterRow, AttendanceStatus } from '@/types/attendance'
 
 export interface AttendanceRegisterParams {
@@ -45,4 +46,20 @@ export async function fetchStudentAttendanceHistory(studentId: string): Promise<
     `/school/students/${studentId}/attendance`
   )
   return { records: data.data, trend: data.meta.trend }
+}
+
+export interface AttendanceLogParams {
+  school_class_id?: string
+  stream_id?: string
+  status?: AttendanceStatus
+  date_from?: string
+  date_to?: string
+  search?: string
+  page?: number
+  per_page?: number
+}
+
+export async function fetchAttendanceLog(params: AttendanceLogParams): Promise<PaginatedResponse<AttendanceRecord>> {
+  const { data } = await apiClient.get<PaginatedResponse<AttendanceRecord>>('/school/attendance', { params })
+  return data
 }

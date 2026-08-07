@@ -176,6 +176,7 @@ $schoolRoutes = function () {
         Route::post('admissions/{admission}/documents', [AdmissionDocumentController::class, 'store']);
 
         // Attendance
+        Route::get('attendance', [AttendanceController::class, 'index']);
         Route::get('attendance/register', [AttendanceController::class, 'register']);
         Route::post('attendance', [AttendanceController::class, 'store']);
         Route::get('students/{student}/attendance', [AttendanceController::class, 'history']);

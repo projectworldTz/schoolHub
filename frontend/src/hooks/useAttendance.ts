@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  fetchAttendanceLog,
   fetchAttendanceRegister,
   fetchStudentAttendanceHistory,
   markAttendance,
+  type AttendanceLogParams,
   type AttendanceMarkPayload,
   type AttendanceRegisterParams,
 } from '@/api/attendance'
@@ -20,6 +22,13 @@ export function useStudentAttendanceHistory(studentId: string) {
     queryKey: ['school', 'students', studentId, 'attendance'],
     queryFn: () => fetchStudentAttendanceHistory(studentId),
     enabled: Boolean(studentId),
+  })
+}
+
+export function useAttendanceLog(params: AttendanceLogParams) {
+  return useQuery({
+    queryKey: ['school', 'attendance', 'log', params],
+    queryFn: () => fetchAttendanceLog(params),
   })
 }
 
