@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { AlertTriangle } from 'lucide-react'
 import {
   Form,
   FormControl,
@@ -54,36 +55,74 @@ const paymentSchema = z.object({
   notes: z.string().optional(),
 })
 
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: 'Cash',
+  bank_transfer: 'Bank transfer',
+  mobile_money: 'Mobile money',
+  card: 'Card',
+  cheque: 'Cheque',
+  other: 'Other',
+}
+
+function emptyPaymentValues(balance: string) {
+  return {
+    amount: balance,
+    method: 'cash' as PaymentMethod,
+    provider: '',
+    reference: '',
+    paid_at: new Date().toISOString().slice(0, 10),
+    notes: '',
+  }
+}
+
 function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balance: string }) {
   const [open, setOpen] = useState(false)
+  const [pendingValues, setPendingValues] = useState<z.infer<typeof paymentSchema> | null>(null)
   const record = useRecordPayment(invoiceId)
   const form = useForm({
     resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      amount: balance,
-      method: 'cash' as PaymentMethod,
-      provider: '',
-      reference: '',
-      paid_at: new Date().toISOString().slice(0, 10),
-      notes: '',
-    },
+    defaultValues: emptyPaymentValues(balance),
   })
   const method = form.watch('method')
 
-  function onSubmit(values: z.infer<typeof paymentSchema>) {
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    setPendingValues(null)
+    if (next) {
+      // Re-sync to the current outstanding balance every time the dialog is
+      // opened, since a prior partial payment can leave the form's original
+      // default (the old, higher balance) stale otherwise.
+      form.reset(emptyPaymentValues(balance))
+    }
+  }
+
+  function onReview(values: z.infer<typeof paymentSchema>) {
+    if (Number(values.amount) > Number(balance)) {
+      form.setError('amount', {
+        type: 'max',
+        message: `Cannot exceed the outstanding balance of ${Number(balance).toLocaleString()}`,
+      })
+      return
+    }
+    setPendingValues(values)
+  }
+
+  function onConfirm() {
+    if (!pendingValues) return
     record.mutate(
       {
-        amount: Number(values.amount),
-        method: values.method,
-        provider: values.provider || undefined,
-        reference: values.reference || undefined,
-        paid_at: values.paid_at,
-        notes: values.notes || undefined,
+        amount: Number(pendingValues.amount),
+        method: pendingValues.method,
+        provider: pendingValues.provider || undefined,
+        reference: pendingValues.reference || undefined,
+        paid_at: pendingValues.paid_at,
+        notes: pendingValues.notes || undefined,
       },
       {
         onSuccess: () => {
           toast.success('Payment recorded')
-          form.reset()
+          setPendingValues(null)
+          form.reset(emptyPaymentValues(balance))
           setOpen(false)
         },
         onError: (error) => {
@@ -97,117 +136,175 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm">Record payment</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Record payment</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+        {pendingValues ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Confirm payment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  You are about to record this payment. Confirm the amount before submitting — it
+                  cannot be edited from this screen.
+                </p>
+              </div>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 text-sm">
+                <dt className="text-muted-foreground">Amount</dt>
+                <dd className="text-right font-semibold">
+                  {Number(pendingValues.amount).toLocaleString()}
+                </dd>
+                <dt className="text-muted-foreground">Date</dt>
+                <dd className="text-right">{pendingValues.paid_at}</dd>
+                <dt className="text-muted-foreground">Method</dt>
+                <dd className="text-right">{PAYMENT_METHOD_LABELS[pendingValues.method]}</dd>
+                {pendingValues.provider && (
+                  <>
+                    <dt className="text-muted-foreground">Provider</dt>
+                    <dd className="text-right">{pendingValues.provider}</dd>
+                  </>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="paid_at"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                {pendingValues.reference && (
+                  <>
+                    <dt className="text-muted-foreground">Reference</dt>
+                    <dd className="text-right">{pendingValues.reference}</dd>
+                  </>
                 )}
-              />
+                {pendingValues.notes && (
+                  <>
+                    <dt className="text-muted-foreground">Notes</dt>
+                    <dd className="text-right">{pendingValues.notes}</dd>
+                  </>
+                )}
+              </dl>
             </div>
-            <FormField
-              control={form.control}
-              name="method"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Method</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank_transfer">Bank transfer</SelectItem>
-                      <SelectItem value="mobile_money">Mobile money</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="cheque">Cheque</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {method === 'mobile_money' && (
-              <FormField
-                control={form.control}
-                name="provider"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Provider</FormLabel>
-                    <FormControl>
-                      <Input placeholder="M-Pesa, Airtel Money, Mixx by Yas…" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            <FormField
-              control={form.control}
-              name="reference"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reference (optional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (optional)</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
-              <Button type="submit" disabled={record.isPending}>
-                {record.isPending ? 'Saving…' : 'Record payment'}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={record.isPending}
+                onClick={() => setPendingValues(null)}
+              >
+                Back
+              </Button>
+              <Button type="button" disabled={record.isPending} onClick={onConfirm}>
+                {record.isPending ? 'Saving…' : 'Confirm & record payment'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Record payment</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onReview)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="paid_at"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Method</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                          <SelectItem value="mobile_money">Mobile money</SelectItem>
+                          <SelectItem value="card">Card</SelectItem>
+                          <SelectItem value="cheque">Cheque</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {method === 'mobile_money' && (
+                  <FormField
+                    control={form.control}
+                    name="provider"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Provider</FormLabel>
+                        <FormControl>
+                          <Input placeholder="M-Pesa, Airtel Money, Mixx by Yas…" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <FormField
+                  control={form.control}
+                  name="reference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reference (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes (optional)</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Review payment</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
