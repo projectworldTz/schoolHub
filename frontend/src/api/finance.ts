@@ -25,6 +25,7 @@ export interface ListInvoicesParams {
   status?: string
   student_id?: string
   search?: string
+  page?: number
   per_page?: number
 }
 

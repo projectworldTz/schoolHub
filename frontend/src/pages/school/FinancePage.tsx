@@ -43,6 +43,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCard'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
+import { TablePagination } from '@/components/school/TablePagination'
 import { useFeeCategories, useFeeStructures, useGenerateInvoices, useInvoices } from '@/hooks/useFinance'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses } from '@/hooks/useAcademics'
@@ -349,10 +350,28 @@ function GenerateInvoicesDialog() {
   )
 }
 
+const INVOICES_PER_PAGE = 100
+
 function InvoicesTab() {
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useInvoices({ status: status || undefined, search: search || undefined })
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useInvoices({
+    status: status || undefined,
+    search: search || undefined,
+    page,
+    per_page: INVOICES_PER_PAGE,
+  })
+
+  function handleStatusChange(next: string) {
+    setStatus(next)
+    setPage(1)
+  }
+
+  function handleSearchChange(next: string) {
+    setSearch(next)
+    setPage(1)
+  }
 
   return (
     <Card>
@@ -364,10 +383,10 @@ function InvoicesTab() {
               <Input
                 placeholder="Search by student name, admission number, or invoice #…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="max-w-xs"
               />
-              <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+              <Select value={status || 'all'} onValueChange={(v) => handleStatusChange(v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -384,7 +403,7 @@ function InvoicesTab() {
         </div>
         <GenerateInvoicesDialog />
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Table>
           <TableHeader>
             <TableRow>
@@ -429,6 +448,15 @@ function InvoicesTab() {
             ))}
           </TableBody>
         </Table>
+        {data && (
+          <TablePagination
+            page={data.meta.current_page}
+            totalPages={data.meta.last_page}
+            totalItems={data.meta.total}
+            pageSize={data.meta.per_page}
+            onPageChange={setPage}
+          />
+        )}
       </CardContent>
     </Card>
   )
