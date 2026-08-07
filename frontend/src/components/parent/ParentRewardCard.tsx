@@ -88,15 +88,22 @@ function ConfettiBurst() {
 
 function RewardEmoji({ tier, open, size = 'text-5xl' }: { tier: RewardTier; open: boolean; size?: string }) {
   const styles = TIER_STYLES[tier]
-  const emoji = tier === 'welcome' ? '✉️' : open ? '🎁' : '🎁'
+  const emoji = tier === 'welcome' ? '✉️' : '🎁'
 
   return (
     <span className="relative inline-flex items-center justify-center">
-      <span
-        className={cn('animate-reward-float animate-reward-glow inline-block select-none', size, open && 'animate-reward-open')}
-        style={{ '--reward-glow-color': styles.glow } as React.CSSProperties}
-      >
-        {emoji}
+      {/* The one-shot "open" bounce lives on this wrapper, separate from the
+          looping float+glow on the inner span below — combining a one-shot
+          and a looping animation via classes on the SAME element doesn't
+          work, since only one `animation` shorthand rule can win per
+          element (see the comment above .animate-reward-idle in index.css). */}
+      <span className={cn('inline-block', open && 'animate-reward-open')}>
+        <span
+          className={cn('animate-reward-idle inline-block select-none', size)}
+          style={{ '--reward-glow-color': styles.glow } as React.CSSProperties}
+        >
+          {emoji}
+        </span>
       </span>
       <span
         className="animate-reward-sparkle absolute -right-1 -top-1 text-sm"

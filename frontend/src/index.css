@@ -312,10 +312,6 @@
     transform: translateY(-6px);
   }
 }
-.animate-reward-float {
-  animation: reward-float 3.6s ease-in-out infinite;
-}
-
 @keyframes reward-glow {
   0%, 100% {
     filter: drop-shadow(0 0 6px var(--reward-glow-color, oklch(0.8 0.18 80 / 55%)));
@@ -324,8 +320,15 @@
     filter: drop-shadow(0 0 16px var(--reward-glow-color, oklch(0.8 0.18 80 / 85%)));
   }
 }
-.animate-reward-glow {
-  animation: reward-glow 3.6s ease-in-out infinite;
+/* Float + glow combined into one rule (one `animation` shorthand) rather
+   than two separate classes — two classes each setting `animation` on the
+   same element don't compose, the later one in the stylesheet just wins
+   and silently kills the other. That bug used to make the "big" gift in
+   the opened dialog freeze solid: `.animate-reward-open`'s one-shot
+   `animation` (below) was the last rule applied to that same element, so
+   it fully replaced float+glow instead of playing alongside them. */
+.animate-reward-idle {
+  animation: reward-float 3.6s ease-in-out infinite, reward-glow 3.6s ease-in-out infinite;
 }
 
 @keyframes reward-sparkle {
@@ -378,8 +381,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-reward-float,
-  .animate-reward-glow,
+  .animate-reward-idle,
   .animate-reward-sparkle {
     animation: none;
   }
