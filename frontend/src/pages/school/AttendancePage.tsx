@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
+import { AlertTriangle, Lock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -31,6 +39,13 @@ const STATUS_OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: 'excused', label: 'Excused' },
 ]
 
+const STATUS_LABELS: Record<AttendanceStatus, string> = {
+  present: 'Present',
+  absent: 'Absent',
+  late: 'Late',
+  excused: 'Excused',
+}
+
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -42,6 +57,7 @@ export function AttendancePage() {
   const [schoolClassId, setSchoolClassId] = useState('')
   const [date, setDate] = useState(todayIsoDate())
   const [rows, setRows] = useState<Record<string, { status: AttendanceStatus; remarks: string }>>({})
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   useEffect(() => {
     if (!academicYearId && academicYears?.length) {
@@ -54,43 +70,57 @@ export function AttendancePage() {
     academic_year_id: academicYearId,
     date,
   })
+  const rosterRows = register?.rows
+  const isLocked = register?.confirmed ?? false
 
   useEffect(() => {
-    if (!register) return
+    if (!rosterRows) return
     const initial: Record<string, { status: AttendanceStatus; remarks: string }> = {}
-    for (const row of register) {
+    for (const row of rosterRows) {
       initial[row.student_id] = { status: row.status ?? 'present', remarks: row.remarks ?? '' }
     }
     setRows(initial)
-  }, [register])
+  }, [rosterRows])
 
   const mark = useMarkAttendance()
 
   const canSave = useMemo(
-    () => Boolean(schoolClassId && academicYearId && date && register && register.length > 0),
-    [schoolClassId, academicYearId, date, register]
+    () => Boolean(schoolClassId && academicYearId && date && rosterRows && rosterRows.length > 0 && !isLocked),
+    [schoolClassId, academicYearId, date, rosterRows, isLocked]
   )
 
-  function handleSave() {
-    if (!register) return
+  const statusCounts = useMemo(() => {
+    const counts: Record<AttendanceStatus, number> = { present: 0, absent: 0, late: 0, excused: 0 }
+    for (const row of Object.values(rows)) {
+      counts[row.status] += 1
+    }
+    return counts
+  }, [rows])
+
+  function handleConfirm() {
+    if (!rosterRows) return
     mark.mutate(
       {
         school_class_id: schoolClassId,
         academic_year_id: academicYearId,
         date,
-        records: register.map((row) => ({
+        records: rosterRows.map((row) => ({
           student_id: row.student_id,
           status: rows[row.student_id]?.status ?? 'present',
           remarks: rows[row.student_id]?.remarks || undefined,
         })),
       },
       {
-        onSuccess: () => toast.success('Attendance saved'),
+        onSuccess: () => {
+          toast.success('Attendance confirmed and locked')
+          setConfirmOpen(false)
+        },
         onError: (error) => {
           const message = isAxiosError(error)
             ? (error.response?.data?.message ?? 'Could not save attendance')
             : 'Something went wrong'
           toast.error(message)
+          setConfirmOpen(false)
         },
       }
     )
@@ -136,7 +166,18 @@ export function AttendancePage() {
             </div>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {isLocked && (
+            <div className="flex items-start gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Attendance for this class and date has been confirmed
+                {register?.confirmed_by_name ? ` by ${register.confirmed_by_name}` : ''}
+                {register?.confirmed_at ? ` on ${new Date(register.confirmed_at).toLocaleString()}` : ''} and can no
+                longer be changed.
+              </p>
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -161,20 +202,21 @@ export function AttendancePage() {
                   </TableCell>
                 </TableRow>
               )}
-              {schoolClassId && !isLoading && register?.length === 0 && (
+              {schoolClassId && !isLoading && rosterRows?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
                     No students enrolled in this class for the selected year.
                   </TableCell>
                 </TableRow>
               )}
-              {register?.map((row) => (
+              {rosterRows?.map((row) => (
                 <TableRow key={row.student_id}>
                   <TableCell>{row.admission_number}</TableCell>
                   <TableCell className="font-medium">{row.full_name}</TableCell>
                   <TableCell>
                     <Select
                       value={rows[row.student_id]?.status ?? 'present'}
+                      disabled={isLocked}
                       onValueChange={(value) =>
                         setRows((prev) => ({
                           ...prev,
@@ -197,6 +239,7 @@ export function AttendancePage() {
                   <TableCell>
                     <Input
                       value={rows[row.student_id]?.remarks ?? ''}
+                      disabled={isLocked}
                       onChange={(e) =>
                         setRows((prev) => ({
                           ...prev,
@@ -211,14 +254,45 @@ export function AttendancePage() {
             </TableBody>
           </Table>
           {canSave && (
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSave} disabled={mark.isPending}>
-                {mark.isPending ? 'Saving…' : 'Save attendance'}
-              </Button>
+            <div className="flex justify-end">
+              <Button onClick={() => setConfirmOpen(true)}>Save attendance</Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm attendance</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                You are about to confirm attendance for <strong>{date}</strong>. Once confirmed, it is locked and
+                cannot be changed — double-check every student's status before continuing.
+              </p>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 text-sm">
+              {STATUS_OPTIONS.map((opt) => (
+                <div key={opt.value} className="contents">
+                  <dt className="text-muted-foreground">{STATUS_LABELS[opt.value]}</dt>
+                  <dd className="text-right font-semibold">{statusCounts[opt.value]}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={mark.isPending} onClick={() => setConfirmOpen(false)}>
+              Back
+            </Button>
+            <Button type="button" disabled={mark.isPending} onClick={handleConfirm}>
+              {mark.isPending ? 'Saving…' : 'Confirm & lock attendance'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -36,6 +36,8 @@ class AttendanceController extends Controller
             $data['date'],
         );
 
+        $confirmed = $this->attendance->confirmedRecord($data['school_class_id'], $data['date']);
+
         return response()->json([
             'data' => array_map(fn ($row) => [
                 'student_id' => $row['student']->id,
@@ -44,12 +46,27 @@ class AttendanceController extends Controller
                 'status' => $row['record']?->status,
                 'remarks' => $row['record']?->remarks,
             ], $rows),
+            'meta' => [
+                'confirmed' => (bool) $confirmed,
+                'confirmed_at' => $confirmed?->confirmed_at,
+                'confirmed_by_name' => $confirmed?->confirmedBy?->name,
+            ],
         ]);
     }
 
+    /**
+     * Saving IS confirming — there's no separate draft/confirm step on the
+     * backend, so once a class+date has any confirmed record this rejects
+     * the whole batch outright rather than silently overwriting it. See
+     * AttendanceService::mark().
+     */
     public function store(MarkAttendanceRequest $request)
     {
         $data = $request->validated();
+
+        $alreadyConfirmed = $this->attendance->confirmedRecord($data['school_class_id'], $data['date']);
+
+        abort_if($alreadyConfirmed, 409, 'Attendance for this class and date has already been confirmed and can no longer be changed.');
 
         $this->attendance->markBulk(
             array_map(fn ($record) => [
@@ -64,7 +81,7 @@ class AttendanceController extends Controller
             $request->user()->id,
         );
 
-        return response()->json(['message' => 'Attendance saved.']);
+        return response()->json(['message' => 'Attendance confirmed.']);
     }
 
     /**

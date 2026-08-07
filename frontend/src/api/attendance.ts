@@ -16,9 +16,24 @@ export interface AttendanceMarkPayload {
   records: { student_id: string; status: AttendanceStatus; remarks?: string }[]
 }
 
-export async function fetchAttendanceRegister(params: AttendanceRegisterParams): Promise<AttendanceRosterRow[]> {
-  const { data } = await apiClient.get<{ data: AttendanceRosterRow[] }>('/school/attendance/register', { params })
-  return data.data
+export interface AttendanceRegisterResponse {
+  rows: AttendanceRosterRow[]
+  confirmed: boolean
+  confirmed_at: string | null
+  confirmed_by_name: string | null
+}
+
+export async function fetchAttendanceRegister(params: AttendanceRegisterParams): Promise<AttendanceRegisterResponse> {
+  const { data } = await apiClient.get<{
+    data: AttendanceRosterRow[]
+    meta: { confirmed: boolean; confirmed_at: string | null; confirmed_by_name: string | null }
+  }>('/school/attendance/register', { params })
+  return {
+    rows: data.data,
+    confirmed: data.meta.confirmed,
+    confirmed_at: data.meta.confirmed_at,
+    confirmed_by_name: data.meta.confirmed_by_name,
+  }
 }
 
 export async function markAttendance(payload: AttendanceMarkPayload): Promise<void> {

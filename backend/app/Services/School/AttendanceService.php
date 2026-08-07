@@ -52,6 +52,8 @@ class AttendanceService
                 'status' => $attributes['status'],
                 'remarks' => $attributes['remarks'] ?? null,
                 'marked_by' => $markedBy,
+                'confirmed_at' => now(),
+                'confirmed_by' => $markedBy,
             ]
         );
     }
@@ -63,6 +65,23 @@ class AttendanceService
                 $this->mark($record, $markedBy);
             }
         });
+    }
+
+    /**
+     * A class+date is locked the moment it's first saved — saving IS the
+     * confirmation step (see AttendanceController::store()'s guard), there's
+     * no separate draft state. Returns the confirming record (for its
+     * confirmed_at/confirmed_by) so the register endpoint can tell the
+     * frontend who locked it and when, or null if this class+date is still
+     * open for marking.
+     */
+    public function confirmedRecord(string $schoolClassId, string $date): ?AttendanceRecord
+    {
+        return AttendanceRecord::where('school_class_id', $schoolClassId)
+            ->where('date', $date)
+            ->whereNotNull('confirmed_at')
+            ->with('confirmedBy')
+            ->first();
     }
 
     /**

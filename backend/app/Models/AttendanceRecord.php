@@ -26,12 +26,15 @@ class AttendanceRecord extends Model
         'status',
         'remarks',
         'marked_by',
+        'confirmed_at',
+        'confirmed_by',
     ];
 
     protected function casts(): array
     {
         return [
             'date' => 'date',
+            'confirmed_at' => 'datetime',
         ];
     }
 
@@ -58,5 +61,10 @@ class AttendanceRecord extends Model
     public function markedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'marked_by');
+    }
+
+    public function confirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by');
     }
 }
