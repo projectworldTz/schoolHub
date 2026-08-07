@@ -142,7 +142,7 @@ function ChildOverview({ student }: { student: Student }) {
         </Card>
       </div>
 
-      <FeesTable invoices={invoices} loading={invoicesLoading} />
+      <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />
 
       <Card>
         <CardHeader>

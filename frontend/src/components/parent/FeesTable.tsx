@@ -1,9 +1,18 @@
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import type { Invoice } from '@/types/finance'
 
-export function FeesTable({ invoices, loading }: { invoices: Invoice[] | undefined; loading: boolean }) {
+export function FeesTable({
+  invoices,
+  loading,
+  studentId,
+}: {
+  invoices: Invoice[] | undefined
+  loading: boolean
+  studentId: string
+}) {
   return (
     <Card>
       <CardHeader>
@@ -30,7 +39,11 @@ export function FeesTable({ invoices, loading }: { invoices: Invoice[] | undefin
             )}
             {invoices?.map((inv) => (
               <TableRow key={inv.id}>
-                <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                <TableCell className="font-medium">
+                  <Link to={`/parent/students/${studentId}/invoices/${inv.id}`} className="hover:underline">
+                    {inv.invoice_number}
+                  </Link>
+                </TableCell>
                 <TableCell>{Number(inv.total_amount).toLocaleString()}</TableCell>
                 <TableCell>{Number(inv.amount_paid).toLocaleString()}</TableCell>
                 <TableCell>{Number(inv.balance).toLocaleString()}</TableCell>

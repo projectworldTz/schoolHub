@@ -38,6 +38,11 @@ export async function fetchChildFees(studentId: string): Promise<Invoice[]> {
   return data.data
 }
 
+export async function fetchChildInvoice(studentId: string, invoiceId: string): Promise<Invoice> {
+  const { data } = await apiClient.get<{ data: Invoice }>(`/parent/children/${studentId}/invoices/${invoiceId}`)
+  return data.data
+}
+
 export async function fetchParentAnnouncements(): Promise<ParentAnnouncementsResponse> {
   const { data } = await apiClient.get<{ data: ParentAnnouncement[]; meta: { unread_count: number } }>('/parent/announcements')
   return { records: data.data, unread_count: data.meta.unread_count }

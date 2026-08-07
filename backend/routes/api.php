@@ -343,6 +343,7 @@ $parentRoutes = function () {
     Route::get('children/{student}/homework', [ParentPortalController::class, 'homework']);
     Route::get('children/{student}/results', [ParentPortalController::class, 'results']);
     Route::get('children/{student}/fees', [ParentPortalController::class, 'fees']);
+    Route::get('children/{student}/invoices/{invoice}', [ParentPortalController::class, 'invoice']);
     Route::get('announcements', [ParentPortalController::class, 'announcements']);
 
     // Read/reply only — parents never start a conversation (see

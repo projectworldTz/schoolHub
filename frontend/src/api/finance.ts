@@ -24,6 +24,7 @@ export const feeStructuresApi = createCrudApi<FeeStructure, FeeStructurePayload>
 export interface ListInvoicesParams {
   status?: string
   student_id?: string
+  search?: string
   per_page?: number
 }
 

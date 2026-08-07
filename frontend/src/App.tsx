@@ -46,6 +46,7 @@ import { AuditLogPage } from '@/pages/school/AuditLogPage'
 import { AiAssistantPage } from '@/pages/school/AiAssistantPage'
 import { WebsiteBuilderPage } from '@/pages/school/WebsiteBuilderPage'
 import { ParentDashboardPage } from '@/pages/parent/ParentDashboardPage'
+import { ParentInvoiceDetailPage } from '@/pages/parent/InvoiceDetailPage'
 import { ScanStudentPage } from '@/pages/parent/ScanStudentPage'
 import { NoticeBoardPage } from '@/pages/public/NoticeBoardPage'
 import { SchoolWebsitePage } from '@/pages/public/SchoolWebsitePage'
@@ -82,6 +83,7 @@ function App() {
         <Route element={<ProtectedRoute requireRole="Parent" />}>
           <Route element={<ParentLayout />}>
             <Route path="/parent/dashboard" element={<ParentDashboardPage />} />
+            <Route path="/parent/students/:studentId/invoices/:invoiceId" element={<ParentInvoiceDetailPage />} />
             <Route path="/scan/:qrCode" element={<ScanStudentPage />} />
           </Route>
         </Route>

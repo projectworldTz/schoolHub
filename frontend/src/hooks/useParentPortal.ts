@@ -3,6 +3,7 @@ import {
   fetchChildAttendance,
   fetchChildFees,
   fetchChildHomework,
+  fetchChildInvoice,
   fetchChildResults,
   fetchMyChildren,
   fetchParentAnnouncements,
@@ -56,6 +57,14 @@ export function useChildFees(studentId: string) {
     queryKey: ['parent', 'children', studentId, 'fees'],
     queryFn: () => fetchChildFees(studentId),
     enabled: Boolean(studentId),
+  })
+}
+
+export function useChildInvoice(studentId: string, invoiceId: string) {
+  return useQuery({
+    queryKey: ['parent', 'children', studentId, 'invoices', invoiceId],
+    queryFn: () => fetchChildInvoice(studentId, invoiceId),
+    enabled: Boolean(studentId) && Boolean(invoiceId),
   })
 }
 

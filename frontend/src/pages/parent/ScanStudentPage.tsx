@@ -70,7 +70,7 @@ export function ScanStudentPage() {
 
       {!invoicesLoading && invoices && <ParentRewardCard studentName={student.first_name} invoices={invoices} />}
 
-      <FeesTable invoices={invoices} loading={invoicesLoading} />
+      <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />
       <ExamResultsList results={results} loading={resultsLoading} />
     </div>
   )

@@ -351,7 +351,8 @@ function GenerateInvoicesDialog() {
 
 function InvoicesTab() {
   const [status, setStatus] = useState('')
-  const { data, isLoading } = useInvoices({ status: status || undefined })
+  const [search, setSearch] = useState('')
+  const { data, isLoading } = useInvoices({ status: status || undefined, search: search || undefined })
 
   return (
     <Card>
@@ -359,18 +360,26 @@ function InvoicesTab() {
         <div>
           <CardTitle>Invoices</CardTitle>
           <CardDescription>
-            <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
-              <SelectTrigger className="mt-2 w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Input
+                placeholder="Search by student name, admission number, or invoice #…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-xs"
+              />
+              <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="partial">Partial</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardDescription>
         </div>
         <GenerateInvoicesDialog />

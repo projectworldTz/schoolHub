@@ -80,6 +80,23 @@ class ParentPortalController extends Controller
     }
 
     /**
+     * Full itemized detail (line items + payment history) for one of this
+     * parent's own children's invoices — the same InvoiceResource shape an
+     * admin sees on the finance side, but reachable only through this
+     * ownership-checked route rather than the admin `/school/invoices/{id}`
+     * endpoint (which requires finance.manage and a Parent will never have).
+     */
+    public function invoice(Request $request, Student $student, Invoice $invoice)
+    {
+        $this->authorizeChild($request, $student);
+        abort_unless($invoice->student_id === $student->id, 404);
+
+        return new InvoiceResource(
+            $invoice->load(['academicYear', 'term', 'items', 'payments'])
+        );
+    }
+
+    /**
      * Resolves a student's printed/ID-card QR code (Student::$qr_code, a
      * UUID, see Student::bootStudent()) to that student, for the "scan the
      * code, see their performance and fees" flow. Deliberately NOT a public
