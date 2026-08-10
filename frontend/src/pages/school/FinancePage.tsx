@@ -48,7 +48,7 @@ import { useFeeCategories, useFeeStructures, useGenerateInvoices, useInvoices } 
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses } from '@/hooks/useAcademics'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
-import type { FeeCategoryPayload, FeeStructurePayload } from '@/api/finance'
+import { feeReportPdfUrl, type FeeCategoryPayload, type FeeStructurePayload } from '@/api/finance'
 import type { FeeCategory, FeeStructure } from '@/types/finance'
 
 const feeCategoryDefaults = { name: '', description: '' }
@@ -401,7 +401,15 @@ function InvoicesTab() {
             </div>
           </CardDescription>
         </div>
-        <GenerateInvoicesDialog />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.open(feeReportPdfUrl({ status: status || undefined, search: search || undefined }), '_blank')}
+          >
+            Download PDF
+          </Button>
+          <GenerateInvoicesDialog />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <Table>

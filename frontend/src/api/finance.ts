@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client'
+import { apiClient, apiOrigin } from '@/api/client'
 import { createCrudApi } from '@/api/crud'
 import type { PaginatedResponse } from '@/types/school'
 import type { FeeCategory, FeeStructure, Invoice, PaymentMethod } from '@/types/finance'
@@ -32,6 +32,14 @@ export interface ListInvoicesParams {
 export async function listInvoices(params: ListInvoicesParams = {}): Promise<PaginatedResponse<Invoice>> {
   const { data } = await apiClient.get<PaginatedResponse<Invoice>>('/school/invoices', { params })
   return data
+}
+
+export function feeReportPdfUrl(params: { status?: string; search?: string } = {}): string {
+  const query = new URLSearchParams()
+  if (params.status) query.set('status', params.status)
+  if (params.search) query.set('search', params.search)
+  const qs = query.toString()
+  return `${apiOrigin}/api/school/invoices/pdf${qs ? `?${qs}` : ''}`
 }
 
 export async function fetchInvoice(id: string): Promise<Invoice> {

@@ -109,4 +109,40 @@ class ReportCardTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_class_results_pdf_downloads_successfully(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        ['examSubject' => $examSubject, 'exam' => $exam] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
+        );
+        foreach ($fixture['students'] as $student) {
+            $this->recordMark($fixture['school'], $examSubject, $student, 60);
+        }
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->get(
+            "/api/school/exams/{$exam->id}/report-cards/class-results-pdf?school_class_id={$fixture['schoolClass']->id}"
+        );
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_class_results_pdf_404s_when_no_students_are_graded_yet(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        ['exam' => $exam] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
+        );
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->get(
+            "/api/school/exams/{$exam->id}/report-cards/class-results-pdf?school_class_id={$fixture['schoolClass']->id}"
+        );
+
+        $response->assertNotFound();
+    }
 }

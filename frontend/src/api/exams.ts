@@ -100,6 +100,10 @@ export function reportCardPdfUrl(studentId: string, examId: string): string {
   return `${apiOrigin}/api/school/students/${studentId}/report-card/pdf?exam_id=${examId}`
 }
 
+export function classResultsPdfUrl(examId: string, schoolClassId: string): string {
+  return `${apiOrigin}/api/school/exams/${examId}/report-cards/class-results-pdf?school_class_id=${schoolClassId}`
+}
+
 export function bulkReportCardPdfUrl(examId: string, schoolClassId: string): string {
   return `${apiOrigin}/api/school/exams/${examId}/report-cards/pdf?school_class_id=${schoolClassId}`
 }

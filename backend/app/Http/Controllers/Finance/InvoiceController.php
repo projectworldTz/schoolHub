@@ -6,8 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\GenerateInvoicesRequest;
 use App\Http\Resources\Finance\InvoiceResource;
 use App\Models\Invoice;
+use App\Models\School;
 use App\Services\Finance\InvoiceService;
+use App\Support\Tenancy\Tenant;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
@@ -17,8 +22,49 @@ class InvoiceController extends Controller
     {
         abort_unless($request->user()->can('finance.manage'), 403);
 
-        $invoices = Invoice::query()
+        $invoices = $this->filteredQuery($request)
             ->with(['student', 'academicYear', 'term'])
+            ->orderByDesc('created_at')
+            ->paginate($request->integer('per_page', 20));
+
+        return InvoiceResource::collection($invoices);
+    }
+
+    /**
+     * A printable fee report — every invoice matching the same status/search
+     * filters as the on-screen list, but unpaginated (this is a full export
+     * for the accountant/director to print or file, not a page of results).
+     */
+    public function pdf(Request $request)
+    {
+        abort_unless($request->user()->can('finance.manage'), 403);
+
+        $invoices = $this->filteredQuery($request)
+            ->with('student')
+            ->get()
+            ->sortBy(fn (Invoice $invoice) => $invoice->student?->last_name)
+            ->values();
+
+        $status = $request->input('status');
+        $totals = [
+            'total_amount' => $invoices->sum('total_amount'),
+            'amount_paid' => $invoices->sum('amount_paid'),
+            'balance' => $invoices->sum(fn (Invoice $invoice) => (float) $invoice->balance),
+        ];
+
+        $pdf = Pdf::loadView('documents.fee-report', [
+            'school' => $this->currentSchool($request),
+            'invoices' => $invoices,
+            'status' => $status,
+            'totals' => $totals,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download(Str::slug('fee-report-'.($status ?? 'all')).'.pdf');
+    }
+
+    protected function filteredQuery(Request $request): Builder
+    {
+        return Invoice::query()
             ->when($request->input('status'), fn ($q, $status) => $q->where('status', $status))
             ->when($request->input('student_id'), fn ($q, $id) => $q->where('student_id', $id))
             ->when($request->string('search')->isNotEmpty(), function ($query) use ($request) {
@@ -31,11 +77,14 @@ class InvoiceController extends Controller
                                 ->orWhere('admission_number', 'like', "%{$search}%");
                         });
                 });
-            })
-            ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 20));
+            });
+    }
 
-        return InvoiceResource::collection($invoices);
+    protected function currentSchool(Request $request): School
+    {
+        abort_unless(Tenant::id(), 403, 'This account is not attached to a school.');
+
+        return School::findOrFail(Tenant::id());
     }
 
     public function generate(GenerateInvoicesRequest $request)

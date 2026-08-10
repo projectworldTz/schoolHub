@@ -8,6 +8,7 @@ use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\ReportCardRemark;
 use App\Models\School;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Services\School\ExamService;
 use App\Services\School\PerformanceMessageService;
@@ -110,6 +111,34 @@ class ReportCardController extends Controller
         $className = $students->first()?->currentEnrollment?->schoolClass?->name ?? 'class';
 
         return $pdf->download(Str::slug($className.'-'.$exam->name).'-report-cards.pdf');
+    }
+
+    /**
+     * A single-page, notice-board-style results sheet for a whole class —
+     * every student's name, admission number, average, grade, and rank in
+     * one table, as opposed to bulkPdf()'s one-page-per-student report
+     * cards. Meant for pinning up, not for handing to an individual parent.
+     */
+    public function classResultsPdf(Request $request, Exam $exam)
+    {
+        abort_unless($request->user()->can('exams.manage'), 403);
+
+        $schoolClassId = $request->query('school_class_id');
+        abort_unless($schoolClassId, 422, 'school_class_id is required.');
+
+        $classRanking = $this->examService->classRanking($exam, $schoolClassId);
+        abort_if($classRanking->isEmpty(), 404, 'No graded students found for this class and exam.');
+
+        $schoolClass = SchoolClass::findOrFail($schoolClassId);
+
+        $pdf = Pdf::loadView('documents.class-exam-results', [
+            'school' => $this->currentSchool($request),
+            'exam' => $exam,
+            'schoolClass' => $schoolClass,
+            'ranking' => $classRanking,
+        ])->setPaper('a4');
+
+        return $pdf->download(Str::slug($schoolClass->name.'-'.$exam->name.'-results').'.pdf');
     }
 
     /**

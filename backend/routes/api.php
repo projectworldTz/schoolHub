@@ -212,6 +212,7 @@ $schoolRoutes = function () {
         Route::put('exams/{exam}/students/{student}/remark', [ReportCardController::class, 'setRemark']);
         Route::get('exams/{exam}/report-cards/ranking', [ReportCardController::class, 'ranking']);
         Route::get('exams/{exam}/report-cards/pdf', [ReportCardController::class, 'bulkPdf']);
+        Route::get('exams/{exam}/report-cards/class-results-pdf', [ReportCardController::class, 'classResultsPdf']);
         Route::get('exams/{exam}/report-cards/class-summary', [ReportCardController::class, 'classSummary']);
         Route::get('exams/{exam}/teacher-performance', [ReportCardController::class, 'teacherPerformance']);
 
@@ -228,6 +229,7 @@ $schoolRoutes = function () {
         Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
         Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
         Route::get('invoices', [InvoiceController::class, 'index']);
+        Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
         Route::post('invoices/generate', [InvoiceController::class, 'generate']);
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);

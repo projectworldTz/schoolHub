@@ -56,7 +56,7 @@ import {
 } from '@/hooks/useExams'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { useSchoolProfile } from '@/hooks/useSchoolSetup'
-import { bulkReportCardPdfUrl, reportCardPdfUrl } from '@/api/exams'
+import { bulkReportCardPdfUrl, classResultsPdfUrl, reportCardPdfUrl } from '@/api/exams'
 import type { Exam, ExamStatus } from '@/types/exams'
 
 const examSubjectSchema = z.object({
@@ -316,6 +316,13 @@ function ReportCardsCard({ exam }: { exam: Exam }) {
 
           <Button onClick={handleGenerate} disabled={!classId || (!generateAll && !studentId)}>
             Generate PDF{generateAll ? ' (all)' : ''}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!classId}
+            onClick={() => window.open(classResultsPdfUrl(exam.id, classId), '_blank')}
+          >
+            Class results (notice board)
           </Button>
         </div>
 
