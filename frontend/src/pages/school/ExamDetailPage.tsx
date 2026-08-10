@@ -45,6 +45,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { GradeDistribution } from '@/components/school/GradeDistribution'
 import {
   useAddExamSubject,
   useClassRanking,
@@ -270,6 +271,10 @@ function ReportCardsCard({ exam }: { exam: Exam }) {
               </p>
             )}
           </div>
+        )}
+
+        {ranking && ranking.length > 0 && (
+          <GradeDistribution grades={ranking.map((row) => row.grade)} title="Result summary" />
         )}
 
         <div className="flex flex-wrap items-end gap-3">

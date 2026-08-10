@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { GradeDistribution } from '@/components/school/GradeDistribution'
 import { useExamSubject, useRecordExamMarks, useSubmitExamSubject } from '@/hooks/useExams'
 import { useCreateExamEditRequest } from '@/hooks/useExamEditRequests'
 import { rankByMarks } from '@/lib/ranking'
@@ -243,6 +244,18 @@ export function GradebookPage() {
           )}
         </CardContent>
       </Card>
+
+      {examSubject.submitted_at && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Result summary</CardTitle>
+            <CardDescription>How many students landed in each grade band.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GradeDistribution grades={examSubject.results?.map((r) => r.grade) ?? []} title="" />
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
         <DialogContent>
