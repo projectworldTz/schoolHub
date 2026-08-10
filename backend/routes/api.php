@@ -126,6 +126,7 @@ $schoolRoutes = function () {
         Route::apiResource('grading-systems', GradingSystemController::class);
 
         Route::get('roles', [SchoolUserController::class, 'availableRoles']);
+        Route::get('users/roles', [SchoolUserController::class, 'usedRoles']);
         Route::apiResource('users', SchoolUserController::class);
 
         // Students

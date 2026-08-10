@@ -12,6 +12,13 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -47,8 +54,10 @@ import {
   useDeleteSchoolUser,
   useSchoolUsers,
   useUpdateSchoolUser,
+  useUsedRoles,
 } from '@/hooks/useSchoolUsers'
 import { useCurrentUser } from '@/hooks/useAuth'
+import { TablePagination } from '@/components/school/TablePagination'
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -172,13 +181,34 @@ function CreateUserDialog() {
   )
 }
 
+const USERS_PER_PAGE = 100
+const ALL_ROLES = '__all'
+
 export function UsersPage() {
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useSchoolUsers(search)
+  const [role, setRole] = useState('')
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useSchoolUsers({
+    search: search || undefined,
+    role: role || undefined,
+    page,
+    per_page: USERS_PER_PAGE,
+  })
+  const { data: usedRoles } = useUsedRoles()
   const { data: currentUser } = useCurrentUser()
   const updateUser = useUpdateSchoolUser()
   const deleteUser = useDeleteSchoolUser()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+
+  function handleSearchChange(next: string) {
+    setSearch(next)
+    setPage(1)
+  }
+
+  function handleRoleChange(next: string) {
+    setRole(next === ALL_ROLES ? '' : next)
+    setPage(1)
+  }
 
   function toggleActive(userId: string, isActive: boolean) {
     updateUser.mutate(
@@ -220,15 +250,30 @@ export function UsersPage() {
         <CardHeader>
           <CardTitle>Staff</CardTitle>
           <CardDescription>
-            <Input
-              placeholder="Search by name…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="mt-2 max-w-xs"
-            />
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Input
+                placeholder="Search by name…"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="max-w-xs"
+              />
+              <Select value={role || ALL_ROLES} onValueChange={handleRoleChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_ROLES}>All roles</SelectItem>
+                  {usedRoles?.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -289,6 +334,15 @@ export function UsersPage() {
               ))}
             </TableBody>
           </Table>
+          {data && (
+            <TablePagination
+              page={data.meta.current_page}
+              totalPages={data.meta.last_page}
+              totalItems={data.meta.total}
+              pageSize={data.meta.per_page}
+              onPageChange={setPage}
+            />
+          )}
         </CardContent>
       </Card>
       <ConfirmDialog

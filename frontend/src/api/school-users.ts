@@ -17,8 +17,15 @@ export interface UpdateSchoolUserPayload {
   is_active?: boolean
 }
 
-export async function listSchoolUsers(search = ''): Promise<PaginatedResponse<User>> {
-  const { data } = await apiClient.get<PaginatedResponse<User>>('/school/users', { params: { search } })
+export interface ListSchoolUsersParams {
+  search?: string
+  role?: string
+  page?: number
+  per_page?: number
+}
+
+export async function listSchoolUsers(params: ListSchoolUsersParams = {}): Promise<PaginatedResponse<User>> {
+  const { data } = await apiClient.get<PaginatedResponse<User>>('/school/users', { params })
   return data
 }
 
@@ -38,5 +45,10 @@ export async function deleteSchoolUser(id: string): Promise<void> {
 
 export async function listAvailableRoles(): Promise<string[]> {
   const { data } = await apiClient.get<{ data: string[] }>('/school/roles')
+  return data.data
+}
+
+export async function listUsedRoles(): Promise<string[]> {
+  const { data } = await apiClient.get<{ data: string[] }>('/school/users/roles')
   return data.data
 }

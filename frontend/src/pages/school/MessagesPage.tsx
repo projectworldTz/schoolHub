@@ -33,7 +33,7 @@ function NewConversationDialog({
 }) {
   const [search, setSearch] = useState('')
   const { data: currentUser } = useCurrentUser()
-  const { data: users, isLoading } = useSchoolUsers(search)
+  const { data: users, isLoading } = useSchoolUsers({ search })
   const start = useStartConversation()
 
   // Messaging a parent directly is admin-tier only (staff.manage) — don't

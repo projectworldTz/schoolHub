@@ -24,8 +24,12 @@ class SchoolUserController extends Controller
         $users = User::query()
             ->with('roles')
             ->when($request->string('search')->isNotEmpty(), fn ($q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
+            ->when($request->string('role')->isNotEmpty(), function ($q) use ($request) {
+                $role = $request->string('role');
+                $q->whereHas('roles', fn ($q) => $q->where('name', $role));
+            })
             ->orderBy('name')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($request->integer('per_page', 100));
 
         return UserResource::collection($users);
     }
@@ -108,5 +112,31 @@ class SchoolUserController extends Controller
         return response()->json([
             'data' => Role::query()->whereIn('name', $allowed)->orderBy('name')->pluck('name'),
         ]);
+    }
+
+    /**
+     * Distinct role names actually held by at least one user in this
+     * school — for the Users page's role filter. Deliberately not the same
+     * list as availableRoles() above (the staff-assignable catalog for the
+     * "New user" dialog, which intentionally excludes Student/Parent): a
+     * filter should offer every role a real user might have, Student and
+     * Parent included, since guardian-portal and student accounts are real
+     * rows in this same table.
+     */
+    public function usedRoles(Request $request)
+    {
+        abort_unless($request->user()->can('users.manage'), 403);
+
+        $roleNames = User::query()
+            ->with('roles:id,name')
+            ->get()
+            ->pluck('roles')
+            ->flatten()
+            ->pluck('name')
+            ->unique()
+            ->sort()
+            ->values();
+
+        return response()->json(['data' => $roleNames]);
     }
 }

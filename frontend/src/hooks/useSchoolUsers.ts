@@ -4,22 +4,28 @@ import {
   deleteSchoolUser,
   listAvailableRoles,
   listSchoolUsers,
+  listUsedRoles,
   updateSchoolUser,
   type CreateSchoolUserPayload,
+  type ListSchoolUsersParams,
   type UpdateSchoolUserPayload,
 } from '@/api/school-users'
 
 const USERS_KEY = ['school', 'users'] as const
 
-export function useSchoolUsers(search = '') {
+export function useSchoolUsers(params: ListSchoolUsersParams = {}) {
   return useQuery({
-    queryKey: [...USERS_KEY, search],
-    queryFn: () => listSchoolUsers(search),
+    queryKey: [...USERS_KEY, params],
+    queryFn: () => listSchoolUsers(params),
   })
 }
 
 export function useAvailableRoles() {
   return useQuery({ queryKey: ['school', 'roles'], queryFn: listAvailableRoles })
+}
+
+export function useUsedRoles() {
+  return useQuery({ queryKey: ['school', 'users', 'roles'], queryFn: listUsedRoles })
 }
 
 export function useCreateSchoolUser() {
