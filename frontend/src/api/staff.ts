@@ -5,8 +5,14 @@ import type { LeaveRequest, StaffContract, StaffProfile, TeacherImportResult } f
 
 export const staffApi = createCrudApi<StaffProfile>('staff')
 
-export async function listStaff(search = ''): Promise<PaginatedResponse<StaffProfile>> {
-  const { data } = await apiClient.get<PaginatedResponse<StaffProfile>>('/school/staff', { params: { search } })
+export async function listStaff(
+  search = '',
+  page?: number,
+  perPage?: number
+): Promise<PaginatedResponse<StaffProfile>> {
+  const { data } = await apiClient.get<PaginatedResponse<StaffProfile>>('/school/staff', {
+    params: { search, page, per_page: perPage },
+  })
   return data
 }
 

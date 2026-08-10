@@ -12,16 +12,26 @@ use Illuminate\Http\Request;
 
 class StaffProfileController extends Controller
 {
+    /**
+     * Ordered by the related user's name and joined (not whereHas) so that
+     * ordering is possible at all — `name` lives on `users`, not
+     * `staff_profiles`. Without an explicit order, a school with more staff
+     * than fits on one page got an arbitrary, potentially unstable slice
+     * from paginate(), which looked like "some staff just don't show up".
+     */
     public function index(Request $request)
     {
         $staff = StaffProfile::query()
+            ->select('staff_profiles.*')
+            ->join('users', 'users.id', '=', 'staff_profiles.user_id')
             ->with(['user.roles', 'user.subjectsTaught', 'user.assignedClasses', 'department', 'branch'])
             ->when($request->string('search')->isNotEmpty(), function ($query) use ($request) {
                 $search = $request->string('search');
-                $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                $query->where('users.name', 'like', "%{$search}%");
             })
-            ->when($request->input('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
-            ->paginate($request->integer('per_page', 20));
+            ->when($request->input('branch_id'), fn ($q, $id) => $q->where('staff_profiles.branch_id', $id))
+            ->orderBy('users.name')
+            ->paginate($request->integer('per_page', 100));
 
         return StaffProfileResource::collection($staff);
     }

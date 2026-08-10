@@ -18,8 +18,11 @@ import type { LeaveRequest, StaffContract, StaffProfile } from '@/types/staff'
 
 const rawStaffHooks = createCrudHooks<StaffProfile>('staff', staffApi)
 
-export function useStaffList(search = '') {
-  return useQuery({ queryKey: ['school', 'staff', search], queryFn: () => listStaff(search) })
+export function useStaffList(search = '', page?: number, perPage?: number) {
+  return useQuery({
+    queryKey: ['school', 'staff', search, page, perPage],
+    queryFn: () => listStaff(search, page, perPage),
+  })
 }
 
 export const useCreateStaff = rawStaffHooks.useCreate

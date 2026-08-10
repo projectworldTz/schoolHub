@@ -70,6 +70,7 @@ import { useClasses, useSubjects } from '@/hooks/useAcademics'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useMarkStaffAttendance, useStaffAttendanceRegister } from '@/hooks/useStaffAttendance'
+import { TablePagination } from '@/components/school/TablePagination'
 import { apiOrigin } from '@/api/client'
 import type { StaffProfile, TeacherImportResult } from '@/types/staff'
 import type { StaffAttendanceStatus } from '@/types/staffAttendance'
@@ -552,12 +553,20 @@ function ImportTeachersDialog() {
   )
 }
 
+const STAFF_PER_PAGE = 100
+
 function StaffTab() {
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useStaffList(search)
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useStaffList(search, page, STAFF_PER_PAGE)
   const { data: branches } = useBranches.useList()
   const [subjectsFor, setSubjectsFor] = useState<StaffProfile | null>(null)
   const [classesFor, setClassesFor] = useState<StaffProfile | null>(null)
+
+  function handleSearchChange(next: string) {
+    setSearch(next)
+    setPage(1)
+  }
 
   return (
     <Card>
@@ -568,7 +577,7 @@ function StaffTab() {
             <Input
               placeholder="Search by name…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="mt-2 max-w-xs"
             />
           </CardDescription>
@@ -578,7 +587,7 @@ function StaffTab() {
           <CreateStaffDialog />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Table>
           <TableHeader>
             <TableRow>
@@ -645,6 +654,15 @@ function StaffTab() {
             ))}
           </TableBody>
         </Table>
+        {data && (
+          <TablePagination
+            page={data.meta.current_page}
+            totalPages={data.meta.last_page}
+            totalItems={data.meta.total}
+            pageSize={data.meta.per_page}
+            onPageChange={setPage}
+          />
+        )}
 
         <Dialog open={Boolean(subjectsFor)} onOpenChange={(open) => !open && setSubjectsFor(null)}>
           <DialogContent>
