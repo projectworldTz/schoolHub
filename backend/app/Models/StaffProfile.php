@@ -21,6 +21,8 @@ class StaffProfile extends Model
     protected $fillable = [
         'school_id',
         'user_id',
+        'name',
+        'phone',
         'department_id',
         'branch_id',
         'staff_number',
@@ -37,6 +39,17 @@ class StaffProfile extends Model
             'hire_date' => 'date',
             'termination_date' => 'date',
         ];
+    }
+
+    /**
+     * name/phone on this table are only meaningful for a no-login staff
+     * member (user_id null) — support staff like cooks/drivers/gate keepers
+     * who don't need a system account. For a login-backed staff member,
+     * these columns stay null and the real values live on the linked User.
+     */
+    public function displayName(): string
+    {
+        return $this->user?->name ?? $this->name ?? '';
     }
 
     public function user(): BelongsTo

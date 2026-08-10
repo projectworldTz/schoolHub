@@ -13,9 +13,11 @@ class StaffProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'name' => $this->whenLoaded('user', fn () => $this->user->name),
-            'email' => $this->whenLoaded('user', fn () => $this->user->email),
-            'roles' => $this->whenLoaded('user', fn () => $this->user->getRoleNames()),
+            'has_login' => $this->user_id !== null,
+            'name' => $this->user?->name ?? $this->name,
+            'phone' => $this->user?->phone ?? $this->phone,
+            'email' => $this->user?->email,
+            'roles' => $this->user?->getRoleNames() ?? [],
             'department_id' => $this->department_id,
             'department_name' => $this->whenLoaded('department', fn () => $this->department?->name),
             'branch_id' => $this->branch_id,
@@ -27,11 +29,11 @@ class StaffProfileResource extends JsonResource
             'termination_date' => $this->termination_date,
             'bio' => $this->bio,
             'subjects_taught' => $this->when(
-                $this->relationLoaded('user') && $this->user->relationLoaded('subjectsTaught'),
+                $this->user?->relationLoaded('subjectsTaught') ?? false,
                 fn () => SubjectResource::collection($this->user->subjectsTaught)
             ),
             'classes_assigned' => $this->when(
-                $this->relationLoaded('user') && $this->user->relationLoaded('assignedClasses'),
+                $this->user?->relationLoaded('assignedClasses') ?? false,
                 fn () => SchoolClassResource::collection($this->user->assignedClasses)
             ),
             'created_at' => $this->created_at,

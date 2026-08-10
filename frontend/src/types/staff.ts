@@ -2,8 +2,10 @@ import type { SchoolClass, Subject } from '@/types/academics'
 
 export interface StaffProfile {
   id: string
-  user_id: string
+  user_id: string | null
+  has_login: boolean
   name?: string
+  phone?: string | null
   email?: string
   roles?: string[]
   department_id: string | null

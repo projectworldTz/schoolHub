@@ -191,11 +191,13 @@ function CreateCourseDialog({ term }: { term: string }) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {staff?.data.map((s) => (
-                        <SelectItem key={s.user_id} value={s.user_id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
+                      {staff?.data
+                        .filter((s): s is typeof s & { user_id: string } => Boolean(s.user_id))
+                        .map((s) => (
+                          <SelectItem key={s.user_id} value={s.user_id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

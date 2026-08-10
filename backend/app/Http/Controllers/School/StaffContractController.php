@@ -15,6 +15,13 @@ class StaffContractController extends Controller
     {
         abort_unless($request->user()->can('staff.manage'), 403);
 
+        // A no-login staff member (cook, driver, gate keeper — user_id
+        // null) has no User row to hang a contract off, so there's nothing
+        // to list rather than an error.
+        if (! $staff->user) {
+            return StaffContractResource::collection(collect());
+        }
+
         return StaffContractResource::collection(
             $staff->user->contracts()->latest('start_date')->get()
         );

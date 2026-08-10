@@ -75,19 +75,27 @@ import { apiOrigin } from '@/api/client'
 import type { StaffProfile, TeacherImportResult } from '@/types/staff'
 import type { StaffAttendanceStatus } from '@/types/staffAttendance'
 
-const staffSchema = z.object({
-  user_id: z.string().min(1, 'Select a user'),
-  staff_number: z.string().min(1, 'Required'),
-  job_title: z.string().optional(),
-  employment_type: z.enum(['full_time', 'part_time', 'contract']),
-  hire_date: z.string().optional(),
-  branch_id: z.string().optional(),
-})
+const staffSchema = z
+  .object({
+    user_id: z.string().optional(),
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    staff_number: z.string().min(1, 'Required'),
+    job_title: z.string().optional(),
+    employment_type: z.enum(['full_time', 'part_time', 'contract']),
+    hire_date: z.string().optional(),
+    branch_id: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.user_id) || Boolean(data.name?.trim()), {
+    message: 'Select a user, or switch to "No login" and enter a name',
+    path: ['user_id'],
+  })
 
 const NO_BRANCH = '__none'
 
 function CreateStaffDialog() {
   const [open, setOpen] = useQuickAddTrigger('staff')
+  const [noLogin, setNoLogin] = useState(false)
   const { data: users } = useSchoolUsers()
   const { data: branches } = useBranches.useList()
   const create = useCreateStaff()
@@ -95,6 +103,8 @@ function CreateStaffDialog() {
     resolver: zodResolver(staffSchema),
     defaultValues: {
       user_id: '',
+      name: '',
+      phone: '',
       staff_number: '',
       job_title: '',
       employment_type: 'full_time' as const,
@@ -104,10 +114,30 @@ function CreateStaffDialog() {
   })
 
   function onSubmit(values: z.infer<typeof staffSchema>) {
-    create.mutate(values, {
+    const payload = noLogin
+      ? {
+          name: values.name,
+          phone: values.phone || undefined,
+          staff_number: values.staff_number,
+          job_title: values.job_title || undefined,
+          employment_type: values.employment_type,
+          hire_date: values.hire_date || undefined,
+          branch_id: values.branch_id || undefined,
+        }
+      : {
+          user_id: values.user_id,
+          staff_number: values.staff_number,
+          job_title: values.job_title || undefined,
+          employment_type: values.employment_type,
+          hire_date: values.hire_date || undefined,
+          branch_id: values.branch_id || undefined,
+        }
+
+    create.mutate(payload, {
       onSuccess: () => {
         toast.success('Staff profile created')
         form.reset()
+        setNoLogin(false)
         setOpen(false)
       },
       onError: (error) => {
@@ -130,30 +160,71 @@ function CreateStaffDialog() {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="user_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>User</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a staff member" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {users?.data.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name} ({u.roles.join(', ')})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <Checkbox
+                checked={noLogin}
+                onCheckedChange={(checked) => {
+                  setNoLogin(Boolean(checked))
+                  form.clearErrors('user_id')
+                }}
+              />
+              No login needed (support staff — cook, driver, gate keeper…)
+            </label>
+            {noLogin ? (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            ) : (
+              <FormField
+                control={form.control}
+                name="user_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a staff member" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {users?.data.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name} ({u.roles.join(', ')})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="staff_number"
@@ -619,11 +690,17 @@ function StaffTab() {
                 <TableCell className="font-medium">{staff.name}</TableCell>
                 <TableCell>{staff.job_title ?? '—'}</TableCell>
                 <TableCell className="space-x-1">
-                  {staff.roles?.map((role) => (
-                    <Badge key={role} variant="secondary">
-                      {role}
+                  {staff.has_login ? (
+                    staff.roles?.map((role) => (
+                      <Badge key={role} variant="secondary">
+                        {role}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      No login
                     </Badge>
-                  ))}
+                  )}
                 </TableCell>
                 <TableCell>{staff.staff_number}</TableCell>
                 <TableCell>
