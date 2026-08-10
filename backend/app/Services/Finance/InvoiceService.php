@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceService
 {
@@ -16,17 +17,37 @@ class InvoiceService
      * invoice_item per selected fee structure — same
      * "auto-generate-per-enrolled-student" pattern as homework/exams.
      *
+     * Guards against both halves of an "empty" invoice run: the request's
+     * fee_structure_ids already pass a `min:1`/`exists` check, but those IDs
+     * could still resolve to zero real FeeStructure rows (e.g. stale IDs
+     * from a different class/year), and a class can simply have no actively
+     * enrolled students. Either would otherwise silently create invoices
+     * with a zero total and no line items — or nothing at all — with no
+     * feedback that the "generate" action didn't do what was asked.
+     *
      * @return array<Invoice>
      */
     public function generateForClass(array $attributes): array
     {
         $feeStructures = FeeStructure::whereIn('id', $attributes['fee_structure_ids'])->get();
 
+        if ($feeStructures->isEmpty()) {
+            throw ValidationException::withMessages([
+                'fee_structure_ids' => 'None of the selected fee structures could be found — nothing to invoice.',
+            ]);
+        }
+
         $studentIds = StudentEnrollment::query()
             ->where('academic_year_id', $attributes['academic_year_id'])
             ->where('school_class_id', $attributes['school_class_id'])
             ->where('status', 'active')
             ->pluck('student_id');
+
+        if ($studentIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'school_class_id' => 'This class has no actively enrolled students to invoice.',
+            ]);
+        }
 
         return DB::transaction(function () use ($attributes, $feeStructures, $studentIds) {
             $invoices = [];

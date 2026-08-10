@@ -35,6 +35,8 @@ class ReportCardController extends Controller
         abort_unless($schoolClassId, 404, 'This student has no exam subjects recorded for this exam.');
 
         $classRanking = $this->examService->classRanking($exam, $schoolClassId);
+        abort_unless($classRanking->contains('student_id', $student->id), 404, 'This student has no graded marks yet for this exam.');
+
         $subjectRankings = $this->subjectRankingsForClass($exam, $schoolClassId);
 
         return response()->json(['data' => $this->buildReportCard($student, $exam, $classRanking, $subjectRankings)]);
@@ -66,6 +68,8 @@ class ReportCardController extends Controller
         abort_unless($schoolClassId, 404, 'This student has no exam subjects recorded for this exam.');
 
         $classRanking = $this->examService->classRanking($exam, $schoolClassId);
+        abort_unless($classRanking->contains('student_id', $student->id), 404, 'This student has no graded marks yet for this exam.');
+
         $subjectRankings = $this->subjectRankingsForClass($exam, $schoolClassId);
         $reportCard = $this->buildReportCard($student, $exam, $classRanking, $subjectRankings);
 

@@ -74,6 +74,31 @@ class ReportCardTest extends TestCase
         $response->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_a_report_card_404s_for_a_student_with_no_graded_marks_yet(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        ['examSubject' => $examSubject, 'exam' => $exam] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
+        );
+        [$graded, $ungraded] = $fixture['students'];
+        $this->recordMark($fixture['school'], $examSubject, $graded, 80, 'B');
+        // Simulates the real "stub row" pattern (ExamService::addSubject()
+        // pre-creates an ExamResult per enrolled student with marks_obtained
+        // null) — the subject was assigned to this student, but no mark was
+        // ever entered.
+        $this->recordMark($fixture['school'], $examSubject, $ungraded, null);
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $jsonResponse = $this->actingAs($owner, 'web')
+            ->getJson("/api/school/students/{$ungraded->id}/report-card?exam_id={$exam->id}");
+        $jsonResponse->assertNotFound();
+
+        $pdfResponse = $this->actingAs($owner, 'web')
+            ->get("/api/school/students/{$ungraded->id}/report-card/pdf?exam_id={$exam->id}");
+        $pdfResponse->assertNotFound();
+    }
+
     public function test_bulk_pdf_includes_every_graded_student_in_the_class(): void
     {
         $this->seedPermissions();
