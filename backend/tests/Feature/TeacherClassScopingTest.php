@@ -9,17 +9,20 @@ use Tests\Concerns\SetsUpTenant;
 use Tests\TestCase;
 
 /**
- * Guards the teacher-class assignment scoping: a teacher (no classes.manage)
- * should only ever see/act on classes they're actually assigned to — via
- * the explicit class_teacher pivot (User::assignedClasses()) — while a
- * classes.manage holder (School Owner, Principal, Academic Master, etc.)
- * keeps seeing everything, matching the pre-existing behaviour for admins.
+ * Guards the teacher-class assignment scoping: it applies to WRITE paths
+ * that need per-user class authorization (announcements, exam marks — via
+ * User::canAccessClass()), not to the shared read-only GET /school/classes
+ * listing, which every class-picking <Select> in the app relies on and must
+ * return every class in the school regardless of the viewer's own
+ * class_teacher/homeroom assignments (see SchoolClassController::index()'s
+ * docblock for why: a Bursar or subject teacher with no assignment of their
+ * own still needs to see every class).
  */
 class TeacherClassScopingTest extends TestCase
 {
     use RefreshDatabase, SetsUpTenant;
 
-    public function test_a_teacher_only_sees_their_assigned_classes(): void
+    public function test_a_teacher_with_no_class_assignment_still_sees_every_class(): void
     {
         $this->seedPermissions();
         $school = $this->createSchool();
@@ -33,7 +36,7 @@ class TeacherClassScopingTest extends TestCase
         $response->assertOk();
         $ids = collect($response->json('data'))->pluck('id')->all();
         $this->assertContains($assignedClass->id, $ids);
-        $this->assertNotContains($otherClass->id, $ids);
+        $this->assertContains($otherClass->id, $ids);
     }
 
     public function test_a_classes_manage_holder_sees_every_class(): void

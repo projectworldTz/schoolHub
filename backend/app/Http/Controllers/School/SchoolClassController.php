@@ -11,16 +11,22 @@ use Illuminate\Http\Request;
 
 class SchoolClassController extends Controller
 {
+    /**
+     * Read access is open to any authenticated school user, same as other
+     * reference-data GETs (see Phase1PermissionsSeeder) — a Bursar building
+     * invoices, a subject teacher marking attendance, or anyone building a
+     * timetable all need to see every class, not just ones they're a
+     * class_teacher/homeroom teacher for. That narrower per-user scoping
+     * (User::canAccessClass()) is enforced independently on the actual
+     * write paths that need it (e.g. AnnouncementRequest, ExamSubjectRequest),
+     * not here.
+     */
     public function index(Request $request)
     {
         return SchoolClassResource::collection(
             SchoolClass::query()
                 ->with(['subjects', 'branch'])
                 ->when($request->input('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
-                ->when(
-                    $request->user()->cannot('classes.manage'),
-                    fn ($q) => $q->whereIn('id', $request->user()->assignedClassIds())
-                )
                 ->orderBy('level')
                 ->get()
         );
