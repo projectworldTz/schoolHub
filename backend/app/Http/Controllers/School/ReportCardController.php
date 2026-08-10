@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
+use App\Models\GradingSystem;
 use App\Models\ReportCardRemark;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -115,9 +116,10 @@ class ReportCardController extends Controller
 
     /**
      * A single-page, notice-board-style results sheet for a whole class —
-     * every student's name, admission number, average, grade, and rank in
-     * one table, as opposed to bulkPdf()'s one-page-per-student report
-     * cards. Meant for pinning up, not for handing to an individual parent.
+     * every student's mark in every subject, their overall average/grade/
+     * rank, and a class-wide pass/fail + grade-distribution summary at the
+     * bottom — as opposed to bulkPdf()'s one-page-per-student report cards.
+     * Meant for pinning up, not for handing to an individual parent.
      */
     public function classResultsPdf(Request $request, Exam $exam)
     {
@@ -131,12 +133,58 @@ class ReportCardController extends Controller
 
         $schoolClass = SchoolClass::findOrFail($schoolClassId);
 
+        $examSubjects = ExamSubject::where('exam_id', $exam->id)
+            ->where('school_class_id', $schoolClassId)
+            ->with('subject')
+            ->get()
+            ->sortBy(fn (ExamSubject $examSubject) => $examSubject->subject->name)
+            ->values();
+
+        // scores[student_id][exam_subject_id] = ExamResult
+        $scores = ExamResult::query()
+            ->whereIn('exam_subject_id', $examSubjects->pluck('id'))
+            ->whereIn('student_id', $classRanking->pluck('student_id'))
+            ->get()
+            ->groupBy('student_id')
+            ->map(fn (Collection $results) => $results->keyBy('exam_subject_id'));
+
+        // Grade bands are ordered best-to-worst (GradingSystem::gradeBands());
+        // the bottom two bands (e.g. D and F on a five-band A-F scale) count
+        // as "low performance" for both the dark-red highlighting and the
+        // passed/failed tally below, so the two stay consistent with each
+        // other on the page.
+        $gradingSystem = GradingSystem::where('is_default', true)->with('gradeBands')->first();
+        $bandPositions = [];
+        foreach ($gradingSystem?->gradeBands ?? [] as $index => $band) {
+            $bandPositions[$band->label] = $index;
+        }
+        $lowThreshold = max(0, count($bandPositions) - 2);
+        $isLowGrade = fn (?string $label) => $label !== null && ($bandPositions[$label] ?? -1) >= $lowThreshold;
+
+        $gradeCounts = [];
+        foreach ($gradingSystem?->gradeBands ?? [] as $band) {
+            $gradeCounts[$band->label] = 0;
+        }
+        foreach ($classRanking as $row) {
+            if ($row['grade'] !== null && array_key_exists($row['grade'], $gradeCounts)) {
+                $gradeCounts[$row['grade']]++;
+            }
+        }
+
+        $failedCount = $classRanking->filter(fn ($row) => $isLowGrade($row['grade']))->count();
+
         $pdf = Pdf::loadView('documents.class-exam-results', [
             'school' => $this->currentSchool($request),
             'exam' => $exam,
             'schoolClass' => $schoolClass,
             'ranking' => $classRanking,
-        ])->setPaper('a4');
+            'examSubjects' => $examSubjects,
+            'scores' => $scores,
+            'isLowGrade' => $isLowGrade,
+            'gradeCounts' => $gradeCounts,
+            'passedCount' => $classRanking->count() - $failedCount,
+            'failedCount' => $failedCount,
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download(Str::slug($schoolClass->name.'-'.$exam->name.'-results').'.pdf');
     }

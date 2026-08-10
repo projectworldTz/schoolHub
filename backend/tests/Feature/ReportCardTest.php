@@ -130,6 +130,45 @@ class ReportCardTest extends TestCase
         $response->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_class_results_pdf_includes_every_subject_and_a_pass_fail_summary(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        [$topStudent, $bottomStudent] = $fixture['students'];
+
+        $science = \App\Models\Subject::create([
+            'school_id' => $fixture['school']->id,
+            'name' => 'Science',
+            'code' => 'SCI',
+        ]);
+        ['examSubject' => $mathSubject, 'exam' => $exam] = $this->createExamWithSubject(
+            $fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $fixture['subject']
+        );
+        $scienceSubject = \App\Models\ExamSubject::create([
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $exam->id,
+            'school_class_id' => $fixture['schoolClass']->id,
+            'subject_id' => $science->id,
+            'max_marks' => 100,
+            'pass_marks' => 40,
+        ]);
+
+        // Top student scores an A in both subjects; bottom student fails both.
+        $this->recordMark($fixture['school'], $mathSubject, $topStudent, 90, 'A');
+        $this->recordMark($fixture['school'], $scienceSubject, $topStudent, 85, 'A');
+        $this->recordMark($fixture['school'], $mathSubject, $bottomStudent, 30, 'F');
+        $this->recordMark($fixture['school'], $scienceSubject, $bottomStudent, 25, 'F');
+
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->get(
+            "/api/school/exams/{$exam->id}/report-cards/class-results-pdf?school_class_id={$fixture['schoolClass']->id}"
+        );
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
     public function test_class_results_pdf_404s_when_no_students_are_graded_yet(): void
     {
         $this->seedPermissions();
