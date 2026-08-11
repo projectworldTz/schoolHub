@@ -14,6 +14,7 @@ export interface StudentPayload {
   emergency_contact_name?: string
   emergency_contact_phone?: string
   previous_school_name?: string
+  status?: 'active' | 'graduated' | 'transferred' | 'withdrawn'
 }
 
 export async function listStudents(

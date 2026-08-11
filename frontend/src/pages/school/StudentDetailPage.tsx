@@ -59,8 +59,10 @@ import {
   useGrantGuardianPortalAccess,
   useStudent,
   useStudentDocuments,
+  useUpdateStudent,
   useUploadStudentDocument,
 } from '@/hooks/useStudents'
+import type { Student } from '@/types/students'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses, useStreams } from '@/hooks/useAcademics'
 import { useExams, useReportCard, useSetReportCardRemark } from '@/hooks/useExams'
@@ -961,6 +963,253 @@ function FeeExclusionsCard({ studentId }: { studentId: string }) {
   )
 }
 
+const editStudentSchema = z.object({
+  admission_number: z.string().min(1, 'Required'),
+  first_name: z.string().min(1, 'Required'),
+  last_name: z.string().min(1, 'Required'),
+  status: z.enum(['active', 'graduated', 'transferred', 'withdrawn']),
+  school_class_id: z.string().optional(),
+  stream_id: z.string().optional(),
+})
+
+/**
+ * Class and branch aren't columns on the student themselves — a student's
+ * "current" class comes from their latest active StudentEnrollment, and
+ * branch is derived from that class (SchoolClass belongsTo Branch). So
+ * changing class here creates a new enrollment (same academic year, dated
+ * today) rather than editing the student row — the same mechanism the
+ * separate "Enroll" button already uses. It only fires if the class or
+ * stream actually changed, so re-saving the form without touching them
+ * doesn't spawn a duplicate enrollment.
+ */
+function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpenChange: (open: boolean) => void }) {
+  const { data: classes } = useClasses.useList()
+  const { data: streams } = useStreams.useList()
+  const updateStudent = useUpdateStudent(student.id)
+  const enrollStudent = useEnrollStudent(student.id)
+  const currentEnrollment = student.current_enrollment
+
+  const form = useForm({
+    resolver: zodResolver(editStudentSchema),
+    defaultValues: {
+      admission_number: student.admission_number,
+      first_name: student.first_name,
+      last_name: student.last_name,
+      status: student.status,
+      school_class_id: currentEnrollment?.school_class_id ?? '',
+      stream_id: currentEnrollment?.stream_id ?? '',
+    },
+  })
+
+  const selectedClassId = form.watch('school_class_id')
+  const selectedClass = classes?.find((c) => c.id === selectedClassId)
+  const classStreams = streams?.filter((s) => s.school_class_id === selectedClassId) ?? []
+
+  function onSubmit(values: z.infer<typeof editStudentSchema>) {
+    updateStudent.mutate(
+      {
+        admission_number: values.admission_number,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        status: values.status,
+      },
+      {
+        onSuccess: () => {
+          const classChanged =
+            values.school_class_id &&
+            (values.school_class_id !== currentEnrollment?.school_class_id ||
+              (values.stream_id ?? '') !== (currentEnrollment?.stream_id ?? ''))
+
+          if (!classChanged) {
+            toast.success('Student updated')
+            onOpenChange(false)
+            return
+          }
+
+          if (!currentEnrollment) {
+            toast.success('Student updated')
+            toast.info('Use "Enroll" below to assign this student to a class for the first time.')
+            onOpenChange(false)
+            return
+          }
+
+          enrollStudent.mutate(
+            {
+              academic_year_id: currentEnrollment.academic_year_id,
+              school_class_id: values.school_class_id!,
+              stream_id: values.stream_id || undefined,
+              enrolled_at: new Date().toISOString().slice(0, 10),
+            },
+            {
+              onSuccess: () => {
+                toast.success('Student updated')
+                onOpenChange(false)
+              },
+              onError: (error) => {
+                const message = isAxiosError(error)
+                  ? (error.response?.data?.message ?? 'Could not update class')
+                  : 'Something went wrong'
+                toast.error(message)
+              },
+            }
+          )
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update student')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  const saving = updateStudent.isPending || enrollStudent.isPending
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit student</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="admission_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Admission number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="graduated">Graduated</SelectItem>
+                      <SelectItem value="transferred">Transferred</SelectItem>
+                      <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="school_class_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Class</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value)
+                      form.setValue('stream_id', '')
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="No class" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {classes?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {selectedClassId && classStreams.length > 0 && (
+              <FormField
+                control={form.control}
+                name="stream_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stream (optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="No stream" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {classStreams.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <div>
+              <p className="text-sm text-muted-foreground">Branch</p>
+              <p className="text-sm">{selectedClass?.branch_name ?? 'No branch — set by the class chosen above'}</p>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const studentId = id ?? ''
@@ -968,6 +1217,7 @@ export function StudentDetailPage() {
   const { data: enrollments } = useEnrollments(studentId)
   const detachGuardian = useDetachGuardian(studentId)
   const [pendingDetachGuardianId, setPendingDetachGuardianId] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
 
   if (isLoading || !student) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
@@ -984,35 +1234,42 @@ export function StudentDetailPage() {
           </div>
           <p className="text-sm text-muted-foreground">Admission #{student.admission_number}</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline">
-              Documents
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() =>
-                window.open(`${apiOrigin}/api/school/students/${studentId}/certificate?type=enrollment`, '_blank')
-              }
-            >
-              Certificate of enrollment
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                window.open(`${apiOrigin}/api/school/students/${studentId}/certificate?type=completion`, '_blank')
-              }
-            >
-              Certificate of completion
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => window.open(`${apiOrigin}/api/school/students/${studentId}/transcript`, '_blank')}
-            >
-              Academic transcript
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            Edit
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                Documents
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() =>
+                  window.open(`${apiOrigin}/api/school/students/${studentId}/certificate?type=enrollment`, '_blank')
+                }
+              >
+                Certificate of enrollment
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  window.open(`${apiOrigin}/api/school/students/${studentId}/certificate?type=completion`, '_blank')
+                }
+              >
+                Certificate of completion
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => window.open(`${apiOrigin}/api/school/students/${studentId}/transcript`, '_blank')}
+              >
+                Academic transcript
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
+
+      {editing && <EditStudentDialog student={student} onOpenChange={setEditing} />}
 
       <Card>
         <CardHeader>
