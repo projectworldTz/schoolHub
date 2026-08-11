@@ -18,11 +18,24 @@ class FeeCategory extends Model
         'school_id',
         'name',
         'description',
+        'is_optional',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_optional' => 'boolean',
+        ];
+    }
 
     public function feeStructures(): HasMany
     {
         return $this->hasMany(FeeStructure::class);
+    }
+
+    public function exclusions(): HasMany
+    {
+        return $this->hasMany(StudentFeeExclusion::class);
     }
 
     protected function activityDescription(string $action): string

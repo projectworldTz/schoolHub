@@ -5,7 +5,9 @@ namespace App\Services\Finance;
 use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Models\StudentFeeExclusion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +27,12 @@ class InvoiceService
      * with a zero total and no line items — or nothing at all — with no
      * feedback that the "generate" action didn't do what was asked.
      *
-     * @return array<Invoice>
+     * A student individually excluded (see StudentFeeExclusion) from every
+     * selected fee structure's category is skipped rather than given a
+     * blank invoice — same "no empty records" rule, just per-student instead
+     * of per-class.
+     *
+     * @return array{invoices: array<Invoice>, skipped_students: array<array{id: string, name: string}>}
      */
     public function generateForClass(array $attributes): array
     {
@@ -49,20 +56,41 @@ class InvoiceService
             ]);
         }
 
-        return DB::transaction(function () use ($attributes, $feeStructures, $studentIds) {
+        $excludedCategoryIdsByStudent = StudentFeeExclusion::query()
+            ->whereIn('student_id', $studentIds)
+            ->where('academic_year_id', $attributes['academic_year_id'])
+            ->get(['student_id', 'fee_category_id'])
+            ->groupBy('student_id')
+            ->map(fn ($rows) => $rows->pluck('fee_category_id')->all());
+
+        return DB::transaction(function () use ($attributes, $feeStructures, $studentIds, $excludedCategoryIdsByStudent) {
             $invoices = [];
+            $skipped = [];
 
             foreach ($studentIds as $studentId) {
+                $excludedCategoryIds = $excludedCategoryIdsByStudent->get($studentId, []);
+
+                $applicableStructures = $excludedCategoryIds === []
+                    ? $feeStructures
+                    : $feeStructures->reject(fn (FeeStructure $fs) => in_array($fs->fee_category_id, $excludedCategoryIds, true));
+
+                if ($applicableStructures->isEmpty()) {
+                    $student = Student::find($studentId);
+                    $skipped[] = ['id' => $studentId, 'name' => $student?->full_name ?? $studentId];
+
+                    continue;
+                }
+
                 $invoice = Invoice::create([
                     'student_id' => $studentId,
                     'academic_year_id' => $attributes['academic_year_id'],
                     'term_id' => $attributes['term_id'] ?? null,
                     'invoice_number' => $this->generateInvoiceNumber(),
-                    'total_amount' => $feeStructures->sum('amount'),
+                    'total_amount' => $applicableStructures->sum('amount'),
                     'due_date' => $attributes['due_date'] ?? null,
                 ]);
 
-                foreach ($feeStructures as $feeStructure) {
+                foreach ($applicableStructures as $feeStructure) {
                     $invoice->items()->create([
                         'fee_structure_id' => $feeStructure->id,
                         'description' => $feeStructure->feeCategory->name,
@@ -73,7 +101,7 @@ class InvoiceService
                 $invoices[] = $invoice;
             }
 
-            return $invoices;
+            return ['invoices' => $invoices, 'skipped_students' => $skipped];
         });
     }
 
@@ -97,14 +125,19 @@ class InvoiceService
             ]);
 
             $invoice->amount_paid = bcadd((string) $invoice->amount_paid, (string) $data['amount'], 2);
-            $invoice->status = $this->computeStatus($invoice);
+            $invoice->status = static::computeStatus($invoice);
             $invoice->save();
 
             return $payment;
         });
     }
 
-    protected function computeStatus(Invoice $invoice): string
+    /**
+     * Shared by recordPayment() here and FeeExclusionService's recalculation
+     * — both mutate amount_paid/total_amount and need the exact same
+     * paid/partial/overdue/unpaid rule applied afterwards.
+     */
+    public static function computeStatus(Invoice $invoice): string
     {
         if (bccomp((string) $invoice->amount_paid, (string) $invoice->total_amount, 2) >= 0) {
             return 'paid';

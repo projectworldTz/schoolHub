@@ -2,6 +2,19 @@ export interface FeeCategory {
   id: string
   name: string
   description: string | null
+  is_optional: boolean
+}
+
+export interface StudentFeeExclusion {
+  id: string
+  student_id: string
+  fee_category_id: string
+  fee_category_name?: string
+  academic_year_id: string
+  academic_year_name?: string
+  reason: string | null
+  excluded_by_name?: string
+  created_at: string
 }
 
 export interface FeeStructure {

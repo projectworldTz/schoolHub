@@ -89,11 +89,14 @@ class InvoiceController extends Controller
 
     public function generate(GenerateInvoicesRequest $request)
     {
-        $invoices = $this->invoiceService->generateForClass($request->validated());
+        $result = $this->invoiceService->generateForClass($request->validated());
 
-        return InvoiceResource::collection(
-            collect($invoices)->each->load(['student', 'academicYear', 'term', 'items'])
-        );
+        $invoices = collect($result['invoices'])->each->load(['student', 'academicYear', 'term', 'items']);
+
+        return response()->json([
+            'data' => InvoiceResource::collection($invoices)->resolve(),
+            'skipped_students' => $result['skipped_students'],
+        ]);
     }
 
     public function show(Request $request, Invoice $invoice)

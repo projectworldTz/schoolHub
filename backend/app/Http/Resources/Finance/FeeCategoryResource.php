@@ -14,6 +14,7 @@ class FeeCategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'is_optional' => $this->is_optional,
         ];
     }
 }

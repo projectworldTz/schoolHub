@@ -1,11 +1,12 @@
 import { apiClient, apiOrigin } from '@/api/client'
 import { createCrudApi } from '@/api/crud'
 import type { PaginatedResponse } from '@/types/school'
-import type { FeeCategory, FeeStructure, Invoice, PaymentMethod } from '@/types/finance'
+import type { FeeCategory, FeeStructure, Invoice, PaymentMethod, StudentFeeExclusion } from '@/types/finance'
 
 export interface FeeCategoryPayload {
   name: string
   description?: string
+  is_optional?: boolean
 }
 
 export const feeCategoriesApi = createCrudApi<FeeCategory, FeeCategoryPayload>('fee-categories')
@@ -55,9 +56,17 @@ export interface GenerateInvoicesPayload {
   due_date?: string
 }
 
-export async function generateInvoices(payload: GenerateInvoicesPayload): Promise<Invoice[]> {
-  const { data } = await apiClient.post<{ data: Invoice[] }>('/school/invoices/generate', payload)
-  return data.data
+export interface GenerateInvoicesResult {
+  invoices: Invoice[]
+  skippedStudents: { id: string; name: string }[]
+}
+
+export async function generateInvoices(payload: GenerateInvoicesPayload): Promise<GenerateInvoicesResult> {
+  const { data } = await apiClient.post<{ data: Invoice[]; skipped_students: { id: string; name: string }[] }>(
+    '/school/invoices/generate',
+    payload
+  )
+  return { invoices: data.data, skippedStudents: data.skipped_students }
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
@@ -76,4 +85,53 @@ export interface RecordPaymentPayload {
 export async function recordPayment(invoiceId: string, payload: RecordPaymentPayload): Promise<Invoice> {
   const { data } = await apiClient.post<{ data: Invoice }>(`/school/invoices/${invoiceId}/payments`, payload)
   return data.data
+}
+
+export async function listStudentFeeExclusions(
+  studentId: string,
+  academicYearId: string
+): Promise<StudentFeeExclusion[]> {
+  const { data } = await apiClient.get<{ data: StudentFeeExclusion[] }>(
+    `/school/students/${studentId}/fee-exclusions`,
+    { params: { academic_year_id: academicYearId } }
+  )
+  return data.data
+}
+
+export interface ExcludeStudentFeePayload {
+  fee_category_id: string
+  academic_year_id: string
+  reason?: string
+}
+
+export interface ExcludeStudentFeeResult {
+  exclusion: StudentFeeExclusion
+  adjustedInvoices: { invoice_number: string; total_amount: string; balance: string }[]
+}
+
+export async function excludeStudentFee(
+  studentId: string,
+  payload: ExcludeStudentFeePayload
+): Promise<ExcludeStudentFeeResult> {
+  const { data } = await apiClient.post<{
+    data: StudentFeeExclusion
+    adjusted_invoices: { invoice_number: string; total_amount: string; balance: string }[]
+  }>(`/school/students/${studentId}/fee-exclusions`, payload)
+  return { exclusion: data.data, adjustedInvoices: data.adjusted_invoices }
+}
+
+export async function updateStudentFeeExclusion(
+  studentId: string,
+  exclusionId: string,
+  reason: string
+): Promise<StudentFeeExclusion> {
+  const { data } = await apiClient.patch<{ data: StudentFeeExclusion }>(
+    `/school/students/${studentId}/fee-exclusions/${exclusionId}`,
+    { reason }
+  )
+  return data.data
+}
+
+export async function includeStudentFee(studentId: string, exclusionId: string): Promise<void> {
+  await apiClient.delete(`/school/students/${studentId}/fee-exclusions/${exclusionId}`)
 }

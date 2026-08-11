@@ -65,6 +65,13 @@ import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses, useStreams } from '@/hooks/useAcademics'
 import { useExams, useReportCard, useSetReportCardRemark } from '@/hooks/useExams'
 import { useStudentAttendanceHistory } from '@/hooks/useAttendance'
+import {
+  useExcludeStudentFee,
+  useFeeCategories,
+  useIncludeStudentFee,
+  useStudentFeeExclusions,
+  useUpdateStudentFeeExclusion,
+} from '@/hooks/useFinance'
 import { reportCardPdfUrl } from '@/api/exams'
 import { Textarea } from '@/components/ui/textarea'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
@@ -673,6 +680,287 @@ function ReportCardsCard({ studentId }: { studentId: string }) {
   )
 }
 
+const excludeFeeSchema = z.object({
+  reason: z.string().max(1000).optional(),
+})
+
+function ExcludeFeeDialog({
+  studentId,
+  academicYearId,
+  feeCategoryId,
+  feeCategoryName,
+}: {
+  studentId: string
+  academicYearId: string
+  feeCategoryId: string
+  feeCategoryName: string
+}) {
+  const [open, setOpen] = useState(false)
+  const exclude = useExcludeStudentFee(studentId)
+  const form = useForm({ resolver: zodResolver(excludeFeeSchema), defaultValues: { reason: '' } })
+
+  function onSubmit(values: z.infer<typeof excludeFeeSchema>) {
+    exclude.mutate(
+      { fee_category_id: feeCategoryId, academic_year_id: academicYearId, reason: values.reason || undefined },
+      {
+        onSuccess: ({ adjustedInvoices }) => {
+          toast.success(
+            adjustedInvoices.length > 0
+              ? `Excluded from ${feeCategoryName} — ${adjustedInvoices.length} invoice(s) adjusted`
+              : `Excluded from ${feeCategoryName}`
+          )
+          form.reset()
+          setOpen(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not exclude this fee')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          Exclude
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Exclude from {feeCategoryName}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reason (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="e.g. does not use school transport" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={exclude.isPending}>
+                {exclude.isPending ? 'Excluding…' : 'Exclude'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditExclusionReasonDialog({
+  studentId,
+  exclusionId,
+  feeCategoryName,
+  currentReason,
+}: {
+  studentId: string
+  exclusionId: string
+  feeCategoryName: string
+  currentReason: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  const update = useUpdateStudentFeeExclusion(studentId)
+  const form = useForm({
+    resolver: zodResolver(excludeFeeSchema),
+    defaultValues: { reason: currentReason ?? '' },
+  })
+
+  function onSubmit(values: z.infer<typeof excludeFeeSchema>) {
+    update.mutate(
+      { exclusionId, reason: values.reason ?? '' },
+      {
+        onSuccess: () => {
+          toast.success('Reason updated')
+          setOpen(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update this exclusion')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) form.reset({ reason: currentReason ?? '' })
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost">
+          Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit exclusion reason — {feeCategoryName}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reason (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="e.g. does not use school transport" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={update.isPending}>
+                {update.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function FeeExclusionsCard({ studentId }: { studentId: string }) {
+  const { data: academicYears } = useAcademicYears.useList()
+  const [academicYearId, setAcademicYearId] = useState('')
+  const { data: categories } = useFeeCategories.useList()
+  const { data: exclusions, isLoading } = useStudentFeeExclusions(studentId, academicYearId)
+  const include = useIncludeStudentFee(studentId)
+  const [pendingIncludeId, setPendingIncludeId] = useState<string | null>(null)
+
+  const optionalCategories = categories?.filter((c) => c.is_optional) ?? []
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Fee exclusions</CardTitle>
+        <CardDescription>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <Select value={academicYearId} onValueChange={setAcademicYearId}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Academic year" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears?.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>
+                    {y.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>
+              Exclude this student from optional fee categories that don't apply to them (transport, uniform,
+              activities…). Mandatory categories always apply.
+            </span>
+          </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!academicYearId && <p className="text-sm text-muted-foreground">Choose an academic year.</p>}
+        {academicYearId && optionalCategories.length === 0 && (
+          <p className="text-sm text-muted-foreground">No optional fee categories are set up yet.</p>
+        )}
+        {academicYearId && optionalCategories.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fee category</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead className="w-48" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    Loading…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading &&
+                optionalCategories.map((category) => {
+                  const exclusion = exclusions?.find((e) => e.fee_category_id === category.id)
+                  return (
+                    <TableRow key={category.id}>
+                      <TableCell>{category.name}</TableCell>
+                      <TableCell>
+                        {exclusion ? (
+                          <Badge variant="secondary">Excluded</Badge>
+                        ) : (
+                          <Badge variant="outline">Included</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{exclusion?.reason ?? '—'}</TableCell>
+                      <TableCell>
+                        {exclusion ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <EditExclusionReasonDialog
+                              studentId={studentId}
+                              exclusionId={exclusion.id}
+                              feeCategoryName={category.name}
+                              currentReason={exclusion.reason}
+                            />
+                            <Button size="sm" variant="ghost" onClick={() => setPendingIncludeId(exclusion.id)}>
+                              Restore
+                            </Button>
+                          </div>
+                        ) : (
+                          <ExcludeFeeDialog
+                            studentId={studentId}
+                            academicYearId={academicYearId}
+                            feeCategoryId={category.id}
+                            feeCategoryName={category.name}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+      <ConfirmDialog
+        open={pendingIncludeId !== null}
+        onOpenChange={(open) => !open && setPendingIncludeId(null)}
+        title="Restore this fee for the student?"
+        description="It will apply again the next time invoices are generated for this academic year. Already-generated invoices are not changed retroactively."
+        confirmLabel="Restore"
+        onConfirm={() => {
+          if (pendingIncludeId) {
+            include.mutate(pendingIncludeId, {
+              onSuccess: () => toast.success('Fee restored'),
+              onError: () => toast.error('Could not restore this fee'),
+            })
+          }
+          setPendingIncludeId(null)
+        }}
+      />
+    </Card>
+  )
+}
+
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const studentId = id ?? ''
@@ -877,6 +1165,7 @@ export function StudentDetailPage() {
       </Card>
 
       <AttendanceCard studentId={studentId} />
+      <FeeExclusionsCard studentId={studentId} />
       <DocumentsCard studentId={studentId} />
       <ReportCardsCard studentId={studentId} />
     </div>

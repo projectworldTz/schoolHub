@@ -23,6 +23,7 @@ class FeeCategoryRequest extends FormRequest
                     ->ignore($this->route('fee_category')),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
+            'is_optional' => ['sometimes', 'boolean'],
         ];
     }
 }

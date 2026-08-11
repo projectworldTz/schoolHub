@@ -41,6 +41,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCard'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import { TablePagination } from '@/components/school/TablePagination'
@@ -51,27 +53,51 @@ import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { feeReportPdfUrl, type FeeCategoryPayload, type FeeStructurePayload } from '@/api/finance'
 import type { FeeCategory, FeeStructure } from '@/types/finance'
 
-const feeCategoryDefaults = { name: '', description: '' }
+const feeCategoryDefaults = { name: '', description: '', is_optional: false }
 const feeCategorySchema = z.object({
   name: z.string().min(1, 'Required'),
   description: z.string().optional(),
+  is_optional: z.boolean().default(false),
 })
 
 function FeeCategoriesCard() {
   const { data, isLoading } = useFeeCategories.useList()
   const create = useFeeCategories.useCreate()
+  const update = useFeeCategories.useUpdate()
   const remove = useFeeCategories.useRemove()
   const form = useForm({ resolver: zodResolver(feeCategorySchema), defaultValues: feeCategoryDefaults })
+
+  function toggleOptional(category: FeeCategory) {
+    update.mutate(
+      {
+        id: category.id,
+        payload: { name: category.name, description: category.description ?? undefined, is_optional: !category.is_optional },
+      },
+      {
+        onError: () => toast.error('Could not update this fee category'),
+      }
+    )
+  }
 
   const columns: ColumnDef<FeeCategory>[] = [
     { key: 'name', label: 'Name', render: (c) => c.name },
     { key: 'description', label: 'Description', render: (c) => c.description ?? '—' },
+    {
+      key: 'is_optional',
+      label: 'Optional',
+      render: (c) => (
+        <div className="flex items-center gap-2">
+          <Switch checked={c.is_optional} onCheckedChange={() => toggleOptional(c)} />
+          <Badge variant={c.is_optional ? 'outline' : 'secondary'}>{c.is_optional ? 'Optional' : 'Mandatory'}</Badge>
+        </div>
+      ),
+    },
   ]
 
   return (
     <SimpleCrudCard
       title="Fee categories"
-      description="Types of fees this school charges (Tuition, Transport, Boarding…)."
+      description="Types of fees this school charges (Tuition, Transport, Boarding…). Optional categories can be excluded per student."
       items={data}
       isLoading={isLoading}
       columns={columns}
@@ -80,6 +106,7 @@ function FeeCategoriesCard() {
       fields={[
         { name: 'name', label: 'Name', type: 'text' },
         { name: 'description', label: 'Description', type: 'textarea' },
+        { name: 'is_optional', label: 'Optional (students can be excluded)', type: 'switch' },
       ]}
       onCreate={(values) => create.mutateAsync(values as FeeCategoryPayload)}
       onDelete={(item) => remove.mutateAsync(item.id)}
@@ -113,7 +140,19 @@ function FeeStructuresCard() {
   const form = useForm({ resolver: zodResolver(feeStructureSchema), defaultValues: feeStructureDefaults })
 
   const columns: ColumnDef<FeeStructure>[] = [
-    { key: 'category', label: 'Category', render: (s) => s.fee_category_name ?? '—' },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (s) => {
+        const isOptional = categories?.find((c) => c.id === s.fee_category_id)?.is_optional
+        return (
+          <>
+            {s.fee_category_name ?? '—'}
+            {isOptional && <span className="ml-1 text-xs text-muted-foreground">(optional)</span>}
+          </>
+        )
+      },
+    },
     { key: 'class', label: 'Class', render: (s) => s.school_class_name ?? 'All classes' },
     { key: 'year', label: 'Academic year', render: (s) => s.academic_year_name ?? '—' },
     { key: 'amount', label: 'Amount', render: (s) => Number(s.amount).toLocaleString() },
@@ -203,8 +242,15 @@ function GenerateInvoicesDialog() {
         fee_structure_ids: values.fee_structure_ids,
       },
       {
-        onSuccess: (invoices) => {
+        onSuccess: ({ invoices, skippedStudents }) => {
           toast.success(`${invoices.length} invoice(s) generated`)
+          if (skippedStudents.length > 0) {
+            toast.info(
+              `${skippedStudents.length} student(s) skipped — every selected fee was excluded for them: ${skippedStudents
+                .map((s) => s.name)
+                .join(', ')}`
+            )
+          }
           form.reset()
           setOpen(false)
         },

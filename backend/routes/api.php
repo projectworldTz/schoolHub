@@ -90,6 +90,7 @@ use App\Http\Controllers\Finance\PaymentController;
 use App\Http\Controllers\Finance\PayrollRunController;
 use App\Http\Controllers\Finance\PayslipController;
 use App\Http\Controllers\Finance\StaffSalaryController;
+use App\Http\Controllers\Finance\StudentFeeExclusionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -235,6 +236,10 @@ $schoolRoutes = function () {
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
         Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store']);
+        Route::get('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'index']);
+        Route::post('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'store']);
+        Route::patch('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'update']);
+        Route::delete('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'destroy']);
 
         // Finance: payroll
         Route::apiResource('staff-salaries', StaffSalaryController::class)->except(['show']);

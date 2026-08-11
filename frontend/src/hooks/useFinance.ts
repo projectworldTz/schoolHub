@@ -2,12 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createCrudHooks } from '@/hooks/useCrud'
 import {
   deleteInvoice,
+  excludeStudentFee,
   feeCategoriesApi,
   feeStructuresApi,
   fetchInvoice,
   generateInvoices,
+  includeStudentFee,
   listInvoices,
+  listStudentFeeExclusions,
   recordPayment,
+  updateStudentFeeExclusion,
+  type ExcludeStudentFeePayload,
   type FeeCategoryPayload,
   type FeeStructurePayload,
   type GenerateInvoicesPayload,
@@ -52,6 +57,50 @@ export function useRecordPayment(invoiceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...INVOICES_KEY, invoiceId] })
       queryClient.invalidateQueries({ queryKey: INVOICES_KEY })
+    },
+  })
+}
+
+function feeExclusionsKey(studentId: string, academicYearId: string) {
+  return ['school', 'students', studentId, 'fee-exclusions', academicYearId] as const
+}
+
+export function useStudentFeeExclusions(studentId: string, academicYearId: string) {
+  return useQuery({
+    queryKey: feeExclusionsKey(studentId, academicYearId),
+    queryFn: () => listStudentFeeExclusions(studentId, academicYearId),
+    enabled: Boolean(studentId) && Boolean(academicYearId),
+  })
+}
+
+export function useExcludeStudentFee(studentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: ExcludeStudentFeePayload) => excludeStudentFee(studentId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['school', 'students', studentId, 'fee-exclusions'] })
+      queryClient.invalidateQueries({ queryKey: INVOICES_KEY })
+    },
+  })
+}
+
+export function useUpdateStudentFeeExclusion(studentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ exclusionId, reason }: { exclusionId: string; reason: string }) =>
+      updateStudentFeeExclusion(studentId, exclusionId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['school', 'students', studentId, 'fee-exclusions'] })
+    },
+  })
+}
+
+export function useIncludeStudentFee(studentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (exclusionId: string) => includeStudentFee(studentId, exclusionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['school', 'students', studentId, 'fee-exclusions'] })
     },
   })
 }
