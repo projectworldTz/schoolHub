@@ -52,6 +52,7 @@ import {
 import {
   useCreateStaff,
   useImportTeachers,
+  useRemoveStaff,
   useStaffContracts,
   useStaffList,
   useSyncTeacherClasses,
@@ -315,6 +316,169 @@ function CreateStaffDialog() {
             <DialogFooter>
               <Button type="submit" disabled={create.isPending}>
                 {create.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const editStaffSchema = z.object({
+  staff_number: z.string().min(1, 'Required'),
+  job_title: z.string().optional(),
+  employment_type: z.enum(['full_time', 'part_time', 'contract']),
+  hire_date: z.string().optional(),
+  branch_id: z.string().optional(),
+})
+
+function EditStaffDialog({
+  staff,
+  branches,
+  onOpenChange,
+}: {
+  staff: StaffProfile
+  branches: { id: string; name: string }[]
+  onOpenChange: (open: boolean) => void
+}) {
+  const update = useUpdateStaff()
+  const form = useForm({
+    resolver: zodResolver(editStaffSchema),
+    defaultValues: {
+      staff_number: staff.staff_number,
+      job_title: staff.job_title ?? '',
+      employment_type: staff.employment_type,
+      hire_date: staff.hire_date?.slice(0, 10) ?? '',
+      branch_id: staff.branch_id ?? '',
+    },
+  })
+
+  function onSubmit(values: z.infer<typeof editStaffSchema>) {
+    update.mutate(
+      {
+        id: staff.id,
+        payload: {
+          staff_number: values.staff_number,
+          job_title: values.job_title || undefined,
+          employment_type: values.employment_type,
+          hire_date: values.hire_date || undefined,
+          branch_id: values.branch_id || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Staff profile updated')
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update staff profile')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit staff profile — {staff.name}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="staff_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Staff number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="job_title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Job title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="employment_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employment type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="full_time">Full time</SelectItem>
+                        <SelectItem value="part_time">Part time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="hire_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hire date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="branch_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Branch (optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="No branch" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={update.isPending}>
+                {update.isPending ? 'Saving…' : 'Save'}
               </Button>
             </DialogFooter>
           </form>
@@ -633,6 +797,9 @@ function StaffTab() {
   const { data: branches } = useBranches.useList()
   const [subjectsFor, setSubjectsFor] = useState<StaffProfile | null>(null)
   const [classesFor, setClassesFor] = useState<StaffProfile | null>(null)
+  const [editingStaff, setEditingStaff] = useState<StaffProfile | null>(null)
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null)
+  const remove = useRemoveStaff()
 
   function handleSearchChange(next: string) {
     setSearch(next)
@@ -714,6 +881,7 @@ function StaffTab() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditingStaff(staff)}>Edit</DropdownMenuItem>
                       {staff.roles?.includes('Teacher') && (
                         <DropdownMenuItem onClick={() => setSubjectsFor(staff)}>
                           Assign subjects
@@ -724,6 +892,12 @@ function StaffTab() {
                           Assign classes
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setPendingRemoveId(staff.id)}
+                      >
+                        Remove
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -758,6 +932,31 @@ function StaffTab() {
             {classesFor && <ClassAssignmentEditor staff={classesFor} />}
           </DialogContent>
         </Dialog>
+
+        {editingStaff && (
+          <EditStaffDialog
+            staff={editingStaff}
+            branches={branches ?? []}
+            onOpenChange={(open) => !open && setEditingStaff(null)}
+          />
+        )}
+
+        <ConfirmDialog
+          open={pendingRemoveId !== null}
+          onOpenChange={(open) => !open && setPendingRemoveId(null)}
+          title="Remove this staff profile?"
+          description="This can't be undone. Their user login (if any) is not deleted, only the staff record."
+          confirmLabel="Remove"
+          onConfirm={() => {
+            if (pendingRemoveId) {
+              remove.mutate(pendingRemoveId, {
+                onSuccess: () => toast.success('Staff profile removed'),
+                onError: () => toast.error('Could not remove this staff profile'),
+              })
+            }
+            setPendingRemoveId(null)
+          }}
+        />
       </CardContent>
     </Card>
   )
