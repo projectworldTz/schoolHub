@@ -43,11 +43,16 @@ import {
 } from '@/components/ui/table'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
+import { InvoiceCategoryBreakdown } from '@/components/school/InvoiceCategoryBreakdown'
 import { useInvoice, useRecordPayment } from '@/hooks/useFinance'
-import type { PaymentMethod } from '@/types/finance'
+import { buildCategoryBreakdown } from '@/lib/invoiceBreakdown'
+import type { Invoice, PaymentMethod } from '@/types/finance'
+
+const GENERAL_PAYMENT = '__general'
 
 const paymentSchema = z.object({
   amount: z.string().min(1, 'Required'),
+  fee_category_id: z.string().min(1, 'Required'),
   method: z.enum(['cash', 'bank_transfer', 'mobile_money', 'card', 'cheque', 'other']),
   provider: z.string().optional(),
   reference: z.string().optional(),
@@ -64,9 +69,21 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   other: 'Other',
 }
 
-function emptyPaymentValues(balance: string) {
+/**
+ * Defaults the category picker to the first category that still has
+ * something owing, and pre-fills the amount to exactly pay that category
+ * off — mirrors the old behaviour of defaulting Amount to the full invoice
+ * balance, just scoped per-category now that payments are attributed to one.
+ */
+function emptyPaymentValues(invoice: Invoice) {
+  const outstanding = buildCategoryBreakdown(invoice).filter(
+    (row) => row.key !== '__unallocated' && row.remaining > 0
+  )
+  const defaultCategory = outstanding[0]
+
   return {
-    amount: balance,
+    amount: defaultCategory ? String(defaultCategory.remaining) : invoice.balance,
+    fee_category_id: defaultCategory?.key ?? GENERAL_PAYMENT,
     method: 'cash' as PaymentMethod,
     provider: '',
     reference: '',
@@ -75,32 +92,46 @@ function emptyPaymentValues(balance: string) {
   }
 }
 
-function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balance: string }) {
+function RecordPaymentDialog({ invoice }: { invoice: Invoice }) {
   const [open, setOpen] = useState(false)
   const [pendingValues, setPendingValues] = useState<z.infer<typeof paymentSchema> | null>(null)
-  const record = useRecordPayment(invoiceId)
+  const record = useRecordPayment(invoice.id)
   const form = useForm({
     resolver: zodResolver(paymentSchema),
-    defaultValues: emptyPaymentValues(balance),
+    defaultValues: emptyPaymentValues(invoice),
   })
   const method = form.watch('method')
+  const feeCategoryId = form.watch('fee_category_id')
+
+  const outstandingCategories = buildCategoryBreakdown(invoice).filter(
+    (row) => row.key !== '__unallocated' && row.remaining > 0
+  )
+  const selectedCategory = outstandingCategories.find((row) => row.key === feeCategoryId)
+  const cap = selectedCategory ? selectedCategory.remaining : Number(invoice.balance)
+  const capLabel = selectedCategory ? `${selectedCategory.label}'s` : "the invoice's"
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     setPendingValues(null)
     if (next) {
-      // Re-sync to the current outstanding balance every time the dialog is
-      // opened, since a prior partial payment can leave the form's original
-      // default (the old, higher balance) stale otherwise.
-      form.reset(emptyPaymentValues(balance))
+      // Re-sync to the current outstanding balances every time the dialog
+      // is opened, since a prior partial payment can leave the form's
+      // original defaults stale otherwise.
+      form.reset(emptyPaymentValues(invoice))
     }
   }
 
+  function handleCategoryChange(key: string) {
+    form.setValue('fee_category_id', key)
+    const row = outstandingCategories.find((r) => r.key === key)
+    form.setValue('amount', row ? String(row.remaining) : invoice.balance)
+  }
+
   function onReview(values: z.infer<typeof paymentSchema>) {
-    if (Number(values.amount) > Number(balance)) {
+    if (Number(values.amount) > cap) {
       form.setError('amount', {
         type: 'max',
-        message: `Cannot exceed the outstanding balance of ${Number(balance).toLocaleString()}`,
+        message: `Cannot exceed ${capLabel} outstanding balance of ${cap.toLocaleString()}`,
       })
       return
     }
@@ -112,6 +143,7 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
     record.mutate(
       {
         amount: Number(pendingValues.amount),
+        fee_category_id: pendingValues.fee_category_id === GENERAL_PAYMENT ? undefined : pendingValues.fee_category_id,
         method: pendingValues.method,
         provider: pendingValues.provider || undefined,
         reference: pendingValues.reference || undefined,
@@ -122,7 +154,7 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
         onSuccess: () => {
           toast.success('Payment recorded')
           setPendingValues(null)
-          form.reset(emptyPaymentValues(balance))
+          form.reset(emptyPaymentValues(invoice))
           setOpen(false)
         },
         onError: (error) => {
@@ -134,6 +166,11 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
       }
     )
   }
+
+  const pendingCategoryLabel =
+    pendingValues?.fee_category_id === GENERAL_PAYMENT
+      ? 'Not specified'
+      : outstandingCategories.find((row) => row.key === pendingValues?.fee_category_id)?.label
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -155,6 +192,8 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
                 </p>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 text-sm">
+                <dt className="text-muted-foreground">Fee category</dt>
+                <dd className="text-right">{pendingCategoryLabel}</dd>
                 <dt className="text-muted-foreground">Amount</dt>
                 <dd className="text-right font-semibold">
                   {Number(pendingValues.amount).toLocaleString()}
@@ -204,6 +243,31 @@ function RecordPaymentDialog({ invoiceId, balance }: { invoiceId: string; balanc
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onReview)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="fee_category_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fee category</FormLabel>
+                      <Select onValueChange={handleCategoryChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {outstandingCategories.map((row) => (
+                            <SelectItem key={row.key} value={row.key}>
+                              {row.label} — remaining {row.remaining.toLocaleString()}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value={GENERAL_PAYMENT}>Not specified / general payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -352,20 +416,16 @@ export function InvoiceDetailPage() {
               ))}
             </TableBody>
           </Table>
-          <div className="mt-4 flex items-center gap-6 rounded-lg border p-3 text-sm">
-            <p>
-              <span className="text-muted-foreground">Total:</span>{' '}
-              {Number(invoice.total_amount).toLocaleString()}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Paid:</span>{' '}
-              {Number(invoice.amount_paid).toLocaleString()}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Balance:</span>{' '}
-              <span className="font-medium">{Number(invoice.balance).toLocaleString()}</span>
-            </p>
-          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fee breakdown</CardTitle>
+          <CardDescription>What's owed, paid, and remaining per fee category.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InvoiceCategoryBreakdown invoice={invoice} />
         </CardContent>
       </Card>
 
@@ -376,7 +436,7 @@ export function InvoiceDetailPage() {
             <CardDescription>Payment history for this invoice.</CardDescription>
           </div>
           {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-            <RecordPaymentDialog invoiceId={invoiceId} balance={invoice.balance} />
+            <RecordPaymentDialog invoice={invoice} />
           )}
         </CardHeader>
         <CardContent>
@@ -384,6 +444,7 @@ export function InvoiceDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Fee category</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Reference</TableHead>
@@ -393,7 +454,7 @@ export function InvoiceDetailPage() {
             <TableBody>
               {invoice.payments?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No payments recorded yet.
                   </TableCell>
                 </TableRow>
@@ -401,6 +462,7 @@ export function InvoiceDetailPage() {
               {invoice.payments?.map((payment) => (
                 <TableRow key={payment.id}>
                   <TableCell>{payment.paid_at}</TableCell>
+                  <TableCell>{payment.fee_category_name ?? 'Not specified'}</TableCell>
                   <TableCell>{Number(payment.amount).toLocaleString()}</TableCell>
                   <TableCell className="capitalize">
                     {payment.method.replace('_', ' ')}

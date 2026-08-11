@@ -13,6 +13,8 @@ class PaymentResource extends JsonResource
         return [
             'id' => $this->id,
             'invoice_id' => $this->invoice_id,
+            'fee_category_id' => $this->fee_category_id,
+            'fee_category_name' => $this->whenLoaded('feeCategory', fn () => $this->feeCategory?->name),
             'amount' => $this->amount,
             'method' => $this->method,
             'provider' => $this->provider,

@@ -14,6 +14,11 @@ class InvoiceItemResource extends JsonResource
             'id' => $this->id,
             'description' => $this->description,
             'amount' => $this->amount,
+            'fee_category_id' => $this->whenLoaded('feeStructure', fn () => $this->feeStructure?->fee_category_id),
+            'fee_category_name' => $this->whenLoaded(
+                'feeStructure',
+                fn () => $this->feeStructure?->feeCategory?->name
+            ),
         ];
     }
 }

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
+import { InvoiceCategoryBreakdown } from '@/components/school/InvoiceCategoryBreakdown'
 import { useChildInvoice } from '@/hooks/useParentPortal'
 
 export function ParentInvoiceDetailPage() {
@@ -61,20 +62,16 @@ export function ParentInvoiceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
-              <div className="mt-4 flex items-center gap-6 rounded-lg border p-3 text-sm">
-                <p>
-                  <span className="text-muted-foreground">Total:</span>{' '}
-                  {Number(invoice.total_amount).toLocaleString()}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Paid:</span>{' '}
-                  {Number(invoice.amount_paid).toLocaleString()}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Balance:</span>{' '}
-                  <span className="font-medium">{Number(invoice.balance).toLocaleString()}</span>
-                </p>
-              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Fee breakdown</CardTitle>
+              <CardDescription>What's owed, paid, and remaining per fee category.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InvoiceCategoryBreakdown invoice={invoice} />
             </CardContent>
           </Card>
 
@@ -88,6 +85,7 @@ export function ParentInvoiceDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Fee category</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Reference</TableHead>
@@ -96,7 +94,7 @@ export function ParentInvoiceDetailPage() {
                 <TableBody>
                   {invoice.payments?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
                         No payments recorded yet.
                       </TableCell>
                     </TableRow>
@@ -104,6 +102,7 @@ export function ParentInvoiceDetailPage() {
                   {invoice.payments?.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>{payment.paid_at}</TableCell>
+                      <TableCell>{payment.fee_category_name ?? 'Not specified'}</TableCell>
                       <TableCell>{Number(payment.amount).toLocaleString()}</TableCell>
                       <TableCell className="capitalize">
                         {payment.method.replace('_', ' ')}

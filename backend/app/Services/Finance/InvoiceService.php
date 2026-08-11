@@ -115,6 +115,7 @@ class InvoiceService
         return DB::transaction(function () use ($invoice, $data, $receivedBy) {
             $payment = $invoice->payments()->create([
                 'student_id' => $invoice->student_id,
+                'fee_category_id' => $data['fee_category_id'] ?? null,
                 'amount' => $data['amount'],
                 'method' => $data['method'],
                 'provider' => $data['provider'] ?? null,

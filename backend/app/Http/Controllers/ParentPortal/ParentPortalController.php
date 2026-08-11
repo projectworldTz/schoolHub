@@ -72,7 +72,11 @@ class ParentPortalController extends Controller
         $this->authorizeChild($request, $student);
 
         $invoices = Invoice::where('student_id', $student->id)
-            ->with(['academicYear', 'term', 'items', 'payments'])
+            ->with([
+                'academicYear', 'term',
+                'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
+                'payments.feeCategory',
+            ])
             ->orderByDesc('created_at')
             ->get();
 
@@ -92,7 +96,11 @@ class ParentPortalController extends Controller
         abort_unless($invoice->student_id === $student->id, 404);
 
         return new InvoiceResource(
-            $invoice->load(['academicYear', 'term', 'items', 'payments'])
+            $invoice->load([
+                'academicYear', 'term',
+                'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
+                'payments.feeCategory',
+            ])
         );
     }
 

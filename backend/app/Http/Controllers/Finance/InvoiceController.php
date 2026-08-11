@@ -91,7 +91,10 @@ class InvoiceController extends Controller
     {
         $result = $this->invoiceService->generateForClass($request->validated());
 
-        $invoices = collect($result['invoices'])->each->load(['student', 'academicYear', 'term', 'items']);
+        $invoices = collect($result['invoices'])->each->load([
+            'student', 'academicYear', 'term',
+            'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
+        ]);
 
         return response()->json([
             'data' => InvoiceResource::collection($invoices)->resolve(),
@@ -104,7 +107,11 @@ class InvoiceController extends Controller
         abort_unless($request->user()->can('finance.manage'), 403);
 
         return new InvoiceResource(
-            $invoice->load(['student', 'academicYear', 'term', 'items', 'payments.receivedBy'])
+            $invoice->load([
+                'student', 'academicYear', 'term',
+                'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
+                'payments.receivedBy', 'payments.feeCategory',
+            ])
         );
     }
 

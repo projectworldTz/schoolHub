@@ -75,6 +75,7 @@ export async function deleteInvoice(id: string): Promise<void> {
 
 export interface RecordPaymentPayload {
   amount: number
+  fee_category_id?: string
   method: PaymentMethod
   provider?: string
   reference?: string

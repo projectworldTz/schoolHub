@@ -35,6 +35,8 @@ export interface InvoiceItem {
   id: string
   description: string
   amount: string
+  fee_category_id?: string | null
+  fee_category_name?: string | null
 }
 
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'mobile_money' | 'card' | 'cheque' | 'other'
@@ -42,6 +44,8 @@ export type PaymentMethod = 'cash' | 'bank_transfer' | 'mobile_money' | 'card' |
 export interface Payment {
   id: string
   invoice_id: string
+  fee_category_id: string | null
+  fee_category_name?: string | null
   amount: string
   method: PaymentMethod
   provider: string | null

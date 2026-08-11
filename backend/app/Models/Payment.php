@@ -20,6 +20,7 @@ class Payment extends Model
     protected $fillable = [
         'school_id',
         'invoice_id',
+        'fee_category_id',
         'student_id',
         'amount',
         'method',
@@ -41,6 +42,11 @@ class Payment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function feeCategory(): BelongsTo
+    {
+        return $this->belongsTo(FeeCategory::class);
     }
 
     public function student(): BelongsTo

@@ -37,7 +37,7 @@ describe('summarizeRewards', () => {
       invoice({
         amount_paid: '20000',
         balance: '80000',
-        payments: [{ id: 'p1', invoice_id: 'inv-1', amount: '20000', method: 'cash', provider: null, reference: null, paid_at: '2026-02-01', notes: null }],
+        payments: [{ id: 'p1', invoice_id: 'inv-1', fee_category_id: null, amount: '20000', method: 'cash', provider: null, reference: null, paid_at: '2026-02-01', notes: null }],
       }),
     ])
 
@@ -83,13 +83,13 @@ describe('summarizeRewards', () => {
       invoice({
         id: 'a',
         payments: [
-          { id: 'p1', invoice_id: 'a', amount: '1', method: 'cash', provider: null, reference: null, paid_at: '2026-01-05', notes: null },
+          { id: 'p1', invoice_id: 'a', fee_category_id: null, amount: '1', method: 'cash', provider: null, reference: null, paid_at: '2026-01-05', notes: null },
         ],
       }),
       invoice({
         id: 'b',
         payments: [
-          { id: 'p2', invoice_id: 'b', amount: '1', method: 'cash', provider: null, reference: null, paid_at: '2026-03-20', notes: null },
+          { id: 'p2', invoice_id: 'b', fee_category_id: null, amount: '1', method: 'cash', provider: null, reference: null, paid_at: '2026-03-20', notes: null },
         ],
       }),
     ])

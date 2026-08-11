@@ -17,7 +17,11 @@ class PaymentController extends Controller
         $this->invoiceService->recordPayment($invoice, $request->validated(), $request->user()->id);
 
         return new InvoiceResource(
-            $invoice->fresh()->load(['student', 'academicYear', 'term', 'items', 'payments.receivedBy'])
+            $invoice->fresh()->load([
+                'student', 'academicYear', 'term',
+                'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
+                'payments.receivedBy', 'payments.feeCategory',
+            ])
         );
     }
 }
