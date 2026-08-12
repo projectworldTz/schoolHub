@@ -33,8 +33,10 @@ class Phase6PermissionsSeeder extends Seeder
         'Transport Officer' => ['transport.manage'],
         'Store Keeper' => ['inventory.manage', 'cafeteria.manage'],
         'Nurse' => ['clinic.manage'],
+        // Head Teacher no longer gets any facilities permission — moved
+        // here, see Phase1PermissionsSeeder's docblock for the split.
+        'Manager' => ['library.manage', 'hostel.manage', 'transport.manage', 'inventory.manage', 'clinic.manage', 'cafeteria.manage'],
 
-        'Head Teacher' => ['library.manage', 'hostel.manage', 'transport.manage', 'inventory.manage', 'clinic.manage', 'cafeteria.manage'],
         'Vice Chancellor' => ['library.manage', 'hostel.manage', 'transport.manage', 'inventory.manage', 'clinic.manage', 'cafeteria.manage'],
     ];
 

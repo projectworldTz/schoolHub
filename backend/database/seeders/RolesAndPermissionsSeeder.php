@@ -43,6 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Store Keeper',
         'Security Officer',
         'Other',
+        'Manager',
 
         // Per-school-type leadership/teaching titles — see
         // config/school_roles.php and App\Support\SchoolRoles for which of

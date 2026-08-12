@@ -27,8 +27,10 @@ class Phase5PermissionsSeeder extends Seeder
         'Accountant' => ['finance.manage', 'payroll.manage', 'expenses.manage'],
         'Bursar' => ['finance.manage', 'payroll.manage', 'expenses.manage'],
         'HR Officer' => ['payroll.manage'],
+        // Head Teacher no longer gets finance.manage/expenses.manage —
+        // moved here, see Phase1PermissionsSeeder's docblock for the split.
+        'Manager' => ['finance.manage', 'expenses.manage'],
 
-        'Head Teacher' => ['finance.manage', 'expenses.manage'],
         'Vice Chancellor' => ['finance.manage', 'expenses.manage'],
     ];
 

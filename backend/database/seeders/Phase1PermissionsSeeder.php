@@ -29,10 +29,16 @@ class Phase1PermissionsSeeder extends Seeder
         'Academic Master' => ['classes.manage', 'subjects.manage'],
         'Registrar' => ['classes.manage'],
         'HR Officer' => ['users.manage'],
+        // Operational counterpart to Head Teacher — see this class's
+        // docblock update and Phase2/5/6/7/9 for the rest of the split.
+        'Manager' => ['school-settings.manage', 'users.manage'],
 
         // Per-school-type equivalents of the roles above — same bundle,
         // see App\Support\SchoolRoles for which type offers which.
-        'Head Teacher' => ['school-settings.manage', 'classes.manage', 'subjects.manage', 'users.manage'],
+        // Head Teacher is scoped to academics only (classes/subjects) —
+        // school-settings.manage and users.manage moved to Manager, the
+        // role that owns non-academic school operations.
+        'Head Teacher' => ['classes.manage', 'subjects.manage'],
         'Vice Chancellor' => ['school-settings.manage', 'classes.manage', 'subjects.manage', 'users.manage'],
         'Deputy Head Teacher' => ['classes.manage', 'subjects.manage', 'users.manage'],
         'Second Master' => ['classes.manage', 'subjects.manage', 'users.manage'],

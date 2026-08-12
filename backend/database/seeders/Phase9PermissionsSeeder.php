@@ -23,7 +23,7 @@ class Phase9PermissionsSeeder extends Seeder
     protected const ROLES = [
         'School Owner',
         'Principal',
-        'Head Teacher',
+        'Manager',
         'Vice Chancellor',
     ];
 

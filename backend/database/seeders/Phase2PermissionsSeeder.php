@@ -29,8 +29,12 @@ class Phase2PermissionsSeeder extends Seeder
         'Registrar' => ['students.manage', 'admissions.manage'],
         'Admissions Officer' => ['admissions.manage'],
         'HR Officer' => ['staff.manage'],
+        'Manager' => ['staff.manage', 'admissions.manage'],
 
-        'Head Teacher' => ['students.manage', 'staff.manage', 'admissions.manage'],
+        // Head Teacher keeps students.manage (academic) but not
+        // staff.manage/admissions.manage (moved to Manager) — see Phase1's
+        // docblock for the split rationale.
+        'Head Teacher' => ['students.manage'],
         'Vice Chancellor' => ['students.manage', 'staff.manage', 'admissions.manage'],
         'Deputy Head Teacher' => ['students.manage', 'staff.manage', 'admissions.manage'],
         'Second Master' => ['students.manage', 'staff.manage', 'admissions.manage'],

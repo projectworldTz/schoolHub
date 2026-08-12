@@ -39,6 +39,7 @@ class Phase8PermissionsSeeder extends Seeder
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+        'Manager',
 
         'Head Teacher',
         'Deputy Head Teacher',
