@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Select,
   SelectContent,
@@ -97,7 +98,11 @@ const NO_BRANCH = '__none'
 function CreateStaffDialog() {
   const [open, setOpen] = useQuickAddTrigger('staff')
   const [noLogin, setNoLogin] = useState(false)
-  const { data: users } = useSchoolUsers()
+  // per_page bumped well past the default 100 — this list is filtered
+  // client-side in the Combobox below, so the full roster needs to be in
+  // memory upfront (a school pushing 200 staff would otherwise silently
+  // lose anyone past the 100th to the picker).
+  const { data: users } = useSchoolUsers({ per_page: 1000 })
   const { data: branches } = useBranches.useList()
   const create = useCreateStaff()
   const form = useForm({
@@ -207,20 +212,18 @@ function CreateStaffDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>User</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a staff member" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {users?.data.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.name} ({u.roles.join(', ')})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={(users?.data ?? []).map((u) => ({
+                        value: u.id,
+                        label: u.name,
+                        sublabel: u.roles.join(', '),
+                      }))}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      placeholder="Select a staff member"
+                      searchPlaceholder="Search by name…"
+                      emptyText="No user found."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
