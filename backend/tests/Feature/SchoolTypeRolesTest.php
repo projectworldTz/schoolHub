@@ -74,7 +74,6 @@ class SchoolTypeRolesTest extends TestCase
         $response = $this->actingAs($owner, 'web')->postJson('/api/school/users', [
             'name' => 'Someone',
             'email' => 'someone@primary.test',
-            'password' => 'correct-horse-battery',
             'roles' => ['Vice Chancellor'],
         ]);
 
@@ -92,7 +91,6 @@ class SchoolTypeRolesTest extends TestCase
         $response = $this->actingAs($owner, 'web')->postJson('/api/school/users', [
             'name' => 'Discipline Person',
             'email' => 'discipline@primary.test',
-            'password' => 'correct-horse-battery',
             'roles' => ['Discipline Master'],
         ]);
 

@@ -7,12 +7,12 @@ use App\Support\SchoolRoles;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 /**
- * Creates a staff account within the admin's own school. No invite-email
- * flow yet (that belongs with Communication in Phase 3) — the admin sets
- * an initial password directly and shares it with the new user out of band.
+ * Creates a staff account within the admin's own school. No password is
+ * collected here — SchoolUserController::store() generates one the admin
+ * never sees and emails an activation link instead, same as
+ * TeacherImportService/GuardianImportService's bulk-import flows.
  */
 class CreateSchoolUserRequest extends FormRequest
 {
@@ -28,7 +28,7 @@ class CreateSchoolUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', Password::defaults()],
+            'phone' => ['nullable', 'string', 'max:30'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['string', Rule::in($allowedRoles)],
             'is_active' => ['sometimes', 'boolean'],

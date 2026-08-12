@@ -2,13 +2,39 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AccountActivationMail;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\SetsUpTenant;
 use Tests\TestCase;
 
 class SchoolUserManagementTest extends TestCase
 {
     use RefreshDatabase, SetsUpTenant;
+
+    public function test_creating_a_user_needs_no_password_and_sends_an_activation_email(): void
+    {
+        Mail::fake();
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'Nia Staff',
+            'email' => 'nia@example.com',
+            'phone' => '+255700000002',
+            'roles' => ['Librarian'],
+        ]);
+
+        $response->assertCreated();
+
+        $created = User::withoutGlobalScopes()->where('email', 'nia@example.com')->firstOrFail();
+        $this->assertTrue($created->hasRole('Librarian'));
+        $this->assertSame('+255700000002', $created->phone);
+
+        Mail::assertSent(AccountActivationMail::class, fn ($mail) => $mail->hasTo($created->email));
+    }
 
     public function test_a_school_owner_cannot_remove_their_own_account(): void
     {

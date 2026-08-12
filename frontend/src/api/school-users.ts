@@ -5,7 +5,7 @@ import type { User } from '@/types/auth'
 export interface CreateSchoolUserPayload {
   name: string
   email: string
-  password: string
+  phone?: string
   roles: string[]
   is_active?: boolean
 }

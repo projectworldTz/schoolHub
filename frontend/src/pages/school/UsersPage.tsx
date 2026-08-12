@@ -21,6 +21,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -63,7 +64,7 @@ import type { User } from '@/types/auth'
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'At least 8 characters'),
+  phone: z.string().optional(),
   roles: z.array(z.string()).min(1, 'Select at least one role'),
 })
 
@@ -76,23 +77,26 @@ function CreateUserDialog() {
 
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: '', email: '', password: '', roles: [] },
+    defaultValues: { name: '', email: '', phone: '', roles: [] },
   })
 
   function onSubmit(values: CreateUserForm) {
-    createUser.mutate(values, {
-      onSuccess: () => {
-        toast.success('User created')
-        form.reset({ name: '', email: '', password: '', roles: [] })
-        setOpen(false)
-      },
-      onError: (error) => {
-        const message = isAxiosError(error)
-          ? (error.response?.data?.message ?? 'Could not create user')
-          : 'Something went wrong'
-        toast.error(message)
-      },
-    })
+    createUser.mutate(
+      { ...values, phone: values.phone || undefined },
+      {
+        onSuccess: () => {
+          toast.success('User created — an activation email has been sent')
+          form.reset({ name: '', email: '', phone: '', roles: [] })
+          setOpen(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not create user')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
   }
 
   return (
@@ -103,6 +107,9 @@ function CreateUserDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New user</DialogTitle>
+          <DialogDescription>
+            They'll get an email to set their own password — no password to set here.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -134,12 +141,12 @@ function CreateUserDialog() {
             />
             <FormField
               control={form.control}
-              name="password"
+              name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial password</FormLabel>
+                  <FormLabel>Phone (optional)</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input type="tel" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

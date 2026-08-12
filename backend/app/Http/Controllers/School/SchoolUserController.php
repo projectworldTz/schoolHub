@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\School\CreateSchoolUserRequest;
 use App\Http\Requests\School\UpdateSchoolUserRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\AccountActivationMail;
 use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\User;
@@ -15,6 +16,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class SchoolUserController extends Controller
@@ -37,13 +41,18 @@ class SchoolUserController extends Controller
     public function store(CreateSchoolUserRequest $request)
     {
         $data = $request->validated();
+        $school = School::find(Tenant::id());
 
-        $user = DB::transaction(function () use ($data, $request) {
+        $user = DB::transaction(function () use ($data) {
             $user = User::create([
                 'school_id' => Tenant::id(),
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
+                'phone' => $data['phone'] ?? null,
+                // Random, never-communicated password — an activation email
+                // (below) is how they actually get in, same as
+                // TeacherImportService/GuardianImportService.
+                'password' => Hash::make(Str::random(40)),
                 'is_active' => $data['is_active'] ?? true,
                 'email_verified_at' => now(),
             ]);
@@ -52,6 +61,12 @@ class SchoolUserController extends Controller
 
             return $user;
         });
+
+        // Outside the transaction — a mail failure must not roll back the
+        // user that was just successfully created.
+        $token = Password::broker()->createToken($user);
+        $roleLine = implode(', ', $data['roles']);
+        Mail::to($user)->send(new AccountActivationMail($user, $school, $token, "a **{$roleLine}** at **{$school->name}**"));
 
         return new UserResource($user->load('roles'));
     }

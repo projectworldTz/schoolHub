@@ -104,7 +104,12 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            // 24h, not Laravel's 60-minute default — this same token type
+            // also backs new-account activation links (SchoolUserController,
+            // TeacherImportService, GuardianImportService), and a new
+            // hire/guardian is much less likely to open that email within an
+            // hour than someone who just clicked "forgot password".
+            'expire' => 1440,
             'throttle' => 60,
         ],
     ],
