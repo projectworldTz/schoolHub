@@ -77,6 +77,13 @@ import { apiOrigin } from '@/api/client'
 import type { StaffProfile, TeacherImportResult } from '@/types/staff'
 import type { StaffAttendanceStatus } from '@/types/staffAttendance'
 
+// Every config/school_roles.php role that means "teaches a class/subject" —
+// 'Teacher' alone only covers nursery-type schools; primary/secondary use
+// 'Class Teacher'/'Subject Teacher' and college/university use 'Lecturer',
+// so "Assign classes"/"Assign subjects" need to check for any of these, not
+// just the literal 'Teacher' role.
+const TEACHING_ROLES = ['Teacher', 'Class Teacher', 'Subject Teacher', 'Lecturer']
+
 const staffSchema = z
   .object({
     user_id: z.string().optional(),
@@ -885,12 +892,12 @@ function StaffTab() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setEditingStaff(staff)}>Edit</DropdownMenuItem>
-                      {staff.roles?.includes('Teacher') && (
+                      {staff.roles?.some((r) => TEACHING_ROLES.includes(r)) && (
                         <DropdownMenuItem onClick={() => setSubjectsFor(staff)}>
                           Assign subjects
                         </DropdownMenuItem>
                       )}
-                      {staff.roles?.includes('Teacher') && (
+                      {staff.roles?.some((r) => TEACHING_ROLES.includes(r)) && (
                         <DropdownMenuItem onClick={() => setClassesFor(staff)}>
                           Assign classes
                         </DropdownMenuItem>
