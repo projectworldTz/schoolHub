@@ -36,4 +36,10 @@ describe('hasPermission', () => {
     const user = { permissions: undefined } as unknown as User
     expect(hasPermission(user, 'exams.manage')).toBe(false)
   })
+
+  it('a Super Admin passes any permission check despite holding no explicit permissions', () => {
+    const user = { roles: ['Super Admin'], permissions: [] } as unknown as User
+    expect(hasPermission(user, 'exams.manage')).toBe(true)
+    expect(hasPermission(user, ['finance.manage', 'staff.manage'])).toBe(true)
+  })
 })
