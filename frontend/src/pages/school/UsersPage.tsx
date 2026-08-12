@@ -273,6 +273,105 @@ function EditRolesDialog({
   )
 }
 
+const editDetailsSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Enter a valid email'),
+  phone: z.string().optional(),
+})
+
+type EditDetailsForm = z.infer<typeof editDetailsSchema>
+
+function EditDetailsDialog({
+  user,
+  onOpenChange,
+}: {
+  user: User
+  onOpenChange: (open: boolean) => void
+}) {
+  const updateUser = useUpdateSchoolUser()
+
+  const form = useForm<EditDetailsForm>({
+    resolver: zodResolver(editDetailsSchema),
+    defaultValues: { name: user.name, email: user.email, phone: user.phone ?? '' },
+  })
+
+  function onSubmit(values: EditDetailsForm) {
+    updateUser.mutate(
+      { id: user.id, payload: { ...values, phone: values.phone || undefined } },
+      {
+        onSuccess: () => {
+          toast.success('User details updated')
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update user details')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit details — {user.name}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone (optional)</FormLabel>
+                  <FormControl>
+                    <Input type="tel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={updateUser.isPending}>
+                {updateUser.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const USERS_PER_PAGE = 100
 const ALL_ROLES = '__all'
 
@@ -292,6 +391,7 @@ export function UsersPage() {
   const deleteUser = useDeleteSchoolUser()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingRolesUser, setEditingRolesUser] = useState<User | null>(null)
+  const [editingDetailsUser, setEditingDetailsUser] = useState<User | null>(null)
 
   function handleSearchChange(next: string) {
     setSearch(next)
@@ -409,6 +509,9 @@ export function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingDetailsUser(user)}>
+                          Edit details
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setEditingRolesUser(user)}>
                           Edit roles
                         </DropdownMenuItem>
@@ -441,6 +544,12 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
+      {editingDetailsUser && (
+        <EditDetailsDialog
+          user={editingDetailsUser}
+          onOpenChange={(open) => !open && setEditingDetailsUser(null)}
+        />
+      )}
       {editingRolesUser && (
         <EditRolesDialog
           user={editingRolesUser}

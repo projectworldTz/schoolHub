@@ -13,6 +13,7 @@ export interface CreateSchoolUserPayload {
 export interface UpdateSchoolUserPayload {
   name?: string
   email?: string
+  phone?: string
   roles?: string[]
   is_active?: boolean
 }

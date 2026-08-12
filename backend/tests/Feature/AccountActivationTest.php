@@ -69,7 +69,10 @@ class AccountActivationTest extends TestCase
         $owner = $this->createUser($school, 'School Owner', ['email' => 'amina@riverside.test']);
         $token = Password::broker()->createToken($owner);
 
-        $this->travel(61)->minutes();
+        // 24h expiry (config/auth.php passwords.users.expire) — see that
+        // file's comment for why this token type lives longer than
+        // Laravel's 60-minute default.
+        $this->travel(25)->hours();
 
         $response = $this->postJson('/api/auth/activate-account', [
             'email' => 'amina@riverside.test',

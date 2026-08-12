@@ -3,6 +3,7 @@ export interface User {
   school_id: string | null
   name: string
   email: string
+  phone: string | null
   is_active: boolean
   must_change_password: boolean
   roles: string[]
