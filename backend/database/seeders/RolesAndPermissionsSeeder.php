@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+        'Other',
 
         // Per-school-type leadership/teaching titles — see
         // config/school_roles.php and App\Support\SchoolRoles for which of

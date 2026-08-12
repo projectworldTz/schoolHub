@@ -58,6 +58,7 @@ import {
 } from '@/hooks/useSchoolUsers'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { TablePagination } from '@/components/school/TablePagination'
+import type { User } from '@/types/auth'
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -181,6 +182,90 @@ function CreateUserDialog() {
   )
 }
 
+const editRolesSchema = z.object({
+  roles: z.array(z.string()).min(1, 'Select at least one role'),
+})
+
+type EditRolesForm = z.infer<typeof editRolesSchema>
+
+function EditRolesDialog({
+  user,
+  onOpenChange,
+}: {
+  user: User
+  onOpenChange: (open: boolean) => void
+}) {
+  const { data: roles } = useAvailableRoles()
+  const updateUser = useUpdateSchoolUser()
+
+  const form = useForm<EditRolesForm>({
+    resolver: zodResolver(editRolesSchema),
+    defaultValues: { roles: user.roles },
+  })
+
+  function onSubmit(values: EditRolesForm) {
+    updateUser.mutate(
+      { id: user.id, payload: { roles: values.roles } },
+      {
+        onSuccess: () => {
+          toast.success('Roles updated')
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not update roles')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit roles — {user.name}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="roles"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Roles</FormLabel>
+                  <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                    {roles?.map((role) => (
+                      <label key={role} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={field.value.includes(role)}
+                          onCheckedChange={(checked) => {
+                            field.onChange(
+                              checked ? [...field.value, role] : field.value.filter((r) => r !== role)
+                            )
+                          }}
+                        />
+                        {role}
+                      </label>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={updateUser.isPending}>
+                {updateUser.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const USERS_PER_PAGE = 100
 const ALL_ROLES = '__all'
 
@@ -199,6 +284,7 @@ export function UsersPage() {
   const updateUser = useUpdateSchoolUser()
   const deleteUser = useDeleteSchoolUser()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [editingRolesUser, setEditingRolesUser] = useState<User | null>(null)
 
   function handleSearchChange(next: string) {
     setSearch(next)
@@ -316,6 +402,9 @@ export function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingRolesUser(user)}>
+                          Edit roles
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toggleActive(user.id, user.is_active)}>
                           {user.is_active ? 'Deactivate' : 'Activate'}
                         </DropdownMenuItem>
@@ -345,6 +434,12 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
+      {editingRolesUser && (
+        <EditRolesDialog
+          user={editingRolesUser}
+          onOpenChange={(open) => !open && setEditingRolesUser(null)}
+        />
+      )}
       <ConfirmDialog
         open={pendingDeleteId !== null}
         onOpenChange={(open) => !open && setPendingDeleteId(null)}

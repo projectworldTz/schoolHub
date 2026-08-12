@@ -33,6 +33,7 @@ return [
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+        'Other',
     ],
 
     'nursery' => [
