@@ -29,7 +29,8 @@ class Phase2PermissionsSeeder extends Seeder
         'Registrar' => ['students.manage', 'admissions.manage'],
         'Admissions Officer' => ['admissions.manage'],
         'HR Officer' => ['staff.manage'],
-        'Manager' => ['staff.manage', 'admissions.manage'],
+        // Manager mirrors School Owner in full — see Phase1's docblock.
+        'Manager' => ['students.manage', 'staff.manage', 'admissions.manage'],
 
         // Head Teacher keeps students.manage (academic) but not
         // staff.manage/admissions.manage (moved to Manager) — see Phase1's

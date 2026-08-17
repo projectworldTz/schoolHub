@@ -485,52 +485,63 @@ export function UsersPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {data?.data.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell className="space-x-1">
-                    {user.roles.map((role) => (
-                      <Badge key={role} variant="secondary">
-                        {role}
+              {data?.data.map((user) => {
+                // Only the School Owner can suspend/remove the School Owner
+                // account — everyone else (Manager included) gets those
+                // actions hidden here, mirrored by a 403 in
+                // SchoolUserController if bypassed via direct API call.
+                const targetIsOwnerLockedForActor =
+                  user.roles.includes('School Owner') && !currentUser?.roles.includes('School Owner')
+
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="space-x-1">
+                      {user.roles.map((role) => (
+                        <Badge key={role} variant="secondary">
+                          {role}
+                        </Badge>
+                      ))}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.is_active ? 'default' : 'outline'}>
+                        {user.is_active ? 'Active' : 'Inactive'}
                       </Badge>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.is_active ? 'default' : 'outline'}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingDetailsUser(user)}>
-                          Edit details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingRolesUser(user)}>
-                          Edit roles
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleActive(user.id, user.is_active)}>
-                          {user.is_active ? 'Deactivate' : 'Activate'}
-                        </DropdownMenuItem>
-                        {user.id !== currentUser?.id && (
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setPendingDeleteId(user.id)}
-                          >
-                            Remove
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingDetailsUser(user)}>
+                            Edit details
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                          <DropdownMenuItem onClick={() => setEditingRolesUser(user)}>
+                            Edit roles
+                          </DropdownMenuItem>
+                          {!targetIsOwnerLockedForActor && (
+                            <DropdownMenuItem onClick={() => toggleActive(user.id, user.is_active)}>
+                              {user.is_active ? 'Deactivate' : 'Activate'}
+                            </DropdownMenuItem>
+                          )}
+                          {user.id !== currentUser?.id && !targetIsOwnerLockedForActor && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setPendingDeleteId(user.id)}
+                            >
+                              Remove
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
           {data && (

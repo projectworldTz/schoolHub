@@ -32,6 +32,8 @@ class Phase3PermissionsSeeder extends Seeder
         'Academic Master' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
         'Class Teacher' => ['attendance.manage', 'homework.manage', 'announcements.manage'],
         'Teacher' => ['attendance.manage', 'homework.manage'],
+        // Manager mirrors School Owner in full — see Phase1's docblock.
+        'Manager' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
 
         'Head Teacher' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],
         'Vice Chancellor' => ['attendance.manage', 'timetable.manage', 'homework.manage', 'announcements.manage'],

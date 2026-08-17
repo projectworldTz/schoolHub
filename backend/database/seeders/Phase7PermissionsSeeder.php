@@ -43,10 +43,8 @@ class Phase7PermissionsSeeder extends Seeder
         'Class Teacher' => ['discipline.manage'],
         'Teacher' => ['discipline.manage'],
         'Security Officer' => ['discipline.manage'],
-        // audit-log.view moved off Head Teacher — see Phase1's docblock for
-        // the split. Kept with the top admin tier as this file's own
-        // docblock already argues, just Manager instead of Head Teacher now.
-        'Manager' => ['audit-log.view'],
+        // Manager mirrors School Owner in full — see Phase1's docblock.
+        'Manager' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],
 
         'Head Teacher' => ['analytics.view', 'discipline.manage', 'graduation.manage'],
         'Vice Chancellor' => ['analytics.view', 'discipline.manage', 'graduation.manage', 'audit-log.view'],

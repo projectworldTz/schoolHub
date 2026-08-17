@@ -80,6 +80,17 @@ class SchoolUserController extends Controller
     {
         $data = $request->validated();
 
+        // Only the School Owner may deactivate the School Owner account —
+        // everyone else (Manager included, even with users.manage) is
+        // blocked here, matching the button being hidden in UsersPage.tsx.
+        abort_if(
+            ($data['is_active'] ?? true) === false
+                && $user->hasRole('School Owner')
+                && ! $request->user()->hasRole('School Owner'),
+            403,
+            'Only the School Owner can suspend the School Owner account.'
+        );
+
         DB::transaction(function () use ($data, $user) {
             $user->update(collect($data)->except('roles')->all());
 
@@ -112,6 +123,11 @@ class SchoolUserController extends Controller
     {
         abort_unless($request->user()->can('users.manage'), 403);
         abort_if($user->is($request->user()), 422, 'You cannot remove your own account.');
+        abort_if(
+            $user->hasRole('School Owner') && ! $request->user()->hasRole('School Owner'),
+            403,
+            'Only the School Owner can remove the School Owner account.'
+        );
 
         $user->delete();
 

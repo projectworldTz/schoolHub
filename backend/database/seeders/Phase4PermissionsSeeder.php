@@ -44,6 +44,8 @@ class Phase4PermissionsSeeder extends Seeder
         'Academic Master' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
         'Class Teacher' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
         'Teacher' => ['exam-marks.record', 'lms.manage'],
+        // Manager mirrors School Owner in full — see Phase1's docblock.
+        'Manager' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
 
         'Head Teacher' => ['exams.manage', 'exam-marks.record', 'lms.manage'],
         'Vice Chancellor' => ['exams.manage', 'exam-marks.record', 'lms.manage'],

@@ -29,9 +29,11 @@ class Phase1PermissionsSeeder extends Seeder
         'Academic Master' => ['classes.manage', 'subjects.manage'],
         'Registrar' => ['classes.manage'],
         'HR Officer' => ['users.manage'],
-        // Operational counterpart to Head Teacher — see this class's
-        // docblock update and Phase2/5/6/7/9 for the rest of the split.
-        'Manager' => ['school-settings.manage', 'users.manage'],
+        // Manager is a full operational deputy for the School Owner — same
+        // permission set as School Owner across every phase, minus the
+        // owner-only protections enforced in SchoolUserController (a
+        // Manager can't suspend/remove the School Owner account).
+        'Manager' => ['school-settings.manage', 'classes.manage', 'subjects.manage', 'users.manage'],
 
         // Per-school-type equivalents of the roles above — same bundle,
         // see App\Support\SchoolRoles for which type offers which.
