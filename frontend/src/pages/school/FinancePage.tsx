@@ -119,6 +119,7 @@ const feeStructureDefaults = {
   academic_year_id: '',
   school_class_id: '',
   fee_category_id: '',
+  pay_once: false,
   amount: '',
   due_date: '',
 }
@@ -126,6 +127,7 @@ const feeStructureSchema = z.object({
   academic_year_id: z.string().min(1, 'Required'),
   school_class_id: z.string().optional(),
   fee_category_id: z.string().min(1, 'Required'),
+  pay_once: z.boolean().default(false),
   amount: z.string().min(1, 'Required'),
   due_date: z.string().optional(),
 })
@@ -136,6 +138,7 @@ function FeeStructuresCard() {
   const { data: classes } = useClasses.useList()
   const { data: categories } = useFeeCategories.useList()
   const create = useFeeStructures.useCreate()
+  const update = useFeeStructures.useUpdate()
   const remove = useFeeStructures.useRemove()
   const form = useForm({ resolver: zodResolver(feeStructureSchema), defaultValues: feeStructureDefaults })
 
@@ -157,6 +160,13 @@ function FeeStructuresCard() {
     { key: 'year', label: 'Academic year', render: (s) => s.academic_year_name ?? '—' },
     { key: 'amount', label: 'Amount', render: (s) => Number(s.amount).toLocaleString() },
     { key: 'due', label: 'Due date', render: (s) => s.due_date ?? '—' },
+    {
+      key: 'billing',
+      label: 'Billing',
+      render: (s) => (
+        <Badge variant={s.pay_once ? 'outline' : 'secondary'}>{s.pay_once ? 'Pay once' : 'Recurring'}</Badge>
+      ),
+    },
   ]
 
   return (
@@ -187,12 +197,32 @@ function FeeStructuresCard() {
           type: 'select',
           options: categories?.map((c) => ({ value: c.id, label: c.name })) ?? [],
         },
+        {
+          name: 'pay_once',
+          label: 'Pay once (e.g. registration fee — never billed again after the first time)',
+          type: 'switch',
+        },
         { name: 'amount', label: 'Amount', type: 'number' },
         { name: 'due_date', label: 'Due date', type: 'date' },
       ]}
       onCreate={(values) => create.mutateAsync({ ...values, amount: Number(values.amount) } as unknown as FeeStructurePayload)}
+      onEdit={(item, values) =>
+        update.mutateAsync({
+          id: item.id,
+          payload: { ...values, amount: Number(values.amount) } as unknown as FeeStructurePayload,
+        })
+      }
+      toFormValues={(item) => ({
+        academic_year_id: item.academic_year_id,
+        school_class_id: item.school_class_id ?? '',
+        fee_category_id: item.fee_category_id,
+        pay_once: item.pay_once,
+        amount: item.amount,
+        due_date: item.due_date ?? '',
+      })}
       onDelete={(item) => remove.mutateAsync(item.id)}
       createLabel="New fee structure"
+      editLabel="Edit fee structure"
     />
   )
 }
