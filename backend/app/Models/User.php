@@ -70,6 +70,35 @@ class User extends Authenticatable
         return $this->belongsTo(School::class);
     }
 
+    /**
+     * users.email is DB-unique, and soft delete (this model's normal
+     * "Remove" action) leaves the row in place — without this, a deleted
+     * account's email would stay permanently unavailable even though
+     * removing the account implies it's free to reuse. Runs via query
+     * builder (not ->save()) because the row is already trashed by the
+     * time this fires, so the BelongsToSchool/SoftDeletingScope global
+     * scopes would otherwise exclude it from a normal Eloquent update.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (User $user) {
+            if ($user->isForceDeleting() || str_contains($user->email, '+deleted-')) {
+                return;
+            }
+
+            static::withTrashed()->whereKey($user->id)->update([
+                'email' => static::deletedEmailFor($user->email, $user->id),
+            ]);
+        });
+    }
+
+    public static function deletedEmailFor(string $email, string $id): string
+    {
+        [$local, $domain] = str_contains($email, '@') ? explode('@', $email, 2) : [$email, 'deleted.invalid'];
+
+        return substr("{$local}+deleted-{$id}@{$domain}", 0, 255);
+    }
+
     public function staffProfile(): HasOne
     {
         return $this->hasOne(StaffProfile::class);
