@@ -34,11 +34,91 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useCreateStudent, useImportGuardians, useImportStudents, useStudents } from '@/hooks/useStudents'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { MoreHorizontal } from 'lucide-react'
+import { useCreateStudent, useImportGuardians, useImportStudents, useStudents, useUpdateStudent } from '@/hooks/useStudents'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useBranches } from '@/hooks/useSchoolSetup'
 import { TablePagination } from '@/components/school/TablePagination'
-import type { GuardianImportResult, StudentImportResult } from '@/types/students'
+import type { GuardianImportResult, Student, StudentImportResult } from '@/types/students'
+
+const editStudentNameSchema = z.object({
+  first_name: z.string().min(1, 'Required'),
+  last_name: z.string().min(1, 'Required'),
+})
+
+function EditStudentNameDialog({ student, onClose }: { student: Student; onClose: () => void }) {
+  const update = useUpdateStudent(student.id)
+  const form = useForm({
+    resolver: zodResolver(editStudentNameSchema),
+    defaultValues: { first_name: student.first_name, last_name: student.last_name },
+  })
+
+  function onSubmit(values: z.infer<typeof editStudentNameSchema>) {
+    update.mutate(values, {
+      onSuccess: () => {
+        toast.success('Student updated')
+        onClose()
+      },
+      onError: (error) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? 'Could not update student')
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    })
+  }
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit name</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="first_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="last_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={update.isPending}>
+                {update.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 const studentSchema = z.object({
   admission_number: z.string().min(1, 'Required'),
@@ -553,6 +633,7 @@ export function StudentsPage() {
   const [search, setSearch] = useState('')
   const [branchId, setBranchId] = useState('')
   const [page, setPage] = useState(1)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const { data: branches } = useBranches.useList()
   const { data, isLoading } = useStudents(search, branchId, page, STUDENTS_PER_PAGE)
 
@@ -621,19 +702,20 @@ export function StudentsPage() {
                 <TableHead>Class</TableHead>
                 <TableHead>Branch</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     Loading…
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && data?.data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No students yet.
                   </TableCell>
                 </TableRow>
@@ -654,6 +736,18 @@ export function StudentsPage() {
                   <TableCell>
                     <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>{student.status}</Badge>
                   </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingStudent(student)}>Edit name</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -669,6 +763,9 @@ export function StudentsPage() {
           )}
         </CardContent>
       </Card>
+      {editingStudent && (
+        <EditStudentNameDialog student={editingStudent} onClose={() => setEditingStudent(null)} />
+      )}
     </div>
   )
 }
