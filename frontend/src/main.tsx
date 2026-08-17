@@ -6,10 +6,32 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
+import { toast } from 'sonner'
+import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+
+// registerType: 'prompt' (vite.config.ts) means a new service worker
+// installs itself in the background but waits for updateSW() before an
+// open tab actually reloads onto it — a silent auto-reload could wipe out
+// someone's half-entered attendance/gradebook/invoice form. duration:
+// Infinity keeps the toast up until they act, since there's no "wrong
+// time" to eventually reload other than mid-edit, which they'd know
+// better than a timer would.
+const updateSW = registerSW({
+  onNeedRefresh() {
+    toast('Update available', {
+      description: 'A new version of SchoolHub is ready.',
+      duration: Infinity,
+      action: {
+        label: 'Reload',
+        onClick: () => updateSW(true),
+      },
+    })
+  },
+})
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -6,6 +6,19 @@
   AddType application/manifest+json .webmanifest
 </IfModule>
 
+<IfModule mod_headers.c>
+  # index.html/sw.js/the manifest are exactly what the browser (and the
+  # service worker's own update check) has to fetch fresh to notice a new
+  # deploy at all — a cached copy of either silently disables the in-app
+  # "Update available" prompt (see main.tsx) until someone stumbles onto a
+  # hard refresh. The hashed /assets/*.js|css files index.html points to
+  # don't need this: their filename itself changes whenever their content
+  # does, so caching them normally is safe.
+  <FilesMatch "^(index\.html|sw\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
 

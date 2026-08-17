@@ -11,7 +11,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate'): the new service worker still installs
+      // itself in the background the moment it's available, but registerSW()
+      // in main.tsx decides WHEN a currently-open tab actually reloads onto
+      // it (a toast with a Reload button) instead of the tab being swapped
+      // out from under someone mid-form. injectRegister is off because
+      // registerSW() there is a manual call to the same virtual module —
+      // leaving auto-injection on would register the service worker twice.
+      registerType: 'prompt',
+      injectRegister: false,
       // Static-asset precaching only (JS/CSS/HTML/fonts/icons) — the app
       // shell loads with zero connectivity. Deliberately NOT caching API
       // responses at the service-worker level: React Query's persisted
