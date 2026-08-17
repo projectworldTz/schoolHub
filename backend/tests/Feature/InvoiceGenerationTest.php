@@ -131,4 +131,61 @@ class InvoiceGenerationTest extends TestCase
         $response->assertStatus(422);
         $this->assertDatabaseCount('invoices', 0);
     }
+
+    public function test_a_pay_once_fee_structure_is_not_billed_again_on_a_second_generation_run(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 2);
+        $category = FeeCategory::create(['school_id' => $fixture['school']->id, 'name' => 'Registration']);
+        $feeStructure = FeeStructure::create([
+            'school_id' => $fixture['school']->id,
+            'academic_year_id' => $fixture['academicYear']->id,
+            'school_class_id' => $fixture['schoolClass']->id,
+            'fee_category_id' => $category->id,
+            'pay_once' => true,
+            'amount' => 500,
+        ]);
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $payload = [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'school_class_id' => $fixture['schoolClass']->id,
+            'fee_structure_ids' => [$feeStructure->id],
+        ];
+
+        $first = $this->actingAs($owner, 'web')->postJson('/api/school/invoices/generate', $payload);
+        $first->assertOk();
+        $this->assertCount(2, $first->json('data'));
+        $this->assertDatabaseCount('invoice_items', 2);
+
+        // Re-running generation for the same class must not create a second
+        // round of invoice items for the pay_once fee — every student is
+        // skipped since it's the only fee structure selected.
+        $second = $this->actingAs($owner, 'web')->postJson('/api/school/invoices/generate', $payload);
+        $second->assertOk();
+        $this->assertCount(0, $second->json('data'));
+        $this->assertCount(2, $second->json('skipped_students'));
+        $this->assertDatabaseCount('invoice_items', 2);
+    }
+
+    public function test_a_recurring_fee_structure_is_billed_again_on_a_second_generation_run(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 1);
+        $feeStructure = $this->createFeeStructure($fixture['school'], $fixture['academicYear'], $fixture['schoolClass']);
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $payload = [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'school_class_id' => $fixture['schoolClass']->id,
+            'fee_structure_ids' => [$feeStructure->id],
+        ];
+
+        $this->actingAs($owner, 'web')->postJson('/api/school/invoices/generate', $payload)->assertOk();
+        $second = $this->actingAs($owner, 'web')->postJson('/api/school/invoices/generate', $payload);
+
+        $second->assertOk();
+        $this->assertCount(1, $second->json('data'));
+        $this->assertDatabaseCount('invoice_items', 2);
+    }
 }

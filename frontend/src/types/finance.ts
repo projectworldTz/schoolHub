@@ -27,6 +27,7 @@ export interface FeeStructure {
   school_class_name?: string | null
   fee_category_id: string
   fee_category_name?: string
+  pay_once: boolean
   amount: string
   due_date: string | null
 }

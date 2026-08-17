@@ -4,6 +4,7 @@ namespace App\Services\Finance;
 
 use App\Models\FeeStructure;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
@@ -31,6 +32,15 @@ class InvoiceService
      * selected fee structure's category is skipped rather than given a
      * blank invoice — same "no empty records" rule, just per-student instead
      * of per-class.
+     *
+     * A fee structure marked pay_once (e.g. a one-time registration/
+     * admission fee) is only ever billed to a given student once, across
+     * every prior invoice — not just within the current academic year/term
+     * — so re-running generation in a later term never re-bills it. This is
+     * a real state check against invoice_items (see $alreadyBilledPayOnce
+     * below), not a flag on the student, since a fee structure can be
+     * flipped between recurring and pay_once after some students already
+     * have it on an invoice.
      *
      * @return array{invoices: array<Invoice>, skipped_students: array<array{id: string, name: string}>}
      */
@@ -63,7 +73,18 @@ class InvoiceService
             ->groupBy('student_id')
             ->map(fn ($rows) => $rows->pluck('fee_category_id')->all());
 
-        return DB::transaction(function () use ($attributes, $feeStructures, $studentIds, $excludedCategoryIdsByStudent) {
+        $payOnceStructureIds = $feeStructures->where('pay_once', true)->pluck('id');
+
+        $alreadyBilledPayOnce = $payOnceStructureIds->isEmpty()
+            ? collect()
+            : InvoiceItem::query()
+                ->whereIn('fee_structure_id', $payOnceStructureIds)
+                ->whereHas('invoice', fn ($q) => $q->whereIn('student_id', $studentIds))
+                ->with('invoice:id,student_id')
+                ->get()
+                ->map(fn (InvoiceItem $item) => "{$item->invoice->student_id}:{$item->fee_structure_id}");
+
+        return DB::transaction(function () use ($attributes, $feeStructures, $studentIds, $excludedCategoryIdsByStudent, $alreadyBilledPayOnce) {
             $invoices = [];
             $skipped = [];
 
@@ -73,6 +94,10 @@ class InvoiceService
                 $applicableStructures = $excludedCategoryIds === []
                     ? $feeStructures
                     : $feeStructures->reject(fn (FeeStructure $fs) => in_array($fs->fee_category_id, $excludedCategoryIds, true));
+
+                $applicableStructures = $applicableStructures->reject(
+                    fn (FeeStructure $fs) => $fs->pay_once && $alreadyBilledPayOnce->contains("{$studentId}:{$fs->id}")
+                );
 
                 if ($applicableStructures->isEmpty()) {
                     $student = Student::find($studentId);

@@ -20,6 +20,7 @@ class FeeStructure extends Model
         'term_id',
         'school_class_id',
         'fee_category_id',
+        'pay_once',
         'amount',
         'due_date',
     ];
@@ -29,6 +30,7 @@ class FeeStructure extends Model
         return [
             'amount' => 'decimal:2',
             'due_date' => 'date',
+            'pay_once' => 'boolean',
         ];
     }
 

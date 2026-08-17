@@ -18,6 +18,7 @@ class FeeStructureRequest extends FormRequest
             'term_id' => ['nullable', 'uuid', 'exists:terms,id'],
             'school_class_id' => ['nullable', 'uuid', 'exists:school_classes,id'],
             'fee_category_id' => ['required', 'uuid', 'exists:fee_categories,id'],
+            'pay_once' => ['sometimes', 'boolean'],
             'amount' => ['required', 'numeric', 'min:0'],
             'due_date' => ['nullable', 'date'],
         ];

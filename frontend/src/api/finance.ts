@@ -16,6 +16,7 @@ export interface FeeStructurePayload {
   term_id?: string
   school_class_id?: string
   fee_category_id: string
+  pay_once?: boolean
   amount: number
   due_date?: string
 }

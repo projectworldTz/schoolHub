@@ -20,6 +20,7 @@ class FeeStructureResource extends JsonResource
             'school_class_name' => $this->whenLoaded('schoolClass', fn () => $this->schoolClass?->name),
             'fee_category_id' => $this->fee_category_id,
             'fee_category_name' => $this->whenLoaded('feeCategory', fn () => $this->feeCategory->name),
+            'pay_once' => $this->pay_once,
             'amount' => $this->amount,
             'due_date' => $this->due_date?->toDateString(),
         ];
