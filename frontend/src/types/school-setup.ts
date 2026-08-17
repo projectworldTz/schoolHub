@@ -47,6 +47,7 @@ export interface Holiday {
 
 export interface SchoolPaymentAccount {
   id: string
+  bank_name: string
   account_name: string
   account_number: string
   currency: string | null

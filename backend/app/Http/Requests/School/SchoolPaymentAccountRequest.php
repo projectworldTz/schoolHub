@@ -14,6 +14,9 @@ class SchoolPaymentAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'bank_name' => ['required', 'string', 'max:255'],
+            // The name the account is held in (e.g. the school's own
+            // registered name) — distinct from bank_name (e.g. "CRDB").
             'account_name' => ['required', 'string', 'max:255'],
             // String, not numeric — bank/mobile money account numbers can
             // carry leading zeros or non-digit characters.

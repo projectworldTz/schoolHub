@@ -21,6 +21,7 @@ class SchoolPaymentAccount extends Model
 
     protected $fillable = [
         'school_id',
+        'bank_name',
         'account_name',
         'account_number',
         'currency',
@@ -28,6 +29,6 @@ class SchoolPaymentAccount extends Model
 
     protected function activityDescription(string $action): string
     {
-        return "Payment account \"{$this->account_name}\" {$action}";
+        return "Payment account \"{$this->bank_name} - {$this->account_name}\" {$action}";
     }
 }

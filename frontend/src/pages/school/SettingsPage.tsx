@@ -248,8 +248,9 @@ function ProfileTab() {
   )
 }
 
-const paymentAccountDefaults = { account_name: '', account_number: '', currency: '' }
+const paymentAccountDefaults = { bank_name: '', account_name: '', account_number: '', currency: '' }
 const paymentAccountSchema = z.object({
+  bank_name: z.string().min(1, 'Required'),
   account_name: z.string().min(1, 'Required'),
   account_number: z.string().min(1, 'Required'),
   currency: z.string().optional(),
@@ -264,6 +265,7 @@ function PaymentAccountsTab() {
 
   const columns: ColumnDef<SchoolPaymentAccount>[] = [
     { key: 'currency', label: 'Currency', render: (a) => a.currency ?? '—' },
+    { key: 'bank_name', label: 'Bank', render: (a) => a.bank_name },
     { key: 'account_name', label: 'Account name', render: (a) => a.account_name },
     { key: 'account_number', label: 'Account number', render: (a) => a.account_number },
   ]
@@ -279,7 +281,8 @@ function PaymentAccountsTab() {
       defaultValues={paymentAccountDefaults}
       fields={[
         { name: 'currency', label: 'Currency (e.g. TZS, USD)', type: 'text' },
-        { name: 'account_name', label: 'Account name (e.g. CRDB Bank)', type: 'text' },
+        { name: 'bank_name', label: 'Bank name (e.g. CRDB, KCB, Exim, Azania)', type: 'text' },
+        { name: 'account_name', label: 'Account name (e.g. the school\'s account name)', type: 'text' },
         // Free-form text, not type="number" — bank/mobile money account
         // numbers can have leading zeros or non-digit characters.
         { name: 'account_number', label: 'Account number', type: 'text' },
@@ -287,6 +290,7 @@ function PaymentAccountsTab() {
       onCreate={(values) => create.mutateAsync(values as SchoolPaymentAccountPayload)}
       onEdit={(item, values) => update.mutateAsync({ id: item.id, payload: values as SchoolPaymentAccountPayload })}
       toFormValues={(item) => ({
+        bank_name: item.bank_name,
         account_name: item.account_name,
         account_number: item.account_number,
         currency: item.currency ?? '',

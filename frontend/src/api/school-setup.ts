@@ -9,6 +9,7 @@ export const academicYearsApi = createCrudApi<AcademicYear>('academic-years')
 export const holidaysApi = createCrudApi<Holiday>('holidays')
 
 export interface SchoolPaymentAccountPayload {
+  bank_name: string
   account_name: string
   account_number: string
   currency?: string
