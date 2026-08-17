@@ -109,8 +109,15 @@ function FeeCategoriesCard() {
         { name: 'is_optional', label: 'Optional (students can be excluded)', type: 'switch' },
       ]}
       onCreate={(values) => create.mutateAsync(values as FeeCategoryPayload)}
+      onEdit={(item, values) => update.mutateAsync({ id: item.id, payload: values as FeeCategoryPayload })}
+      toFormValues={(item) => ({
+        name: item.name,
+        description: item.description ?? '',
+        is_optional: item.is_optional,
+      })}
       onDelete={(item) => remove.mutateAsync(item.id)}
       createLabel="New category"
+      editLabel="Edit fee category"
     />
   )
 }
