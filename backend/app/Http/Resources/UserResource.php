@@ -20,6 +20,13 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'is_active' => $this->is_active,
             'must_change_password' => $this->must_change_password,
+            'has_placeholder_email' => $this->has_placeholder_email,
+            // Only set on the in-memory instance returned right after
+            // store() creates a placeholder-email account — a plain
+            // database re-fetch (index, show, update) never has this
+            // attribute, same pattern as School Owner's temporary_password
+            // in Platform\SchoolResource.
+            'temporary_password' => $this->temporary_password ?? null,
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name'),
             'acting_school' => $this->when($this->hasRole('Super Admin'), fn () => $this->actingSchool($request)),

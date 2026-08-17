@@ -131,6 +131,7 @@ $schoolRoutes = function () {
         Route::get('roles', [SchoolUserController::class, 'availableRoles']);
         Route::get('users/roles', [SchoolUserController::class, 'usedRoles']);
         Route::apiResource('users', SchoolUserController::class);
+        Route::put('users/{user}/email', [SchoolUserController::class, 'addEmail']);
 
         // Students
         Route::apiResource('students', StudentController::class);

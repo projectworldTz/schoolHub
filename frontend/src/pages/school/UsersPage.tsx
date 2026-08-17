@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { MoreHorizontal } from 'lucide-react'
+import { Check, Copy, MoreHorizontal } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  useAddSchoolUserEmail,
   useAvailableRoles,
   useCreateSchoolUser,
   useDeleteSchoolUser,
@@ -61,33 +62,104 @@ import { useCurrentUser } from '@/hooks/useAuth'
 import { TablePagination } from '@/components/school/TablePagination'
 import type { User } from '@/types/auth'
 
-const createUserSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Enter a valid email'),
-  phone: z.string().optional(),
-  roles: z.array(z.string()).min(1, 'Select at least one role'),
-})
+const createUserSchema = z
+  .object({
+    name: z.string().min(2, 'Name is required'),
+    noEmail: z.boolean(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    roles: z.array(z.string()).min(1, 'Select at least one role'),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.noEmail && !z.string().email().safeParse(data.email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Enter a valid email, or check "No email yet"',
+        path: ['email'],
+      })
+    }
+  })
 
 type CreateUserForm = z.infer<typeof createUserSchema>
 
+const createUserDefaults: CreateUserForm = { name: '', noEmail: false, email: '', phone: '', roles: [] }
+
+/**
+ * Shown once right after creating a no-email account — there's no
+ * activation email to send, so this password (never persisted in
+ * plaintext) is the only way the admin can hand the teacher a working
+ * login. Same "shown once" pattern as the platform's school-owner
+ * temporary password reveal.
+ */
+function TemporaryPasswordReveal({ user, onDone }: { user: User; onDone: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const temporaryPassword = user.temporary_password ?? ''
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(temporaryPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{user.name}'s account is ready</DialogTitle>
+        <DialogDescription>
+          This account has no email yet, so there's no activation link to send. Share this temporary password
+          with {user.name} directly. Copy it now — for security, it won't be shown again. They'll be required
+          to set their own password the first time they sign in. Once they have an email, use "Add email" on
+          their row to send a normal activation link.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="flex items-center gap-2 rounded-md border bg-muted p-3">
+        <code className="flex-1 break-all text-sm">{temporaryPassword}</code>
+        <Button size="icon" variant="ghost" onClick={handleCopy} type="button">
+          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+        </Button>
+      </div>
+      <DialogFooter>
+        <Button onClick={onDone}>Done</Button>
+      </DialogFooter>
+    </>
+  )
+}
+
 function CreateUserDialog() {
   const [open, setOpen] = useState(false)
+  const [createdUser, setCreatedUser] = useState<User | null>(null)
   const { data: roles } = useAvailableRoles()
   const createUser = useCreateSchoolUser()
 
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: '', email: '', phone: '', roles: [] },
+    defaultValues: createUserDefaults,
   })
+
+  const noEmail = form.watch('noEmail')
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) setCreatedUser(null)
+  }
 
   function onSubmit(values: CreateUserForm) {
     createUser.mutate(
-      { ...values, phone: values.phone || undefined },
       {
-        onSuccess: () => {
-          toast.success('User created — an activation email has been sent')
-          form.reset({ name: '', email: '', phone: '', roles: [] })
-          setOpen(false)
+        name: values.name,
+        email: values.noEmail ? undefined : values.email,
+        phone: values.phone || undefined,
+        roles: values.roles,
+      },
+      {
+        onSuccess: (user) => {
+          form.reset(createUserDefaults)
+          if (user.temporary_password) {
+            setCreatedUser(user)
+          } else {
+            toast.success('User created — an activation email has been sent')
+            setOpen(false)
+          }
         },
         onError: (error) => {
           const message = isAxiosError(error)
@@ -100,90 +172,108 @@ function CreateUserDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm">New user</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New user</DialogTitle>
-          <DialogDescription>
-            They'll get an email to set their own password — no password to set here.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone (optional)</FormLabel>
-                  <FormControl>
-                    <Input type="tel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="roles"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Roles</FormLabel>
-                  <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
-                    {roles?.map((role) => (
-                      <label key={role} className="flex items-center gap-2 text-sm">
-                        <Checkbox
-                          checked={field.value.includes(role)}
-                          onCheckedChange={(checked) => {
-                            field.onChange(
-                              checked ? [...field.value, role] : field.value.filter((r) => r !== role)
-                            )
-                          }}
-                        />
-                        {role}
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="submit" disabled={createUser.isPending}>
-                {createUser.isPending ? 'Creating…' : 'Create user'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        {createdUser ? (
+          <TemporaryPasswordReveal user={createdUser} onDone={() => handleOpenChange(false)} />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>New user</DialogTitle>
+              <DialogDescription>
+                They'll get an email to set their own password — no password to set here.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <Checkbox
+                    checked={noEmail}
+                    onCheckedChange={(checked) => {
+                      form.setValue('noEmail', Boolean(checked))
+                      form.clearErrors('email')
+                    }}
+                  />
+                  No email yet (they'll get a temporary password instead)
+                </label>
+                {!noEmail && (
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="roles"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Roles</FormLabel>
+                      <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                        {roles?.map((role) => (
+                          <label key={role} className="flex items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={field.value.includes(role)}
+                              onCheckedChange={(checked) => {
+                                field.onChange(
+                                  checked ? [...field.value, role] : field.value.filter((r) => r !== role)
+                                )
+                              }}
+                            />
+                            {role}
+                          </label>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit" disabled={createUser.isPending}>
+                    {createUser.isPending ? 'Creating…' : 'Create user'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -372,6 +462,86 @@ function EditDetailsDialog({
   )
 }
 
+const addEmailSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+})
+
+type AddEmailForm = z.infer<typeof addEmailSchema>
+
+/**
+ * Upgrades a no-email account to a real one — clears the placeholder flag
+ * server-side and sends the same activation email a brand-new user gets,
+ * since this is effectively the teacher's first real chance to set their
+ * own password.
+ */
+function AddEmailDialog({
+  user,
+  onOpenChange,
+}: {
+  user: User
+  onOpenChange: (open: boolean) => void
+}) {
+  const addEmail = useAddSchoolUserEmail()
+
+  const form = useForm<AddEmailForm>({
+    resolver: zodResolver(addEmailSchema),
+    defaultValues: { email: '' },
+  })
+
+  function onSubmit(values: AddEmailForm) {
+    addEmail.mutate(
+      { id: user.id, email: values.email },
+      {
+        onSuccess: () => {
+          toast.success('Email added — an activation email has been sent')
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not add email')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add email — {user.name}</DialogTitle>
+          <DialogDescription>
+            They'll get an activation email to set their own password, same as a brand-new user.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={addEmail.isPending}>
+                {addEmail.isPending ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const USERS_PER_PAGE = 100
 const ALL_ROLES = '__all'
 
@@ -392,6 +562,7 @@ export function UsersPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingRolesUser, setEditingRolesUser] = useState<User | null>(null)
   const [editingDetailsUser, setEditingDetailsUser] = useState<User | null>(null)
+  const [addingEmailUser, setAddingEmailUser] = useState<User | null>(null)
 
   function handleSearchChange(next: string) {
     setSearch(next)
@@ -496,7 +667,15 @@ export function UsersPage() {
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.has_placeholder_email ? (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          No email
+                        </Badge>
+                      ) : (
+                        user.email
+                      )}
+                    </TableCell>
                     <TableCell className="space-x-1">
                       {user.roles.map((role) => (
                         <Badge key={role} variant="secondary">
@@ -523,6 +702,11 @@ export function UsersPage() {
                           <DropdownMenuItem onClick={() => setEditingRolesUser(user)}>
                             Edit roles
                           </DropdownMenuItem>
+                          {user.has_placeholder_email && (
+                            <DropdownMenuItem onClick={() => setAddingEmailUser(user)}>
+                              Add email
+                            </DropdownMenuItem>
+                          )}
                           {!targetIsOwnerLockedForActor && (
                             <DropdownMenuItem onClick={() => toggleActive(user.id, user.is_active)}>
                               {user.is_active ? 'Deactivate' : 'Activate'}
@@ -565,6 +749,12 @@ export function UsersPage() {
         <EditRolesDialog
           user={editingRolesUser}
           onOpenChange={(open) => !open && setEditingRolesUser(null)}
+        />
+      )}
+      {addingEmailUser && (
+        <AddEmailDialog
+          user={addingEmailUser}
+          onOpenChange={(open) => !open && setAddingEmailUser(null)}
         />
       )}
       <ConfirmDialog

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -36,6 +37,7 @@ class User extends Authenticatable
         'password',
         'is_active',
         'must_change_password',
+        'has_placeholder_email',
         'announcements_last_seen_at',
     ];
 
@@ -61,6 +63,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
+            'has_placeholder_email' => 'boolean',
             'announcements_last_seen_at' => 'datetime',
         ];
     }
@@ -97,6 +100,21 @@ class User extends Authenticatable
         [$local, $domain] = str_contains($email, '@') ? explode('@', $email, 2) : [$email, 'deleted.invalid'];
 
         return substr("{$local}+deleted-{$id}@{$domain}", 0, 255);
+    }
+
+    /**
+     * A syntactically-valid, unique stand-in for a teacher who genuinely
+     * has no email address yet — never a real inbox, never mailed to (see
+     * has_placeholder_email). Named after them purely so it's recognizable
+     * in the database, not because it needs to be; collision risk is
+     * negligible given the random suffix, same tolerance this codebase
+     * already accepts for InvoiceService::generateInvoiceNumber().
+     */
+    public static function placeholderEmailFor(string $name): string
+    {
+        $local = Str::slug($name, '.') ?: 'staff';
+
+        return substr("{$local}.".Str::lower(Str::random(8)).'@noemail.schoolhub.internal', 0, 255);
     }
 
     public function staffProfile(): HasOne

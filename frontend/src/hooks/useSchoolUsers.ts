@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  addSchoolUserEmail,
   createSchoolUser,
   deleteSchoolUser,
   listAvailableRoles,
@@ -49,6 +50,14 @@ export function useDeleteSchoolUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteSchoolUser,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  })
+}
+
+export function useAddSchoolUserEmail() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, email }: { id: string; email: string }) => addSchoolUserEmail(id, email),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
   })
 }

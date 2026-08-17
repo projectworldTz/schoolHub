@@ -113,4 +113,116 @@ class SchoolUserManagementTest extends TestCase
         $forbidden = $this->actingAs($plainTeacher, 'web')->getJson('/api/school/users/roles');
         $forbidden->assertForbidden();
     }
+
+    public function test_creating_a_user_without_an_email_gets_a_placeholder_and_a_shown_once_password(): void
+    {
+        Mail::fake();
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'No Email Teacher',
+            'roles' => ['Class Teacher'],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.has_placeholder_email', true);
+        $this->assertNotEmpty($response->json('data.temporary_password'));
+
+        $created = User::withoutGlobalScopes()->where('name', 'No Email Teacher')->firstOrFail();
+        $this->assertTrue($created->hasRole('Class Teacher'));
+        $this->assertTrue($created->has_placeholder_email);
+        $this->assertTrue($created->must_change_password);
+        $this->assertStringEndsWith('@noemail.schoolhub.internal', $created->email);
+
+        Mail::assertNotSent(AccountActivationMail::class);
+    }
+
+    public function test_a_temporary_password_is_not_shown_again_on_a_later_fetch(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+
+        $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'No Email Teacher',
+            'roles' => ['Class Teacher'],
+        ])->assertCreated();
+
+        $created = User::withoutGlobalScopes()->where('name', 'No Email Teacher')->firstOrFail();
+        $response = $this->actingAs($owner, 'web')->getJson("/api/school/users/{$created->id}");
+
+        $response->assertOk();
+        $this->assertNull($response->json('data.temporary_password'));
+    }
+
+    public function test_adding_an_email_to_a_placeholder_account_sends_the_activation_email(): void
+    {
+        Mail::fake();
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+
+        $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'No Email Teacher',
+            'roles' => ['Class Teacher'],
+        ])->assertCreated();
+
+        $created = User::withoutGlobalScopes()->where('name', 'No Email Teacher')->firstOrFail();
+
+        $response = $this->actingAs($owner, 'web')->putJson("/api/school/users/{$created->id}/email", [
+            'email' => 'noemail.teacher@example.com',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.email', 'noemail.teacher@example.com');
+        $response->assertJsonPath('data.has_placeholder_email', false);
+
+        Mail::assertSent(AccountActivationMail::class, fn ($mail) => $mail->hasTo('noemail.teacher@example.com'));
+    }
+
+    public function test_adding_an_email_rejects_one_already_used_by_another_user(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+        $this->createUser($school, 'Teacher', ['email' => 'taken@example.com']);
+
+        $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'No Email Teacher',
+            'roles' => ['Class Teacher'],
+        ])->assertCreated();
+        $created = User::withoutGlobalScopes()->where('name', 'No Email Teacher')->firstOrFail();
+
+        $response = $this->actingAs($owner, 'web')->putJson("/api/school/users/{$created->id}/email", [
+            'email' => 'taken@example.com',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_editing_details_without_touching_email_does_not_clear_the_placeholder_flag(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+
+        $this->actingAs($owner, 'web')->postJson('/api/school/users', [
+            'name' => 'No Email Teacher',
+            'roles' => ['Class Teacher'],
+        ])->assertCreated();
+        $created = User::withoutGlobalScopes()->where('name', 'No Email Teacher')->firstOrFail();
+
+        // Same pattern EditDetailsDialog submits: every field present,
+        // including the unchanged (placeholder) email.
+        $response = $this->actingAs($owner, 'web')->putJson("/api/school/users/{$created->id}", [
+            'name' => 'No Email Teacher',
+            'email' => $created->email,
+            'phone' => '+255700000099',
+        ]);
+
+        $response->assertOk();
+        $this->assertTrue($created->refresh()->has_placeholder_email);
+    }
 }

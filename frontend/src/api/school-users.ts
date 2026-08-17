@@ -4,7 +4,8 @@ import type { User } from '@/types/auth'
 
 export interface CreateSchoolUserPayload {
   name: string
-  email: string
+  /** Omit for a teacher with no email yet — a placeholder is generated server-side. */
+  email?: string
   phone?: string
   roles: string[]
   is_active?: boolean
@@ -42,6 +43,11 @@ export async function updateSchoolUser(id: string, payload: UpdateSchoolUserPayl
 
 export async function deleteSchoolUser(id: string): Promise<void> {
   await apiClient.delete(`/school/users/${id}`)
+}
+
+export async function addSchoolUserEmail(id: string, email: string): Promise<User> {
+  const { data } = await apiClient.put<{ data: User }>(`/school/users/${id}/email`, { email })
+  return data.data
 }
 
 export async function listAvailableRoles(): Promise<string[]> {

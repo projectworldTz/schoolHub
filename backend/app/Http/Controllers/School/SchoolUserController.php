@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\School;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\School\AddSchoolUserEmailRequest;
 use App\Http\Requests\School\CreateSchoolUserRequest;
 use App\Http\Requests\School\UpdateSchoolUserRequest;
 use App\Http\Resources\UserResource;
@@ -42,17 +43,31 @@ class SchoolUserController extends Controller
     {
         $data = $request->validated();
         $school = School::find(Tenant::id());
+        $hasRealEmail = ! empty($data['email']);
 
-        $user = DB::transaction(function () use ($data) {
+        // No real email yet (a teacher who genuinely has none) — still
+        // needs a real User row to hold a role and be assignable to
+        // subjects/classes, so a placeholder address fills the unique
+        // column instead of blocking account creation entirely. Shown once
+        // in the response (never persisted in plaintext) so the admin can
+        // hand it to the teacher directly, same as SchoolService::create()
+        // does for a new school owner.
+        $temporaryPassword = $hasRealEmail ? null : Str::password(12);
+
+        $user = DB::transaction(function () use ($data, $hasRealEmail, $temporaryPassword) {
             $user = User::create([
                 'school_id' => Tenant::id(),
                 'name' => $data['name'],
-                'email' => $data['email'],
+                'email' => $hasRealEmail ? $data['email'] : User::placeholderEmailFor($data['name']),
                 'phone' => $data['phone'] ?? null,
-                // Random, never-communicated password — an activation email
-                // (below) is how they actually get in, same as
-                // TeacherImportService/GuardianImportService.
-                'password' => Hash::make(Str::random(40)),
+                'has_placeholder_email' => ! $hasRealEmail,
+                // Real email: random, never-communicated password — the
+                // activation email below is how they actually get in, same
+                // as TeacherImportService/GuardianImportService. No email:
+                // the temporary password above IS how they get in, so it's
+                // set directly and must be changed on first login.
+                'password' => Hash::make($hasRealEmail ? Str::random(40) : $temporaryPassword),
+                'must_change_password' => ! $hasRealEmail,
                 'is_active' => $data['is_active'] ?? true,
                 'email_verified_at' => now(),
             ]);
@@ -62,10 +77,38 @@ class SchoolUserController extends Controller
             return $user;
         });
 
-        // Outside the transaction — a mail failure must not roll back the
-        // user that was just successfully created.
+        if ($hasRealEmail) {
+            // Outside the transaction — a mail failure must not roll back
+            // the user that was just successfully created.
+            $token = Password::broker()->createToken($user);
+            $roleLine = implode(', ', $data['roles']);
+            Mail::to($user)->send(new AccountActivationMail($user, $school, $token, "a **{$roleLine}** at **{$school->name}**"));
+        } else {
+            // Not a real column — lives only on this in-memory instance so
+            // UserResource can surface it in this one response.
+            $user->temporary_password = $temporaryPassword;
+        }
+
+        return new UserResource($user->load('roles'));
+    }
+
+    /**
+     * Upgrades a placeholder-email account to a real one once the teacher
+     * actually has an email — sends the same activation mail store() sends
+     * a brand-new user, since this is effectively their first real chance
+     * to set their own password.
+     */
+    public function addEmail(AddSchoolUserEmailRequest $request, User $user)
+    {
+        $school = School::find(Tenant::id());
+
+        $user->update([
+            'email' => $request->validated('email'),
+            'has_placeholder_email' => false,
+        ]);
+
         $token = Password::broker()->createToken($user);
-        $roleLine = implode(', ', $data['roles']);
+        $roleLine = implode(', ', $user->getRoleNames()->all());
         Mail::to($user)->send(new AccountActivationMail($user, $school, $token, "a **{$roleLine}** at **{$school->name}**"));
 
         return new UserResource($user->load('roles'));
@@ -92,6 +135,17 @@ class SchoolUserController extends Controller
         );
 
         DB::transaction(function () use ($data, $user) {
+            // A placeholder email is only ever meant to be replaced via
+            // addEmail() (which also sends the activation mail), but if an
+            // admin instead changes it through this general-purpose edit
+            // form, the placeholder flag shouldn't be left stale either.
+            // Compared against the current value (not just "was email
+            // sent") because EditDetailsDialog always submits every field,
+            // including an untouched email — that must NOT clear the flag.
+            if (isset($data['email']) && $data['email'] !== $user->email) {
+                $data['has_placeholder_email'] = false;
+            }
+
             $user->update(collect($data)->except('roles')->all());
 
             if (isset($data['roles'])) {
