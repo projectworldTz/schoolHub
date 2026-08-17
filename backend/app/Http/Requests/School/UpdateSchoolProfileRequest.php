@@ -27,6 +27,10 @@ class UpdateSchoolProfileRequest extends FormRequest
             'country' => ['nullable', 'string', 'size:2'],
             'timezone' => ['nullable', 'timezone'],
             'currency' => ['nullable', 'string', 'size:3'],
+            // Strings, not numeric — account numbers can carry leading
+            // zeros or non-digit characters (mobile money, IBANs, etc).
+            'payment_account_name' => ['nullable', 'string', 'max:255'],
+            'payment_account_number' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -68,6 +68,8 @@ const profileSchema = z.object({
   country: z.string().length(2).optional().or(z.literal('')),
   timezone: z.string().optional(),
   currency: z.string().length(3).optional().or(z.literal('')),
+  payment_account_name: z.string().optional(),
+  payment_account_number: z.string().optional(),
 })
 
 function ProfileTab() {
@@ -76,7 +78,18 @@ function ProfileTab() {
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: '', email: '', phone: '', address: '', city: '', country: '', timezone: '', currency: '' },
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      country: '',
+      timezone: '',
+      currency: '',
+      payment_account_name: '',
+      payment_account_number: '',
+    },
   })
 
   useEffect(() => {
@@ -90,6 +103,8 @@ function ProfileTab() {
         country: school.country ?? '',
         timezone: school.timezone ?? '',
         currency: school.currency ?? '',
+        payment_account_name: school.payment_account_name ?? '',
+        payment_account_number: school.payment_account_number ?? '',
       })
     }
   }, [school, form])
@@ -227,6 +242,40 @@ function ProfileTab() {
                 )}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="payment_account_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment account name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. St Joseph's School Fees Account" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="payment_account_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment account number</FormLabel>
+                    <FormControl>
+                      {/* Free-form text, not type="number" — mobile money and
+                          bank account numbers can have leading zeros or
+                          non-digit characters. */}
+                      <Input placeholder="e.g. 0712 345 678" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Shown to parents on their dashboard as where to send fee payments.
+            </p>
             <Button type="submit" disabled={updateProfile.isPending}>
               {updateProfile.isPending ? 'Saving…' : 'Save changes'}
             </Button>

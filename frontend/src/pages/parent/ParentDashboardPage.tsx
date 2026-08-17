@@ -34,6 +34,7 @@ import {
   useParentConversations,
   useSendParentMessage,
 } from '@/hooks/useParentPortal'
+import { useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
 import { AttendanceStatusBadge } from '@/components/school/AttendanceStatusBadge'
@@ -42,8 +43,9 @@ import { ParentRewardCard } from '@/components/parent/ParentRewardCard'
 import { FeesTable } from '@/components/parent/FeesTable'
 import { ExamResultsList } from '@/components/parent/ExamResultsList'
 import type { Student } from '@/types/students'
+import type { School } from '@/types/school'
 
-function ChildOverview({ student }: { student: Student }) {
+function ChildOverview({ student, school }: { student: Student; school?: School }) {
   const { data: attendance, isLoading: attendanceLoading } = useChildAttendance(student.id)
   const { data: homework, isLoading: homeworkLoading } = useChildHomework(student.id)
   const { data: results, isLoading: resultsLoading } = useChildResults(student.id)
@@ -135,6 +137,27 @@ function ChildOverview({ student }: { student: Student }) {
           </CardContent>
         </Card>
       </div>
+
+      {school?.payment_account_number && (
+        <Card className="border-none bg-muted/40">
+          <CardHeader>
+            <CardTitle className="text-base">Pay fees to</CardTitle>
+            <CardDescription>Send fee payments to this account.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm">
+            {school.payment_account_name && (
+              <p>
+                <span className="text-muted-foreground">Account name: </span>
+                {school.payment_account_name}
+              </p>
+            )}
+            <p>
+              <span className="text-muted-foreground">Account number: </span>
+              {school.payment_account_number}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />
 
@@ -368,6 +391,7 @@ function ParentMessagesCard() {
 export function ParentDashboardPage() {
   const { data: children, isLoading } = useMyChildren()
   const { data: announcements } = useParentAnnouncements()
+  const { data: school } = useSchoolProfile()
   const [activeChild, setActiveChild] = useState('')
 
   useEffect(() => {
@@ -397,7 +421,7 @@ export function ParentDashboardPage() {
           </TabsList>
           {children.map((child) => (
             <TabsContent key={child.id} value={child.id} className="mt-4">
-              <ChildOverview student={child} />
+              <ChildOverview student={child} school={school} />
             </TabsContent>
           ))}
         </Tabs>

@@ -25,6 +25,8 @@ class SchoolResource extends JsonResource
             'timezone' => $this->timezone,
             'currency' => $this->currency,
             'logo_path' => $this->logo_path,
+            'payment_account_name' => $this->payment_account_name,
+            'payment_account_number' => $this->payment_account_number,
             'subscription_plan' => $this->subscription_plan,
             'license_expires_at' => $this->license_expires_at,
             'approved_at' => $this->approved_at,
