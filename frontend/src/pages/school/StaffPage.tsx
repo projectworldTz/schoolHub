@@ -530,19 +530,38 @@ function StaffBranchCell({ staff, branches }: { staff: StaffProfile; branches: {
   )
 }
 
-function SubjectAssignmentEditor({ staff }: { staff: StaffProfile }) {
+/**
+ * Checkboxes toggle local state only — nothing hits the network until Save
+ * is clicked. Previously every single click fired its own sync request and
+ * the checkbox visually only updated once that round trip (plus the full
+ * staff-list refetch it triggered) completed, so each click felt like it
+ * "took 20 seconds to respond" on a slow connection even though the click
+ * itself was instant.
+ */
+function SubjectAssignmentEditor({ staff, onClose }: { staff: StaffProfile; onClose: () => void }) {
   const { data: subjects } = useSubjects.useList()
   const sync = useSyncTeacherSubjects()
-  const currentIds = new Set((staff.subjects_taught ?? []).map((s) => s.id))
+  const [checkedIds, setCheckedIds] = useState(
+    () => new Set((staff.subjects_taught ?? []).map((s) => s.id))
+  )
 
   function toggle(subjectId: string, checked: boolean) {
-    const next = new Set(currentIds)
-    if (checked) next.add(subjectId)
-    else next.delete(subjectId)
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(subjectId)
+      else next.delete(subjectId)
+      return next
+    })
+  }
 
+  function handleSave() {
     sync.mutate(
-      { staffId: staff.id, subjectIds: Array.from(next) },
+      { staffId: staff.id, subjectIds: Array.from(checkedIds) },
       {
+        onSuccess: () => {
+          toast.success('Subjects updated')
+          onClose()
+        },
         onError: (error) => {
           const message = isAxiosError(error)
             ? (error.response?.data?.message ?? 'Could not update subjects')
@@ -554,33 +573,51 @@ function SubjectAssignmentEditor({ staff }: { staff: StaffProfile }) {
   }
 
   return (
-    <div className="space-y-2 p-1">
-      {subjects?.map((subject) => (
-        <label key={subject.id} className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={currentIds.has(subject.id)}
-            onCheckedChange={(checked) => toggle(subject.id, checked === true)}
-          />
-          {subject.name}
-        </label>
-      ))}
+    <div className="space-y-4">
+      <div className="max-h-80 space-y-2 overflow-y-auto p-1">
+        {subjects?.map((subject) => (
+          <label key={subject.id} className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={checkedIds.has(subject.id)}
+              onCheckedChange={(checked) => toggle(subject.id, checked === true)}
+            />
+            {subject.name}
+          </label>
+        ))}
+      </div>
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={sync.isPending}>
+          {sync.isPending ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
     </div>
   )
 }
 
-function ClassAssignmentEditor({ staff }: { staff: StaffProfile }) {
+function ClassAssignmentEditor({ staff, onClose }: { staff: StaffProfile; onClose: () => void }) {
   const { data: classes } = useClasses.useList()
   const sync = useSyncTeacherClasses()
-  const currentIds = new Set((staff.classes_assigned ?? []).map((c) => c.id))
+  const [checkedIds, setCheckedIds] = useState(
+    () => new Set((staff.classes_assigned ?? []).map((c) => c.id))
+  )
 
   function toggle(classId: string, checked: boolean) {
-    const next = new Set(currentIds)
-    if (checked) next.add(classId)
-    else next.delete(classId)
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(classId)
+      else next.delete(classId)
+      return next
+    })
+  }
 
+  function handleSave() {
     sync.mutate(
-      { staffId: staff.id, classIds: Array.from(next) },
+      { staffId: staff.id, classIds: Array.from(checkedIds) },
       {
+        onSuccess: () => {
+          toast.success('Classes updated')
+          onClose()
+        },
         onError: (error) => {
           const message = isAxiosError(error)
             ? (error.response?.data?.message ?? 'Could not update classes')
@@ -592,16 +629,23 @@ function ClassAssignmentEditor({ staff }: { staff: StaffProfile }) {
   }
 
   return (
-    <div className="space-y-2 p-1">
-      {classes?.map((schoolClass) => (
-        <label key={schoolClass.id} className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={currentIds.has(schoolClass.id)}
-            onCheckedChange={(checked) => toggle(schoolClass.id, checked === true)}
-          />
-          {schoolClass.name}
-        </label>
-      ))}
+    <div className="space-y-4">
+      <div className="max-h-80 space-y-2 overflow-y-auto p-1">
+        {classes?.map((schoolClass) => (
+          <label key={schoolClass.id} className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={checkedIds.has(schoolClass.id)}
+              onCheckedChange={(checked) => toggle(schoolClass.id, checked === true)}
+            />
+            {schoolClass.name}
+          </label>
+        ))}
+      </div>
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={sync.isPending}>
+          {sync.isPending ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -930,7 +974,7 @@ function StaffTab() {
             <DialogHeader>
               <DialogTitle>Subjects taught — {subjectsFor?.name}</DialogTitle>
             </DialogHeader>
-            {subjectsFor && <SubjectAssignmentEditor staff={subjectsFor} />}
+            {subjectsFor && <SubjectAssignmentEditor staff={subjectsFor} onClose={() => setSubjectsFor(null)} />}
           </DialogContent>
         </Dialog>
 
@@ -939,7 +983,7 @@ function StaffTab() {
             <DialogHeader>
               <DialogTitle>Classes assigned — {classesFor?.name}</DialogTitle>
             </DialogHeader>
-            {classesFor && <ClassAssignmentEditor staff={classesFor} />}
+            {classesFor && <ClassAssignmentEditor staff={classesFor} onClose={() => setClassesFor(null)} />}
           </DialogContent>
         </Dialog>
 
