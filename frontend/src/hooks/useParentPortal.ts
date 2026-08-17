@@ -69,7 +69,11 @@ export function useChildInvoice(studentId: string, invoiceId: string) {
 }
 
 export function useParentAnnouncements() {
-  return useQuery({ queryKey: ['parent', 'announcements'], queryFn: fetchParentAnnouncements })
+  return useQuery({
+    queryKey: ['parent', 'announcements'],
+    queryFn: fetchParentAnnouncements,
+    refetchInterval: 30000,
+  })
 }
 
 export function useParentConversations() {

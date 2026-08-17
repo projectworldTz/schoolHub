@@ -1,8 +1,8 @@
 import { Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Bell, LogOut } from 'lucide-react'
+import { Bell, LogOut, MessageSquare } from 'lucide-react'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
-import { useParentAnnouncements } from '@/hooks/useParentPortal'
+import { useParentAnnouncements, useParentConversations } from '@/hooks/useParentPortal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -13,8 +13,10 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle'
 export function ParentLayout() {
   const { data: user } = useCurrentUser()
   const { data: announcements } = useParentAnnouncements()
+  const { data: conversations } = useParentConversations()
   const logoutMutation = useLogout()
   const navigate = useNavigate()
+  const unreadMessageCount = conversations?.reduce((sum, c) => sum + c.unread_count, 0) ?? 0
 
   function handleLogout() {
     logoutMutation.mutate(undefined, {
@@ -32,7 +34,12 @@ export function ParentLayout() {
           <Logo />
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => navigate('/parent/dashboard')}
+              >
                 <Bell className="size-4" />
               </Button>
               {Boolean(announcements?.unread_count) && (
@@ -41,6 +48,24 @@ export function ParentLayout() {
                   className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full p-0 text-[10px]"
                 >
                   {announcements!.unread_count}
+                </Badge>
+              )}
+            </div>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => navigate('/parent/dashboard')}
+              >
+                <MessageSquare className="size-4" />
+              </Button>
+              {unreadMessageCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full p-0 text-[10px]"
+                >
+                  {unreadMessageCount}
                 </Badge>
               )}
             </div>

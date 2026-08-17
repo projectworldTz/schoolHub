@@ -14,6 +14,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -31,9 +32,19 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { QuickAddMenu } from '@/components/layout/QuickAddMenu'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useAcademicYears, useSchoolProfile } from '@/hooks/useSchoolSetup'
+import { useConversations } from '@/hooks/useMessages'
 import { hasPermission } from '@/lib/permissions'
 import { AI_ASSISTANT_LINK, WEBSITE_BUILDER_LINK } from '@/config/nav'
 import { cn } from '@/lib/utils'
+
+function timeLabel(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  const sameDay = date.toDateString() === new Date().toDateString()
+  return sameDay
+    ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
 
 function initials(name: string): string {
   return name
@@ -65,6 +76,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const { data: user } = useCurrentUser()
   const { data: school } = useSchoolProfile()
   const { data: academicYears } = useAcademicYears.useList()
+  const { data: conversations } = useConversations()
   const logoutMutation = useLogout()
   const navigate = useNavigate()
   const [schoolMenuOpen, setSchoolMenuOpen] = useState(false)
@@ -81,6 +93,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   }
 
   const currentYear = academicYears?.find((y) => y.id === selectedYearId) ?? academicYears?.find((y) => y.is_current) ?? academicYears?.[0]
+  const unreadMessageCount = conversations?.reduce((sum, c) => sum + c.unread_count, 0) ?? 0
 
   return (
     <header className="bg-sidebar text-sidebar-foreground">
@@ -208,13 +221,57 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:bg-sidebar-accent hidden rounded-full text-white hover:text-white sm:flex">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-sidebar-accent relative hidden rounded-full text-white hover:text-white sm:flex"
+              >
                 <MessageSquare className="size-4" />
+                {unreadMessageCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full p-0 text-[10px]"
+                  >
+                    {unreadMessageCount}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 p-0">
               <div className="border-b px-4 py-3 text-sm font-medium">Messages</div>
-              <EmptyPanel icon={MessageSquare} title="No messages yet" description="Direct messaging is coming in a future update." />
+              {!conversations || conversations.length === 0 ? (
+                <EmptyPanel icon={MessageSquare} title="No messages yet" description="Direct messages will show up here." />
+              ) : (
+                <div className="max-h-80 divide-y overflow-y-auto">
+                  {conversations.slice(0, 6).map((conversation) => (
+                    <button
+                      key={conversation.id}
+                      onClick={() => navigate('/app/messages')}
+                      className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left text-sm hover:bg-accent"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{conversation.other_user_name ?? 'Unknown'}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {timeLabel(conversation.last_message_at)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-muted-foreground">
+                          {conversation.last_message ?? 'No messages yet'}
+                        </span>
+                        {conversation.unread_count > 0 && (
+                          <Badge className="shrink-0">{conversation.unread_count}</Badge>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="border-t p-2">
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/app/messages')}>
+                  View all messages
+                </Button>
+              </div>
             </PopoverContent>
           </Popover>
 
