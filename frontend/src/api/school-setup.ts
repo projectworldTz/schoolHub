@@ -1,12 +1,22 @@
 import { apiClient } from '@/api/client'
 import { createCrudApi } from '@/api/crud'
-import type { AcademicYear, Branch, Department, Holiday, Term } from '@/types/school-setup'
+import type { AcademicYear, Branch, Department, Holiday, SchoolPaymentAccount, Term } from '@/types/school-setup'
 import type { School } from '@/types/school'
 
 export const branchesApi = createCrudApi<Branch>('branches')
 export const departmentsApi = createCrudApi<Department>('departments')
 export const academicYearsApi = createCrudApi<AcademicYear>('academic-years')
 export const holidaysApi = createCrudApi<Holiday>('holidays')
+
+export interface SchoolPaymentAccountPayload {
+  account_name: string
+  account_number: string
+  currency?: string
+}
+
+export const schoolPaymentAccountsApi = createCrudApi<SchoolPaymentAccount, SchoolPaymentAccountPayload>(
+  'payment-accounts'
+)
 
 export async function fetchSchoolProfile(): Promise<School> {
   const { data } = await apiClient.get<{ data: School }>('/school/profile')

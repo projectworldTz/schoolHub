@@ -34,7 +34,7 @@ import {
   useParentConversations,
   useSendParentMessage,
 } from '@/hooks/useParentPortal'
-import { useSchoolProfile } from '@/hooks/useSchoolSetup'
+import { useSchoolPaymentAccounts } from '@/hooks/useSchoolSetup'
 import { cn } from '@/lib/utils'
 import { AttendanceTrendChart } from '@/components/school/AttendanceTrendChart'
 import { AttendanceStatusBadge } from '@/components/school/AttendanceStatusBadge'
@@ -43,9 +43,9 @@ import { ParentRewardCard } from '@/components/parent/ParentRewardCard'
 import { FeesTable } from '@/components/parent/FeesTable'
 import { ExamResultsList } from '@/components/parent/ExamResultsList'
 import type { Student } from '@/types/students'
-import type { School } from '@/types/school'
+import type { SchoolPaymentAccount } from '@/types/school-setup'
 
-function ChildOverview({ student, school }: { student: Student; school?: School }) {
+function ChildOverview({ student, paymentAccounts }: { student: Student; paymentAccounts?: SchoolPaymentAccount[] }) {
   const { data: attendance, isLoading: attendanceLoading } = useChildAttendance(student.id)
   const { data: homework, isLoading: homeworkLoading } = useChildHomework(student.id)
   const { data: results, isLoading: resultsLoading } = useChildResults(student.id)
@@ -138,23 +138,24 @@ function ChildOverview({ student, school }: { student: Student; school?: School 
         </Card>
       </div>
 
-      {school?.payment_account_number && (
+      {paymentAccounts && paymentAccounts.length > 0 && (
         <Card className="border-none bg-muted/40">
           <CardHeader>
             <CardTitle className="text-base">Pay fees to</CardTitle>
-            <CardDescription>Send fee payments to this account.</CardDescription>
+            <CardDescription>Send fee payments to any of these accounts.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            {school.payment_account_name && (
-              <p>
-                <span className="text-muted-foreground">Account name: </span>
-                {school.payment_account_name}
-              </p>
-            )}
-            <p>
-              <span className="text-muted-foreground">Account number: </span>
-              {school.payment_account_number}
-            </p>
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {paymentAccounts.map((account) => (
+              <div key={account.id} className="rounded-lg border bg-background p-3 text-sm">
+                {account.currency && (
+                  <Badge variant="secondary" className="mb-1">
+                    {account.currency}
+                  </Badge>
+                )}
+                <p className="font-medium">{account.account_name}</p>
+                <p className="text-muted-foreground">{account.account_number}</p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
@@ -391,7 +392,7 @@ function ParentMessagesCard() {
 export function ParentDashboardPage() {
   const { data: children, isLoading } = useMyChildren()
   const { data: announcements } = useParentAnnouncements()
-  const { data: school } = useSchoolProfile()
+  const { data: paymentAccounts } = useSchoolPaymentAccounts.useList()
   const [activeChild, setActiveChild] = useState('')
 
   useEffect(() => {
@@ -421,7 +422,7 @@ export function ParentDashboardPage() {
           </TabsList>
           {children.map((child) => (
             <TabsContent key={child.id} value={child.id} className="mt-4">
-              <ChildOverview student={child} school={school} />
+              <ChildOverview student={child} paymentAccounts={paymentAccounts} />
             </TabsContent>
           ))}
         </Tabs>

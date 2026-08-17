@@ -52,11 +52,13 @@ import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCa
 import {
   useBranches,
   useDepartments,
+  useSchoolPaymentAccounts,
   useSchoolProfile,
   useUpdateSchoolProfile,
 } from '@/hooks/useSchoolSetup'
 import { useApiTokens, useCreateApiToken, useDeleteApiToken } from '@/hooks/useApiTokens'
-import type { Branch, Department } from '@/types/school-setup'
+import type { SchoolPaymentAccountPayload } from '@/api/school-setup'
+import type { Branch, Department, SchoolPaymentAccount } from '@/types/school-setup'
 import type { CreatedApiToken } from '@/types/apiTokens'
 
 const profileSchema = z.object({
@@ -68,8 +70,6 @@ const profileSchema = z.object({
   country: z.string().length(2).optional().or(z.literal('')),
   timezone: z.string().optional(),
   currency: z.string().length(3).optional().or(z.literal('')),
-  payment_account_name: z.string().optional(),
-  payment_account_number: z.string().optional(),
 })
 
 function ProfileTab() {
@@ -87,8 +87,6 @@ function ProfileTab() {
       country: '',
       timezone: '',
       currency: '',
-      payment_account_name: '',
-      payment_account_number: '',
     },
   })
 
@@ -103,8 +101,6 @@ function ProfileTab() {
         country: school.country ?? '',
         timezone: school.timezone ?? '',
         currency: school.currency ?? '',
-        payment_account_name: school.payment_account_name ?? '',
-        payment_account_number: school.payment_account_number ?? '',
       })
     }
   }, [school, form])
@@ -242,40 +238,6 @@ function ProfileTab() {
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="payment_account_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Payment account name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. St Joseph's School Fees Account" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="payment_account_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Payment account number</FormLabel>
-                    <FormControl>
-                      {/* Free-form text, not type="number" — mobile money and
-                          bank account numbers can have leading zeros or
-                          non-digit characters. */}
-                      <Input placeholder="e.g. 0712 345 678" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Shown to parents on their dashboard as where to send fee payments.
-            </p>
             <Button type="submit" disabled={updateProfile.isPending}>
               {updateProfile.isPending ? 'Saving…' : 'Save changes'}
             </Button>
@@ -283,6 +245,56 @@ function ProfileTab() {
         </Form>
       </CardContent>
     </Card>
+  )
+}
+
+const paymentAccountDefaults = { account_name: '', account_number: '', currency: '' }
+const paymentAccountSchema = z.object({
+  account_name: z.string().min(1, 'Required'),
+  account_number: z.string().min(1, 'Required'),
+  currency: z.string().optional(),
+})
+
+function PaymentAccountsTab() {
+  const { data, isLoading } = useSchoolPaymentAccounts.useList()
+  const create = useSchoolPaymentAccounts.useCreate()
+  const update = useSchoolPaymentAccounts.useUpdate()
+  const remove = useSchoolPaymentAccounts.useRemove()
+  const form = useForm({ resolver: zodResolver(paymentAccountSchema), defaultValues: paymentAccountDefaults })
+
+  const columns: ColumnDef<SchoolPaymentAccount>[] = [
+    { key: 'currency', label: 'Currency', render: (a) => a.currency ?? '—' },
+    { key: 'account_name', label: 'Account name', render: (a) => a.account_name },
+    { key: 'account_number', label: 'Account number', render: (a) => a.account_number },
+  ]
+
+  return (
+    <SimpleCrudCard
+      title="Payment accounts"
+      description="Bank/mobile money accounts parents can pay fees into — e.g. a TZS account at each of several banks, plus a separate USD account. Shown on parents' dashboards."
+      items={data}
+      isLoading={isLoading}
+      columns={columns}
+      form={form as unknown as UseFormReturn<FieldValues>}
+      defaultValues={paymentAccountDefaults}
+      fields={[
+        { name: 'currency', label: 'Currency (e.g. TZS, USD)', type: 'text' },
+        { name: 'account_name', label: 'Account name (e.g. CRDB Bank)', type: 'text' },
+        // Free-form text, not type="number" — bank/mobile money account
+        // numbers can have leading zeros or non-digit characters.
+        { name: 'account_number', label: 'Account number', type: 'text' },
+      ]}
+      onCreate={(values) => create.mutateAsync(values as SchoolPaymentAccountPayload)}
+      onEdit={(item, values) => update.mutateAsync({ id: item.id, payload: values as SchoolPaymentAccountPayload })}
+      toFormValues={(item) => ({
+        account_name: item.account_name,
+        account_number: item.account_number,
+        currency: item.currency ?? '',
+      })}
+      onDelete={(item) => remove.mutateAsync(item.id)}
+      createLabel="Add account"
+      editLabel="Edit payment account"
+    />
   )
 }
 
@@ -574,17 +586,21 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">School Settings</h1>
-        <p className="text-sm text-muted-foreground">Profile, branches, and departments.</p>
+        <p className="text-sm text-muted-foreground">Profile, payment accounts, branches, and departments.</p>
       </div>
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="payment-accounts">Payment accounts</TabsTrigger>
           <TabsTrigger value="branches">Branches</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
           <ProfileTab />
+        </TabsContent>
+        <TabsContent value="payment-accounts" className="mt-4">
+          <PaymentAccountsTab />
         </TabsContent>
         <TabsContent value="branches" className="mt-4">
           <BranchesTab />

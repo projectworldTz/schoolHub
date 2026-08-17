@@ -61,6 +61,7 @@ use App\Http\Controllers\School\LessonController;
 use App\Http\Controllers\School\ReportCardController;
 use App\Http\Controllers\School\RoomController;
 use App\Http\Controllers\School\SchoolClassController;
+use App\Http\Controllers\School\SchoolPaymentAccountController;
 use App\Http\Controllers\School\SchoolProfileController;
 use App\Http\Controllers\School\SchoolUserController;
 use App\Http\Controllers\School\StaffAttendanceController;
@@ -110,6 +111,7 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->m
 $schoolRoutes = function () {
     Route::get('profile', [SchoolProfileController::class, 'show']);
         Route::put('profile', [SchoolProfileController::class, 'update']);
+        Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show']);
 
         Route::apiResource('branches', BranchController::class);
         Route::apiResource('departments', DepartmentController::class);

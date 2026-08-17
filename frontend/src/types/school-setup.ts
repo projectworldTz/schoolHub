@@ -44,3 +44,11 @@ export interface Holiday {
   end_date: string
   description: string | null
 }
+
+export interface SchoolPaymentAccount {
+  id: string
+  account_name: string
+  account_number: string
+  currency: string | null
+  created_at: string
+}

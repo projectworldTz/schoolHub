@@ -9,15 +9,21 @@ import {
   fetchSchoolProfile,
   holidaysApi,
   listTerms,
+  schoolPaymentAccountsApi,
   updateSchoolProfile,
   updateTerm,
+  type SchoolPaymentAccountPayload,
 } from '@/api/school-setup'
-import type { AcademicYear, Branch, Department, Holiday, Term } from '@/types/school-setup'
+import type { AcademicYear, Branch, Department, Holiday, SchoolPaymentAccount, Term } from '@/types/school-setup'
 
 export const useBranches = createCrudHooks<Branch>('branches', branchesApi)
 export const useDepartments = createCrudHooks<Department>('departments', departmentsApi)
 export const useAcademicYears = createCrudHooks<AcademicYear>('academic-years', academicYearsApi)
 export const useHolidays = createCrudHooks<Holiday>('holidays', holidaysApi)
+export const useSchoolPaymentAccounts = createCrudHooks<SchoolPaymentAccount, SchoolPaymentAccountPayload>(
+  'payment-accounts',
+  schoolPaymentAccountsApi
+)
 
 export function useSchoolProfile() {
   return useQuery({ queryKey: ['school', 'profile'], queryFn: fetchSchoolProfile })

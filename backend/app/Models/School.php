@@ -33,8 +33,6 @@ class School extends Model
         'timezone',
         'currency',
         'logo_path',
-        'payment_account_name',
-        'payment_account_number',
         'subscription_plan',
         'license_expires_at',
         'approved_at',
