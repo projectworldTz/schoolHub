@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Logo } from '@/components/layout/Logo'
+import { NavigationButtons } from '@/components/layout/NavigationButtons'
 import { RefreshButton } from '@/components/layout/RefreshButton'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
@@ -69,6 +70,7 @@ export function ParentLayout() {
                 </Badge>
               )}
             </div>
+            <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />
             <div className="ml-1 flex items-center gap-2">

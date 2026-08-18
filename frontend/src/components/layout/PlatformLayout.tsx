@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Logo } from '@/components/layout/Logo'
+import { NavigationButtons } from '@/components/layout/NavigationButtons'
 import { RefreshButton } from '@/components/layout/RefreshButton'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { PlatformMobileNav } from '@/components/layout/PlatformMobileNav'
@@ -59,6 +60,7 @@ export function PlatformLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />
             <div className="ml-1 flex items-center gap-2">

@@ -27,6 +27,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Logo } from '@/components/layout/Logo'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { NavigationButtons } from '@/components/layout/NavigationButtons'
 import { RefreshButton } from '@/components/layout/RefreshButton'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { QuickAddMenu } from '@/components/layout/QuickAddMenu'
@@ -276,6 +277,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
           </Popover>
 
           <span className="text-white [&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
+            <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />
           </span>
