@@ -21,10 +21,16 @@ import {
 
 const STUDENTS_KEY = ['school', 'students'] as const
 
-export function useStudents(search = '', branchId?: string, page?: number, perPage?: number) {
+export function useStudents(
+  search = '',
+  branchId?: string,
+  page?: number,
+  perPage?: number,
+  schoolClassId?: string
+) {
   return useQuery({
-    queryKey: [...STUDENTS_KEY, search, branchId, page, perPage],
-    queryFn: () => listStudents(search, branchId, page, perPage),
+    queryKey: [...STUDENTS_KEY, search, branchId, page, perPage, schoolClassId],
+    queryFn: () => listStudents(search, branchId, page, perPage, schoolClassId),
   })
 }
 

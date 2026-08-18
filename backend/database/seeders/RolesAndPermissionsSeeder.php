@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Receptionist',
         'Store Keeper',
         'Security Officer',
+        'Driver',
         'Other',
         'Manager',
 

@@ -641,6 +641,7 @@ export function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">#</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Roles</TableHead>
@@ -651,12 +652,12 @@ export function UsersPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     Loading…
                   </TableCell>
                 </TableRow>
               )}
-              {data?.data.map((user) => {
+              {data?.data.map((user, index) => {
                 // Only the School Owner can suspend/remove the School Owner
                 // account — everyone else (Manager included) gets those
                 // actions hidden here, mirrored by a 403 in
@@ -666,6 +667,9 @@ export function UsersPage() {
 
                 return (
                   <TableRow key={user.id}>
+                    <TableCell className="text-muted-foreground">
+                      {(data.meta.current_page - 1) * data.meta.per_page + index + 1}
+                    </TableCell>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>
                       {user.has_placeholder_email ? (

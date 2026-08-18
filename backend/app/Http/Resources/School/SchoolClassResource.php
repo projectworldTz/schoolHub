@@ -20,6 +20,11 @@ class SchoolClassResource extends JsonResource
             'branch_name' => $this->whenLoaded('branch', fn () => $this->branch?->name),
             'subjects' => SubjectResource::collection($this->whenLoaded('subjects')),
             'streams' => StreamResource::collection($this->whenLoaded('streams')),
+            'assigned_teachers' => $this->whenLoaded('assignedTeachers', fn () => $this->assignedTeachers->map(fn ($teacher) => [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'roles' => $teacher->getRoleNames(),
+            ])),
             'created_at' => $this->created_at,
         ];
     }

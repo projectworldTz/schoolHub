@@ -936,6 +936,7 @@ function StaffTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Job title</TableHead>
               <TableHead>Roles</TableHead>
@@ -947,20 +948,23 @@ function StaffTab() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   Loading…
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No staff profiles yet.
                 </TableCell>
               </TableRow>
             )}
-            {data?.data.map((staff) => (
+            {data?.data.map((staff, index) => (
               <TableRow key={staff.id}>
+                <TableCell className="text-muted-foreground">
+                  {(data.meta.current_page - 1) * data.meta.per_page + index + 1}
+                </TableCell>
                 <TableCell className="font-medium">{staff.name}</TableCell>
                 <TableCell>{staff.job_title ?? '—'}</TableCell>
                 <TableCell className="space-x-1">

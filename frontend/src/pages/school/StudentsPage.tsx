@@ -45,6 +45,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { useCreateStudent, useImportGuardians, useImportStudents, useStudents, useUpdateStudent } from '@/hooks/useStudents'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { useBranches } from '@/hooks/useSchoolSetup'
+import { useClasses } from '@/hooks/useAcademics'
 import { TablePagination } from '@/components/school/TablePagination'
 import type { GuardianImportResult, Student, StudentImportResult } from '@/types/students'
 
@@ -679,15 +680,27 @@ function ImportGuardiansDialog() {
 }
 
 const ALL_BRANCHES = '__all'
+const ALL_CLASSES = '__all'
 const STUDENTS_PER_PAGE = 100
+// "Class teacher" as opposed to a subject teacher who also happens to be
+// assigned to the class — 'Teacher' alone covers nursery-type schools that
+// don't use a separate 'Class Teacher' role (see StaffPage's TEACHING_ROLES).
+const CLASS_TEACHER_ROLES = ['Teacher', 'Class Teacher']
 
 export function StudentsPage() {
   const [search, setSearch] = useState('')
   const [branchId, setBranchId] = useState('')
+  const [classId, setClassId] = useState('')
   const [page, setPage] = useState(1)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const { data: branches } = useBranches.useList()
-  const { data, isLoading } = useStudents(search, branchId, page, STUDENTS_PER_PAGE)
+  const { data: classes } = useClasses.useList()
+  const { data, isLoading } = useStudents(search, branchId, page, STUDENTS_PER_PAGE, classId)
+
+  const selectedClass = classes?.find((c) => c.id === classId)
+  const classTeacherNames = selectedClass?.assigned_teachers
+    ?.filter((t) => t.roles.some((r) => CLASS_TEACHER_ROLES.includes(r)))
+    .map((t) => t.name)
 
   function handleSearchChange(next: string) {
     setSearch(next)
@@ -696,6 +709,11 @@ export function StudentsPage() {
 
   function handleBranchChange(next: string) {
     setBranchId(next)
+    setPage(1)
+  }
+
+  function handleClassChange(next: string) {
+    setClassId(next)
     setPage(1)
   }
 
@@ -742,13 +760,40 @@ export function StudentsPage() {
                   </SelectContent>
                 </Select>
               )}
+              {classes && classes.length > 0 && (
+                <Select
+                  value={classId || ALL_CLASSES}
+                  onValueChange={(v) => handleClassChange(v === ALL_CLASSES ? '' : v)}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_CLASSES}>All classes</SelectItem>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
+            {selectedClass && (
+              <p className="mt-2 text-sm">
+                Class teacher:{' '}
+                <span className="font-medium text-foreground">
+                  {classTeacherNames && classTeacherNames.length > 0 ? classTeacherNames.join(', ') : 'Not assigned'}
+                </span>
+              </p>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">#</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Admission #</TableHead>
                 <TableHead>Class</TableHead>
@@ -760,20 +805,23 @@ export function StudentsPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Loading…
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && data?.data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No students yet.
                   </TableCell>
                 </TableRow>
               )}
-              {data?.data.map((student) => (
+              {data?.data.map((student, index) => (
                 <TableRow key={student.id}>
+                  <TableCell className="text-muted-foreground">
+                    {(data.meta.current_page - 1) * data.meta.per_page + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <Link to={`/app/students/${student.id}`} className="hover:underline">
                       {student.full_name}

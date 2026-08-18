@@ -16,6 +16,7 @@ export interface SchoolClass {
   branch_name?: string | null
   subjects?: Subject[]
   streams?: Stream[]
+  assigned_teachers?: { id: string; name: string; roles: string[] }[]
   created_at: string
 }
 

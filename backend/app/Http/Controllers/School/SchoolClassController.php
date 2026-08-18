@@ -25,7 +25,7 @@ class SchoolClassController extends Controller
     {
         return SchoolClassResource::collection(
             SchoolClass::query()
-                ->with(['subjects', 'branch'])
+                ->with(['subjects', 'branch', 'assignedTeachers.roles'])
                 ->when($request->input('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
                 ->orderBy('level')
                 ->get()
@@ -39,7 +39,7 @@ class SchoolClassController extends Controller
 
     public function show(SchoolClass $class)
     {
-        return new SchoolClassResource($class->load(['subjects', 'streams', 'branch']));
+        return new SchoolClassResource($class->load(['subjects', 'streams', 'branch', 'assignedTeachers.roles']));
     }
 
     public function update(SchoolClassRequest $request, SchoolClass $class)

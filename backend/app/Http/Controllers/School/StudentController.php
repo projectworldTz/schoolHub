@@ -26,6 +26,10 @@ class StudentController extends Controller
                 'currentEnrollment.schoolClass',
                 fn ($q) => $q->where('branch_id', $id)
             ))
+            ->when($request->input('school_class_id'), fn ($q, $id) => $q->whereHas(
+                'currentEnrollment',
+                fn ($q) => $q->where('school_class_id', $id)
+            ))
             ->orderBy('last_name')
             ->paginate($request->integer('per_page', 20));
 
