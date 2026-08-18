@@ -7,6 +7,7 @@ export interface StudentPayload {
   first_name: string
   last_name: string
   date_of_birth?: string
+  enrollment_year?: number
   gender?: string
   blood_group?: string
   allergies?: string
