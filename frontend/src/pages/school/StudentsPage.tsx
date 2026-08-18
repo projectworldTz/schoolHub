@@ -224,9 +224,17 @@ function CreateStudentDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -260,7 +268,17 @@ function downloadImportTemplate() {
 const IMPORT_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   created: 'default',
   would_create: 'secondary',
+  updated: 'default',
+  would_update: 'secondary',
   error: 'destructive',
+}
+
+const IMPORT_STATUS_LABEL: Record<string, string> = {
+  created: 'created',
+  would_create: 'valid',
+  updated: 'updated',
+  would_update: 'will update',
+  error: 'error',
 }
 
 function ImportResultTable({ result }: { result: StudentImportResult }) {
@@ -283,9 +301,7 @@ function ImportResultTable({ result }: { result: StudentImportResult }) {
               <TableCell className="font-medium">{row.name || '—'}</TableCell>
               <TableCell>{row.admission_number || '—'}</TableCell>
               <TableCell>
-                <Badge variant={IMPORT_STATUS_VARIANT[row.status]}>
-                  {row.status === 'would_create' ? 'valid' : row.status}
-                </Badge>
+                <Badge variant={IMPORT_STATUS_VARIANT[row.status]}>{IMPORT_STATUS_LABEL[row.status]}</Badge>
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
                 {[...row.errors, ...row.warnings].join(' ') || '—'}
@@ -340,7 +356,9 @@ function ImportStudentsDialog() {
       {
         onSuccess: (result) => {
           setCommittedResult(result)
-          toast.success(`Imported ${result.created_count} student(s)`)
+          const parts = [`${result.created_count} created`]
+          if (result.updated_count > 0) parts.push(`${result.updated_count} updated`)
+          toast.success(parts.join(', '))
         },
         onError: (error) => {
           const message = isAxiosError(error)
@@ -374,7 +392,10 @@ function ImportStudentsDialog() {
           <div className="flex items-center justify-between text-sm">
             <p className="text-muted-foreground">
               Columns: <code>admission_number</code>, <code>first_name</code>, <code>last_name</code> (required),
-              plus optional <code>date_of_birth</code>, <code>gender</code>, <code>class_name</code>.
+              plus optional <code>date_of_birth</code>, <code>gender</code>, <code>class_name</code>. A row whose
+              admission number already exists <span className="font-medium">updates</span> that student instead of
+              creating a duplicate — including assigning <code>class_name</code> and calculating their Enrollment
+              Year from it.
             </p>
             <Button type="button" variant="link" size="sm" className="shrink-0" onClick={downloadImportTemplate}>
               Download template
@@ -395,6 +416,10 @@ function ImportStudentsDialog() {
             <>
               <p className="text-sm">
                 <span className="font-medium text-primary">{committedResult.created_count} created</span>
+                {committedResult.updated_count > 0 && `, ${committedResult.updated_count} updated`}
+                {committedResult.class_assigned_count > 0 && `, ${committedResult.class_assigned_count} classes assigned`}
+                {committedResult.enrollment_year_calculated_count > 0
+                  && `, ${committedResult.enrollment_year_calculated_count} enrollment years calculated`}
                 {committedResult.error_count > 0 && `, ${committedResult.error_count} skipped`}
               </p>
               <ImportResultTable result={committedResult} />
@@ -402,7 +427,8 @@ function ImportStudentsDialog() {
           ) : preview ? (
             <>
               <p className="text-sm">
-                <span className="font-medium">{preview.created_count} of {preview.total_rows} rows are valid</span>
+                <span className="font-medium">{preview.created_count + preview.updated_count} of {preview.total_rows} rows are valid</span>
+                {preview.updated_count > 0 && ` (${preview.updated_count} will update existing students)`}
                 {preview.error_count > 0 && ` — ${preview.error_count} will be skipped`}
               </p>
               <ImportResultTable result={preview} />
@@ -418,8 +444,13 @@ function ImportStudentsDialog() {
               <Button variant="outline" onClick={reset}>
                 Start over
               </Button>
-              <Button onClick={handleConfirm} disabled={importStudents.isPending || preview.created_count === 0}>
-                {importStudents.isPending ? 'Importing…' : `Confirm import (${preview.created_count})`}
+              <Button
+                onClick={handleConfirm}
+                disabled={importStudents.isPending || preview.created_count + preview.updated_count === 0}
+              >
+                {importStudents.isPending
+                  ? 'Importing…'
+                  : `Confirm import (${preview.created_count + preview.updated_count})`}
               </Button>
             </>
           ) : (

@@ -41,6 +41,7 @@ export interface Student {
   last_name: string
   full_name: string
   date_of_birth: string | null
+  enrollment_year: number | null
   gender: string | null
   photo_path: string | null
   blood_group: string | null
@@ -61,7 +62,7 @@ export interface StudentImportRow {
   row: number
   admission_number: string
   name: string
-  status: 'created' | 'would_create' | 'error'
+  status: 'created' | 'would_create' | 'updated' | 'would_update' | 'error'
   errors: string[]
   warnings: string[]
   student_id?: string
@@ -70,6 +71,9 @@ export interface StudentImportRow {
 export interface StudentImportResult {
   total_rows: number
   created_count: number
+  updated_count: number
+  class_assigned_count: number
+  enrollment_year_calculated_count: number
   error_count: number
   committed: boolean
   missing_headers: string[]

@@ -23,6 +23,7 @@ class StaffProfile extends Model
         'user_id',
         'name',
         'phone',
+        'gender',
         'department_id',
         'branch_id',
         'staff_number',

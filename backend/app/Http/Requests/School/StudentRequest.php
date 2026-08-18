@@ -25,6 +25,7 @@ class StudentRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'date_of_birth' => ['nullable', 'date'],
+            'enrollment_year' => ['nullable', 'integer', 'min:1990', 'max:'.(now()->year + 1)],
             'gender' => ['nullable', 'string', 'max:20'],
             'blood_group' => ['nullable', 'string', 'max:10'],
             'allergies' => ['nullable', 'string', 'max:1000'],

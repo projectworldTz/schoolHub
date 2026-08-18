@@ -968,6 +968,7 @@ const editStudentSchema = z.object({
   first_name: z.string().min(1, 'Required'),
   last_name: z.string().min(1, 'Required'),
   status: z.enum(['active', 'graduated', 'transferred', 'withdrawn']),
+  enrollment_year: z.string().optional(),
   school_class_id: z.string().optional(),
   stream_id: z.string().optional(),
 })
@@ -996,6 +997,7 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
       first_name: student.first_name,
       last_name: student.last_name,
       status: student.status,
+      enrollment_year: student.enrollment_year ? String(student.enrollment_year) : '',
       school_class_id: currentEnrollment?.school_class_id ?? '',
       stream_id: currentEnrollment?.stream_id ?? '',
     },
@@ -1012,6 +1014,7 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
         first_name: values.first_name,
         last_name: values.last_name,
         status: values.status,
+        enrollment_year: values.enrollment_year ? Number(values.enrollment_year) : undefined,
       },
       {
         onSuccess: () => {
@@ -1115,29 +1118,44 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="graduated">Graduated</SelectItem>
+                        <SelectItem value="transferred">Transferred</SelectItem>
+                        <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="enrollment_year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Enrollment year (optional)</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <Input type="number" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="graduated">Graduated</SelectItem>
-                      <SelectItem value="transferred">Transferred</SelectItem>
-                      <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="school_class_id"
@@ -1283,6 +1301,10 @@ export function StudentDetailPage() {
           <div>
             <p className="text-muted-foreground">Gender</p>
             <p>{student.gender ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Enrollment year</p>
+            <p>{student.enrollment_year ?? '—'}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Blood group</p>

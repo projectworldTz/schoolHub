@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -77,7 +79,34 @@ class StudentImportTest extends TestCase
         $this->assertSame(1, Student::count());
     }
 
-    public function test_an_admission_number_that_already_exists_in_the_school_is_rejected(): void
+    public function test_an_existing_admission_number_updates_the_student_instead_of_erroring(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        $owner = $this->createUser($school, 'School Owner');
+        $student = Student::create([
+            'school_id' => $school->id,
+            'admission_number' => 'ADM-1',
+            'first_name' => 'Old',
+            'last_name' => 'Name',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name\nADM-1,New,Student\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $response->assertJsonPath('data.created_count', 0);
+        $response->assertJsonPath('data.updated_count', 1);
+        $response->assertJsonPath('data.rows.0.status', 'updated');
+        $this->assertSame(1, Student::count());
+        $student->refresh();
+        $this->assertSame('New', $student->first_name);
+        $this->assertSame('Student', $student->last_name);
+    }
+
+    public function test_a_blank_cell_on_update_does_not_erase_an_existing_value(): void
     {
         $this->seedPermissions();
         $school = $this->createSchool();
@@ -87,17 +116,106 @@ class StudentImportTest extends TestCase
             'admission_number' => 'ADM-1',
             'first_name' => 'Existing',
             'last_name' => 'Student',
+            'gender' => 'female',
             'status' => 'active',
         ]);
 
         $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
-            'file' => $this->csv("admission_number,first_name,last_name\nADM-1,New,Student\n"),
+            'file' => $this->csv("admission_number,first_name,last_name,gender\nADM-1,Existing,Student,\n"),
             'dry_run' => 'false',
         ]);
 
-        $response->assertJsonPath('data.error_count', 1);
-        $response->assertJsonPath('data.rows.0.errors.0', "Admission number 'ADM-1' already exists.");
-        $this->assertSame(1, Student::count());
+        $response->assertJsonPath('data.updated_count', 1);
+        $this->assertSame('female', Student::first()->gender);
+    }
+
+    public function test_reimporting_a_students_new_class_updates_the_existing_enrollment_instead_of_duplicating(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 0);
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+        SchoolClass::create(['school_id' => $fixture['school']->id, 'name' => 'Form 2', 'level' => 2]);
+
+        $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Amina,Hassan,Form 1\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Amina,Hassan,Form 2\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $student = Student::where('admission_number', 'ADM-1')->first();
+        $this->assertSame(1, $student->enrollments()->where('status', 'active')->count());
+        $student->load('currentEnrollment.schoolClass');
+        $this->assertSame('Form 2', $student->currentEnrollment?->schoolClass?->name);
+    }
+
+    public function test_enrollment_year_is_calculated_from_class_level_relative_to_the_lowest_class(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        AcademicYear::create([
+            'school_id' => $school->id,
+            'name' => '2026/2027',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'is_current' => true,
+        ]);
+        SchoolClass::create(['school_id' => $school->id, 'name' => 'Pre-Unit', 'level' => 0]);
+        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 7', 'level' => 8]);
+        $owner = $this->createUser($school, 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Juma,Kimaro,Standard 7\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $response->assertJsonPath('data.enrollment_year_calculated_count', 1);
+        $this->assertSame(2018, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+    }
+
+    public function test_an_implausible_enrollment_year_is_warned_about_and_not_saved(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        AcademicYear::create([
+            'school_id' => $school->id,
+            'name' => '2026/2027',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'is_current' => true,
+        ]);
+        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 1', 'level' => 0]);
+        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 7', 'level' => 6]);
+        $owner = $this->createUser($school, 'School Owner');
+
+        // level-based calculation puts Standard 7 at 2020, but this
+        // student's date of birth is after that — clearly wrong.
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,date_of_birth,class_name\nADM-1,Juma,Kimaro,6/1/2021,Standard 7\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $response->assertJsonPath('data.enrollment_year_calculated_count', 0);
+        $this->assertNotEmpty($response->json('data.rows.0.warnings'));
+        $this->assertNull(Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+    }
+
+    public function test_class_name_matching_tolerates_doubled_internal_whitespace(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 0);
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Amina,Hassan,Form  1\n"),
+            'dry_run' => 'false',
+        ]);
+
+        $response->assertJsonPath('data.rows.0.warnings', []);
+        $response->assertJsonPath('data.class_assigned_count', 1);
     }
 
     public function test_a_second_schools_admission_numbers_do_not_collide_with_the_first(): void

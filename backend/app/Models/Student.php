@@ -35,6 +35,7 @@ class Student extends Model
         'first_name',
         'last_name',
         'date_of_birth',
+        'enrollment_year',
         'gender',
         'photo_path',
         'blood_group',
@@ -80,6 +81,7 @@ class Student extends Model
     {
         return [
             'date_of_birth' => 'date',
+            'enrollment_year' => 'integer',
         ];
     }
 

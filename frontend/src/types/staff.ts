@@ -6,6 +6,7 @@ export interface StaffProfile {
   has_login: boolean
   name?: string
   phone?: string | null
+  gender?: string | null
   email?: string
   roles?: string[]
   department_id: string | null

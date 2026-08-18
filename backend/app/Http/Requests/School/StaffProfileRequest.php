@@ -43,6 +43,7 @@ class StaffProfileRequest extends FormRequest
                 'nullable', 'string', 'max:255',
             ],
             'phone' => ['nullable', 'string', 'max:30'],
+            'gender' => ['nullable', 'string', 'max:20'],
             'department_id' => [
                 'nullable', 'uuid',
                 Rule::exists('departments', 'id')->where('school_id', $schoolId),

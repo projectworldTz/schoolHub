@@ -16,6 +16,7 @@ class StaffProfileResource extends JsonResource
             'has_login' => $this->user_id !== null,
             'name' => $this->user?->name ?? $this->name,
             'phone' => $this->user?->phone ?? $this->phone,
+            'gender' => $this->gender,
             'email' => $this->user?->email,
             'roles' => $this->user?->getRoleNames() ?? [],
             'department_id' => $this->department_id,

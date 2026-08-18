@@ -89,6 +89,7 @@ const staffSchema = z
     user_id: z.string().optional(),
     name: z.string().optional(),
     phone: z.string().optional(),
+    gender: z.string().optional(),
     staff_number: z.string().min(1, 'Required'),
     job_title: z.string().optional(),
     employment_type: z.enum(['full_time', 'part_time', 'contract']),
@@ -118,6 +119,7 @@ function CreateStaffDialog() {
       user_id: '',
       name: '',
       phone: '',
+      gender: '',
       staff_number: '',
       job_title: '',
       employment_type: 'full_time' as const,
@@ -131,6 +133,7 @@ function CreateStaffDialog() {
       ? {
           name: values.name,
           phone: values.phone || undefined,
+          gender: values.gender || undefined,
           staff_number: values.staff_number,
           job_title: values.job_title || undefined,
           employment_type: values.employment_type,
@@ -139,6 +142,7 @@ function CreateStaffDialog() {
         }
       : {
           user_id: values.user_id,
+          gender: values.gender || undefined,
           staff_number: values.staff_number,
           job_title: values.job_title || undefined,
           employment_type: values.employment_type,
@@ -299,30 +303,53 @@ function CreateStaffDialog() {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="branch_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Branch (optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="No branch" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {branches?.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender (optional)</FormLabel>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="branch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Branch (optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="No branch" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {branches?.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
               <Button type="submit" disabled={create.isPending}>
                 {create.isPending ? 'Saving…' : 'Save'}
@@ -338,6 +365,7 @@ function CreateStaffDialog() {
 const editStaffSchema = z.object({
   staff_number: z.string().min(1, 'Required'),
   job_title: z.string().optional(),
+  gender: z.string().optional(),
   employment_type: z.enum(['full_time', 'part_time', 'contract']),
   hire_date: z.string().optional(),
   branch_id: z.string().optional(),
@@ -358,6 +386,7 @@ function EditStaffDialog({
     defaultValues: {
       staff_number: staff.staff_number,
       job_title: staff.job_title ?? '',
+      gender: staff.gender ?? '',
       employment_type: staff.employment_type,
       hire_date: staff.hire_date?.slice(0, 10) ?? '',
       branch_id: staff.branch_id ?? '',
@@ -371,6 +400,7 @@ function EditStaffDialog({
         payload: {
           staff_number: values.staff_number,
           job_title: values.job_title || undefined,
+          gender: values.gender || undefined,
           employment_type: values.employment_type,
           hire_date: values.hire_date || undefined,
           branch_id: values.branch_id || undefined,
@@ -462,30 +492,53 @@ function EditStaffDialog({
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="branch_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Branch (optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="No branch" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender (optional)</FormLabel>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="branch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Branch (optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="No branch" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {branches.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
               <Button type="submit" disabled={update.isPending}>
                 {update.isPending ? 'Saving…' : 'Save'}
