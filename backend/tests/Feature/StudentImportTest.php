@@ -19,6 +19,22 @@ class StudentImportTest extends TestCase
         return UploadedFile::fake()->createWithContent('students.csv', $content);
     }
 
+    /**
+     * Pre-Unit/Nursery span 2 years each, Standard 1-7 span 1 year each —
+     * the exact progression from the product spec, expressed only as
+     * per-class durations (never a calendar year), so the offsets it
+     * produces are: Pre-Unit 0, Nursery 2, Standard 1 4, Standard 2 5, ...
+     * Standard 7 10.
+     */
+    protected function createStandardProgression(string $schoolId): void
+    {
+        SchoolClass::create(['school_id' => $schoolId, 'name' => 'Pre-Unit', 'level' => 0, 'duration_years' => 2]);
+        SchoolClass::create(['school_id' => $schoolId, 'name' => 'Nursery', 'level' => 1, 'duration_years' => 2]);
+        foreach (range(1, 7) as $i) {
+            SchoolClass::create(['school_id' => $schoolId, 'name' => "Standard {$i}", 'level' => 1 + $i]);
+        }
+    }
+
     public function test_a_dry_run_reports_rows_but_persists_nothing(): void
     {
         $this->seedPermissions();
@@ -152,7 +168,7 @@ class StudentImportTest extends TestCase
         $this->assertSame('Form 2', $student->currentEnrollment?->schoolClass?->name);
     }
 
-    public function test_enrollment_year_is_calculated_from_class_level_relative_to_the_lowest_class(): void
+    public function test_enrollment_year_is_calculated_from_cumulative_class_durations(): void
     {
         $this->seedPermissions();
         $school = $this->createSchool();
@@ -163,8 +179,7 @@ class StudentImportTest extends TestCase
             'end_date' => '2026-12-31',
             'is_current' => true,
         ]);
-        SchoolClass::create(['school_id' => $school->id, 'name' => 'Pre-Unit', 'level' => 0]);
-        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 7', 'level' => 8]);
+        $this->createStandardProgression($school->id);
         $owner = $this->createUser($school, 'School Owner');
 
         $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
@@ -172,8 +187,39 @@ class StudentImportTest extends TestCase
             'dry_run' => 'false',
         ]);
 
+        // offset(Standard 7) = Pre-Unit(2) + Nursery(2) + Standard 1..6(1 each) = 10
         $response->assertJsonPath('data.enrollment_year_calculated_count', 1);
-        $this->assertSame(2018, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+        $this->assertSame(2016, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+    }
+
+    public function test_pre_unit_and_nursery_count_as_two_years_each_in_the_offset(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        AcademicYear::create([
+            'school_id' => $school->id,
+            'name' => '2026/2027',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'is_current' => true,
+        ]);
+        $this->createStandardProgression($school->id);
+        $owner = $this->createUser($school, 'School Owner');
+
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv(
+                "admission_number,first_name,last_name,class_name\n"
+                ."ADM-1,Amina,Hassan,Pre-Unit\n"
+                ."ADM-2,Baraka,Maeda,Nursery\n"
+                ."ADM-3,Hawa,Abubakari,Standard 1\n"
+            ),
+            'dry_run' => 'false',
+        ]);
+
+        $response->assertJsonPath('data.enrollment_year_calculated_count', 3);
+        $this->assertSame(2026, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+        $this->assertSame(2024, Student::where('admission_number', 'ADM-2')->first()->enrollment_year);
+        $this->assertSame(2022, Student::where('admission_number', 'ADM-3')->first()->enrollment_year);
     }
 
     public function test_an_implausible_enrollment_year_is_warned_about_and_not_saved(): void
@@ -187,11 +233,10 @@ class StudentImportTest extends TestCase
             'end_date' => '2026-12-31',
             'is_current' => true,
         ]);
-        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 1', 'level' => 0]);
-        SchoolClass::create(['school_id' => $school->id, 'name' => 'Standard 7', 'level' => 6]);
+        $this->createStandardProgression($school->id);
         $owner = $this->createUser($school, 'School Owner');
 
-        // level-based calculation puts Standard 7 at 2020, but this
+        // offset(Standard 7) = 10, so this calculates 2016 — but this
         // student's date of birth is after that — clearly wrong.
         $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
             'file' => $this->csv("admission_number,first_name,last_name,date_of_birth,class_name\nADM-1,Juma,Kimaro,6/1/2021,Standard 7\n"),
@@ -201,6 +246,47 @@ class StudentImportTest extends TestCase
         $response->assertJsonPath('data.enrollment_year_calculated_count', 0);
         $this->assertNotEmpty($response->json('data.rows.0.warnings'));
         $this->assertNull(Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+    }
+
+    public function test_an_already_calculated_enrollment_year_is_preserved_on_a_routine_reimport(): void
+    {
+        $this->seedPermissions();
+        $school = $this->createSchool();
+        AcademicYear::create([
+            'school_id' => $school->id,
+            'name' => '2026/2027',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'is_current' => true,
+        ]);
+        $this->createStandardProgression($school->id);
+        $owner = $this->createUser($school, 'School Owner');
+
+        // First import: student in Standard 1 (offset 4) -> 2022.
+        $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Juma,Kimaro,Standard 1\n"),
+            'dry_run' => 'false',
+        ]);
+        $this->assertSame(2022, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+
+        // Promoted to Standard 2 (offset 5) the following year, re-imported
+        // without asking for recalculation: enrollment_year must not move,
+        // even though it's now sitting under a different class's offset.
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Juma,Kimaro,Standard 2\n"),
+            'dry_run' => 'false',
+        ]);
+        $response->assertJsonPath('data.enrollment_year_calculated_count', 0);
+        $this->assertSame(2022, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
+
+        // An explicit recalculation pass, however, is allowed to change it.
+        $response = $this->actingAs($owner, 'web')->post('/api/school/students/import', [
+            'file' => $this->csv("admission_number,first_name,last_name,class_name\nADM-1,Juma,Kimaro,Standard 2\n"),
+            'dry_run' => 'false',
+            'recalculate_enrollment_year' => 'true',
+        ]);
+        $response->assertJsonPath('data.enrollment_year_calculated_count', 1);
+        $this->assertSame(2021, Student::where('admission_number', 'ADM-1')->first()->enrollment_year);
     }
 
     public function test_class_name_matching_tolerates_doubled_internal_whitespace(): void

@@ -31,7 +31,18 @@ class StudentImportService
 {
     protected const REQUIRED_HEADERS = ['admission_number', 'first_name', 'last_name'];
 
-    public function process(UploadedFile $file, bool $commit): array
+    /**
+     * $recalculateEnrollmentYear controls whether an already-calculated
+     * Enrollment Year on an existing student gets overwritten. It defaults
+     * to false: Enrollment Year represents the estimated year a student
+     * first joined, which must NOT drift every time this import runs again
+     * (e.g. after a promotion to the next class next year) — only a caller
+     * that explicitly asks for recalculation (a data-correction re-import)
+     * should be able to change an already-set value. A student with no
+     * Enrollment Year yet always gets one calculated, regardless of this
+     * flag.
+     */
+    public function process(UploadedFile $file, bool $commit, bool $recalculateEnrollmentYear = false): array
     {
         $handle = fopen($file->getRealPath(), 'r');
         $header = $this->normalizeHeader(fgetcsv($handle) ?: []);
@@ -55,12 +66,19 @@ class StudentImportService
 
         // Resolved once per file, not per row: which classes exist (matched
         // case/whitespace-tolerantly), the school's current academic year,
-        // and the lowest configured class level (the baseline "just
-        // enrolled this year" grade used to calculate every other class's
-        // Enrollment Year relative to it).
-        $classesByNormalizedName = SchoolClass::all()->keyBy(fn (SchoolClass $c) => $this->normalizeClassName($c->name));
+        // and each class's Enrollment Year "offset" — the number of years
+        // before the current academic year a student in that class is
+        // assumed to have first enrolled. Never a hardcoded calendar year:
+        // offset(class) is the cumulative duration_years of every class
+        // ordered below it (see resolveEnrollmentYearOffsets()), so e.g. a
+        // 2-year Pre-Unit stage followed by a 2-year Nursery stage puts
+        // Standard 1 at offset 4, automatically — no per-class-name mapping
+        // to maintain, and it stays correct whatever the current academic
+        // year is.
+        $classes = SchoolClass::orderBy('level')->get();
+        $classesByNormalizedName = $classes->keyBy(fn (SchoolClass $c) => $this->normalizeClassName($c->name));
         $academicYear = $this->resolveCurrentAcademicYear();
-        $minLevel = SchoolClass::min('level');
+        $enrollmentYearOffsetByClassId = $this->resolveEnrollmentYearOffsets($classes);
 
         $seenAdmissionNumbers = [];
         $rows = [];
@@ -84,7 +102,10 @@ class StudentImportService
             $data = array_combine($header, array_pad($line, count($header), null));
             $data = array_map(fn ($v) => is_string($v) ? trim($v) : $v, $data);
 
-            $row = $this->processRow($data, $rowNumber, $commit, $seenAdmissionNumbers, $academicYear, $minLevel, $classesByNormalizedName);
+            $row = $this->processRow(
+                $data, $rowNumber, $commit, $recalculateEnrollmentYear, $seenAdmissionNumbers,
+                $academicYear, $enrollmentYearOffsetByClassId, $classesByNormalizedName
+            );
 
             if ($row['status'] === 'error') {
                 $errorCount++;
@@ -120,15 +141,17 @@ class StudentImportService
     }
 
     /**
+     * @param  array<string, int>  $enrollmentYearOffsetByClassId
      * @param  \Illuminate\Support\Collection<string, SchoolClass>  $classesByNormalizedName
      */
     protected function processRow(
         array $data,
         int $rowNumber,
         bool $commit,
+        bool $recalculateEnrollmentYear,
         array &$seenAdmissionNumbers,
         ?AcademicYear $academicYear,
-        ?int $minLevel,
+        array $enrollmentYearOffsetByClassId,
         $classesByNormalizedName
     ): array {
         $admissionNumber = $data['admission_number'] ?? '';
@@ -184,17 +207,24 @@ class StudentImportService
             }
         }
 
+        // A student's Enrollment Year is only (re)calculated when it's
+        // currently missing, or the caller explicitly asked for a
+        // recalculation — never on every routine re-import, since that
+        // would drift the value each time a student is promoted to their
+        // next class in a later academic year.
+        $canSetEnrollmentYear = ! $existingStudent || $existingStudent->enrollment_year === null || $recalculateEnrollmentYear;
+
         // Resolved up front (before the preview-mode early return below) so
         // preview reports the same warnings a real commit would produce —
         // e.g. an implausible year doesn't get silently saved just because
         // nobody previewed first.
         $enrollmentYear = null;
-        if ($schoolClass && $academicYear && $minLevel !== null) {
-            $enrollmentYear = $academicYear->start_date->year - ($schoolClass->level - $minLevel);
+        if ($schoolClass && $academicYear && $canSetEnrollmentYear && isset($enrollmentYearOffsetByClassId[$schoolClass->id])) {
+            $enrollmentYear = $academicYear->start_date->year - $enrollmentYearOffsetByClassId[$schoolClass->id];
 
             $dob = ! empty($data['date_of_birth']) ? $data['date_of_birth'] : null;
             if ($dob && $enrollmentYear < Carbon::parse($dob)->year) {
-                $result['warnings'][] = "Calculated enrollment year ({$enrollmentYear}) is before the student's date of birth — check class levels in Academic Setup.";
+                $result['warnings'][] = "Calculated enrollment year ({$enrollmentYear}) is before the student's date of birth — check class durations in Academic Setup.";
                 $enrollmentYear = null;
             }
         }
@@ -280,6 +310,33 @@ class StudentImportService
         $result['student_id'] = $student->id;
 
         return $result;
+    }
+
+    /**
+     * The Enrollment Year "offset" for every class, keyed by class ID: how
+     * many years before the current academic year a student in that class
+     * is assumed to have first enrolled, assuming steady progression from
+     * the school's lowest-level class. Purely a function of each class's
+     * `duration_years` (how many academic years a student typically spends
+     * at that level before advancing) — never a calendar year — so a
+     * 2-year Pre-Unit stage followed by a 2-year Nursery stage naturally
+     * puts the next class after them at offset 4, without any per-school or
+     * per-class-name mapping baked into this code.
+     *
+     * @param  \Illuminate\Support\Collection<int, SchoolClass>  $classesOrderedByLevel
+     * @return array<string, int>
+     */
+    protected function resolveEnrollmentYearOffsets($classesOrderedByLevel): array
+    {
+        $offsets = [];
+        $cumulativeYears = 0;
+
+        foreach ($classesOrderedByLevel as $class) {
+            $offsets[$class->id] = $cumulativeYears;
+            $cumulativeYears += $class->duration_years;
+        }
+
+        return $offsets;
     }
 
     protected function resolveCurrentAcademicYear(): ?AcademicYear

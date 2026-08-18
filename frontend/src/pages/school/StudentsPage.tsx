@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
@@ -317,12 +318,14 @@ function ImportResultTable({ result }: { result: StudentImportResult }) {
 function ImportStudentsDialog() {
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
+  const [recalculateEnrollmentYear, setRecalculateEnrollmentYear] = useState(false)
   const [preview, setPreview] = useState<StudentImportResult | null>(null)
   const [committedResult, setCommittedResult] = useState<StudentImportResult | null>(null)
   const importStudents = useImportStudents()
 
   function reset() {
     setFile(null)
+    setRecalculateEnrollmentYear(false)
     setPreview(null)
     setCommittedResult(null)
   }
@@ -330,7 +333,7 @@ function ImportStudentsDialog() {
   function handlePreview() {
     if (!file) return
     importStudents.mutate(
-      { file, dryRun: true },
+      { file, dryRun: true, recalculateEnrollmentYear },
       {
         onSuccess: (result) => {
           if (result.missing_headers.length > 0) {
@@ -352,7 +355,7 @@ function ImportStudentsDialog() {
   function handleConfirm() {
     if (!file) return
     importStudents.mutate(
-      { file, dryRun: false },
+      { file, dryRun: false, recalculateEnrollmentYear },
       {
         onSuccess: (result) => {
           setCommittedResult(result)
@@ -411,6 +414,24 @@ function ImportStudentsDialog() {
               setCommittedResult(null)
             }}
           />
+
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={recalculateEnrollmentYear}
+              onCheckedChange={(checked) => {
+                setRecalculateEnrollmentYear(Boolean(checked))
+                setPreview(null)
+                setCommittedResult(null)
+              }}
+            />
+            <span>
+              Recalculate Enrollment Year for existing students
+              <span className="block text-xs text-muted-foreground">
+                Off by default — a student who already has an Enrollment Year keeps it, even if their class changed.
+                Only turn this on for a deliberate correction pass.
+              </span>
+            </span>
+          </label>
 
           {committedResult ? (
             <>

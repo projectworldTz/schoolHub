@@ -27,7 +27,19 @@ class SchoolClass extends Model
         'branch_id',
         'name',
         'level',
+        'duration_years',
     ];
+
+    protected $attributes = [
+        'duration_years' => 1,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'duration_years' => 'integer',
+        ];
+    }
 
     public function branch(): BelongsTo
     {

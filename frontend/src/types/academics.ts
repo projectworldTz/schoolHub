@@ -10,6 +10,7 @@ export interface SchoolClass {
   id: string
   name: string
   level: number
+  duration_years: number
   branch_id: string | null
   branch_name?: string | null
   subjects?: Subject[]

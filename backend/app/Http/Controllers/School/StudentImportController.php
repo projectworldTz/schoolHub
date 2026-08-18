@@ -29,7 +29,11 @@ class StudentImportController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
         ]);
 
-        $result = $this->importer->process($data['file'], ! $request->boolean('dry_run', true));
+        $result = $this->importer->process(
+            $data['file'],
+            ! $request->boolean('dry_run', true),
+            $request->boolean('recalculate_enrollment_year')
+        );
 
         return response()->json(['data' => $result]);
     }

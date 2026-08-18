@@ -22,10 +22,11 @@ import type { Room, SchoolClass, Stream } from '@/types/academics'
 const classSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   level: z.coerce.number().int().min(0, 'Level is required'),
+  duration_years: z.coerce.number().int().min(1, 'Must be at least 1'),
   branch_id: z.string().optional(),
 })
 
-const classDefaults = { name: '', level: 0, branch_id: '' }
+const classDefaults = { name: '', level: 0, duration_years: 1, branch_id: '' }
 
 const NO_BRANCH = '__none'
 
@@ -99,10 +100,11 @@ function CurriculumEditor({ schoolClass }: { schoolClass: SchoolClass }) {
 }
 
 function ClassesTab() {
-  const { useList, useCreate, useRemove } = useClasses
+  const { useList, useCreate, useUpdate, useRemove } = useClasses
   const { data, isLoading } = useList()
   const { data: branches } = useBranches.useList()
   const create = useCreate()
+  const update = useUpdate()
   const remove = useRemove()
   const [curriculumClassId, setCurriculumClassId] = useState<string | null>(null)
   const form = useForm({ resolver: zodResolver(classSchema), defaultValues: classDefaults })
@@ -110,6 +112,7 @@ function ClassesTab() {
   const columns: ColumnDef<SchoolClass>[] = [
     { key: 'name', label: 'Name', render: (c) => c.name },
     { key: 'level', label: 'Level', render: (c) => c.level },
+    { key: 'duration_years', label: 'Duration (years)', render: (c) => c.duration_years },
     { key: 'branch', label: 'Branch', render: (c) => <ClassBranchCell schoolClass={c} branches={branches ?? []} /> },
   ]
 
@@ -129,6 +132,11 @@ function ClassesTab() {
           { name: 'name', label: 'Name', type: 'text', placeholder: 'Form 1' },
           { name: 'level', label: 'Level (ordering)', type: 'number' },
           {
+            name: 'duration_years',
+            label: 'Duration (years, for Enrollment Year calculation)',
+            type: 'number',
+          },
+          {
             name: 'branch_id',
             label: 'Branch (optional)',
             type: 'select',
@@ -136,8 +144,16 @@ function ClassesTab() {
           },
         ]}
         onCreate={(values) => create.mutateAsync(values)}
+        onEdit={(item, values) => update.mutateAsync({ id: item.id, payload: values })}
+        toFormValues={(item) => ({
+          name: item.name,
+          level: item.level,
+          duration_years: item.duration_years,
+          branch_id: item.branch_id ?? '',
+        })}
         onDelete={(item) => remove.mutateAsync(item.id)}
         createLabel="New class"
+        editLabel="Edit class"
       />
 
       <Card>

@@ -24,6 +24,7 @@ class SchoolClassRequest extends FormRequest
                     ->ignore($this->route('class')),
             ],
             'level' => ['required', 'integer', 'min:0', 'max:65535'],
+            'duration_years' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'branch_id' => [
                 'nullable', 'uuid',
                 Rule::exists('branches', 'id')->where('school_id', Tenant::id()),

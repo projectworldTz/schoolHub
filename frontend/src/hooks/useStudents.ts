@@ -43,7 +43,15 @@ export function useCreateStudent() {
 export function useImportStudents() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, dryRun }: { file: File; dryRun: boolean }) => importStudents(file, dryRun),
+    mutationFn: ({
+      file,
+      dryRun,
+      recalculateEnrollmentYear,
+    }: {
+      file: File
+      dryRun: boolean
+      recalculateEnrollmentYear?: boolean
+    }) => importStudents(file, dryRun, recalculateEnrollmentYear),
     onSuccess: (result) => {
       if (result.committed) {
         queryClient.invalidateQueries({ queryKey: STUDENTS_KEY })

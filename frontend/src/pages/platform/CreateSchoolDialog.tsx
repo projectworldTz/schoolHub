@@ -160,7 +160,7 @@ export function CreateSchoolDialog() {
       <DialogTrigger asChild>
         <Button>Register school</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="flex max-h-[90vh] flex-col">
         {createdSchool ? (
           <TemporaryPasswordReveal school={createdSchool} onDone={() => handleOpenChange(false)} />
         ) : (
@@ -169,7 +169,8 @@ export function CreateSchoolDialog() {
           <DialogTitle>Register a new school</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col gap-4">
+            <div className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
             <FormField
               control={form.control}
               name="name"
@@ -343,6 +344,7 @@ export function CreateSchoolDialog() {
                   </FormItem>
                 )}
               />
+            </div>
             </div>
             <DialogFooter>
               <Button type="submit" disabled={createSchool.isPending}>

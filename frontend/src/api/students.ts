@@ -108,10 +108,15 @@ export async function uploadStudentDocument(studentId: string, file: File): Prom
   return data.data
 }
 
-export async function importStudents(file: File, dryRun: boolean): Promise<StudentImportResult> {
+export async function importStudents(
+  file: File,
+  dryRun: boolean,
+  recalculateEnrollmentYear = false
+): Promise<StudentImportResult> {
   const form = new FormData()
   form.append('file', file)
   form.append('dry_run', dryRun ? 'true' : 'false')
+  form.append('recalculate_enrollment_year', recalculateEnrollmentYear ? 'true' : 'false')
   const { data } = await apiClient.post<{ data: StudentImportResult }>('/school/students/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
