@@ -153,8 +153,8 @@ function ChildOverview({ student, paymentAccounts }: { student: Student; payment
                   </Badge>
                 )}
                 <p className="font-medium">{account.bank_name}</p>
-                <p>{account.account_name}</p>
                 <p className="text-muted-foreground">{account.account_number}</p>
+                <p>{account.account_name}</p>
               </div>
             ))}
           </CardContent>
