@@ -28,16 +28,19 @@ class SchoolClass extends Model
         'name',
         'level',
         'duration_years',
+        'auto_promote',
     ];
 
     protected $attributes = [
         'duration_years' => 1,
+        'auto_promote' => true,
     ];
 
     protected function casts(): array
     {
         return [
             'duration_years' => 'integer',
+            'auto_promote' => 'boolean',
         ];
     }
 

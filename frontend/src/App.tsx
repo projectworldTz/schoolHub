@@ -19,6 +19,7 @@ import { AdmissionsPage } from '@/pages/school/AdmissionsPage'
 import { AttendancePage } from '@/pages/school/AttendancePage'
 import { DisciplinePage } from '@/pages/school/DisciplinePage'
 import { GraduationPage } from '@/pages/school/GraduationPage'
+import { PromotionsPage } from '@/pages/school/PromotionsPage'
 import { MessagesPage } from '@/pages/school/MessagesPage'
 import { TimetablePage } from '@/pages/school/TimetablePage'
 import { HomeworkListPage, HomeworkDetailPage } from '@/pages/school/HomeworkPage'
@@ -101,6 +102,7 @@ function App() {
           <Route path="/app/attendance" element={<AttendancePage />} />
           <Route path="/app/discipline" element={<DisciplinePage />} />
           <Route path="/app/graduation" element={<GraduationPage />} />
+          <Route path="/app/promotions" element={<PromotionsPage />} />
           <Route path="/app/messages" element={<MessagesPage />} />
           <Route path="/app/timetable" element={<TimetablePage />} />
           <Route path="/app/homework" element={<HomeworkListPage />} />

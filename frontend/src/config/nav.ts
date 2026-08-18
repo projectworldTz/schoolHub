@@ -1,5 +1,6 @@
 import {
   Archive,
+  ArrowUpCircle,
   BarChart3,
   BookOpen,
   Briefcase,
@@ -73,6 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Student List', to: '/app/students', description: 'Profiles, guardians, documents', icon: UsersRound, permission: 'students.manage' },
       { label: 'Discipline', to: '/app/discipline', description: 'Incident records', icon: ShieldCheck, permission: 'discipline.manage' },
       { label: 'Graduation', to: '/app/graduation', description: 'Leaver & transfer records', icon: GraduationCap, permission: 'graduation.manage' },
+      { label: 'Promotions', to: '/app/promotions', description: 'Annual class promotion', icon: ArrowUpCircle, permission: 'graduation.manage' },
     ],
   },
   {

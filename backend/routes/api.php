@@ -47,6 +47,7 @@ use App\Http\Controllers\School\ExamResultController;
 use App\Http\Controllers\School\ExamSubjectController;
 use App\Http\Controllers\School\GradingSystemController;
 use App\Http\Controllers\School\GraduationController;
+use App\Http\Controllers\School\PromotionController;
 use App\Http\Controllers\School\GuardianImportController;
 use App\Http\Controllers\School\GuardianPortalController;
 use App\Http\Controllers\School\HolidayController;
@@ -154,6 +155,11 @@ $schoolRoutes = function () {
         Route::get('graduation/eligible', [GraduationController::class, 'eligible']);
         Route::post('graduation/batch', [GraduationController::class, 'batch']);
         Route::get('graduation/history', [GraduationController::class, 'history']);
+
+        // Annual class promotion
+        Route::get('promotions/preview', [PromotionController::class, 'preview']);
+        Route::post('promotions', [PromotionController::class, 'store']);
+        Route::get('promotions/history', [PromotionController::class, 'history']);
 
         // Staff / Teachers (HR)
         Route::apiResource('staff', StaffProfileController::class);

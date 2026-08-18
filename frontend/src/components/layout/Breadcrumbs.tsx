@@ -16,6 +16,7 @@ const PATH_LABELS: Record<string, string> = {
   '/app/attendance': 'Attendance',
   '/app/discipline': 'Discipline',
   '/app/graduation': 'Graduation',
+  '/app/promotions': 'Promotions',
   '/app/timetable': 'Timetable',
   '/app/homework': 'Homework',
   '/app/communication': 'Communication',

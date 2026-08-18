@@ -23,10 +23,11 @@ const classSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   level: z.coerce.number().int().min(0, 'Level is required'),
   duration_years: z.coerce.number().int().min(1, 'Must be at least 1'),
+  auto_promote: z.boolean().default(true),
   branch_id: z.string().optional(),
 })
 
-const classDefaults = { name: '', level: 0, duration_years: 1, branch_id: '' }
+const classDefaults = { name: '', level: 0, duration_years: 1, auto_promote: true, branch_id: '' }
 
 const NO_BRANCH = '__none'
 
@@ -113,6 +114,7 @@ function ClassesTab() {
     { key: 'name', label: 'Name', render: (c) => c.name },
     { key: 'level', label: 'Level', render: (c) => c.level },
     { key: 'duration_years', label: 'Duration (years)', render: (c) => c.duration_years },
+    { key: 'auto_promote', label: 'Auto promote', render: (c) => (c.auto_promote ? 'Yes' : 'Manual only') },
     { key: 'branch', label: 'Branch', render: (c) => <ClassBranchCell schoolClass={c} branches={branches ?? []} /> },
   ]
 
@@ -135,6 +137,11 @@ function ClassesTab() {
             name: 'duration_years',
             label: 'Duration (years, for Enrollment Year calculation)',
             type: 'number',
+          },
+          {
+            name: 'auto_promote',
+            label: 'Include in annual class promotion',
+            type: 'switch',
           },
           {
             name: 'branch_id',

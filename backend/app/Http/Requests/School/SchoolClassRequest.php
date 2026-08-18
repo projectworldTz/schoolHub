@@ -25,6 +25,7 @@ class SchoolClassRequest extends FormRequest
             ],
             'level' => ['required', 'integer', 'min:0', 'max:65535'],
             'duration_years' => ['sometimes', 'integer', 'min:1', 'max:10'],
+            'auto_promote' => ['sometimes', 'boolean'],
             'branch_id' => [
                 'nullable', 'uuid',
                 Rule::exists('branches', 'id')->where('school_id', Tenant::id()),

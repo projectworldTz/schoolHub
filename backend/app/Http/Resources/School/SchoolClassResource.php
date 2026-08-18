@@ -15,6 +15,7 @@ class SchoolClassResource extends JsonResource
             'name' => $this->name,
             'level' => $this->level,
             'duration_years' => $this->duration_years,
+            'auto_promote' => $this->auto_promote,
             'branch_id' => $this->branch_id,
             'branch_name' => $this->whenLoaded('branch', fn () => $this->branch?->name),
             'subjects' => SubjectResource::collection($this->whenLoaded('subjects')),
