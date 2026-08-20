@@ -43,6 +43,7 @@ use App\Http\Controllers\School\DocumentController;
 use App\Http\Controllers\School\DocumentGeneratorController;
 use App\Http\Controllers\School\ExamController;
 use App\Http\Controllers\School\ExamEditRequestController;
+use App\Http\Controllers\School\ExamPaperController;
 use App\Http\Controllers\School\ExamResultController;
 use App\Http\Controllers\School\ExamSubjectController;
 use App\Http\Controllers\School\GradingSystemController;
@@ -312,6 +313,16 @@ $schoolRoutes = function () {
         Route::get('ai-assistant/status', [AiAssistantController::class, 'status']);
         Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->middleware('throttle:ai-assistant');
         Route::post('ai-assistant/lesson-plan', [AiAssistantController::class, 'lessonPlan'])->middleware('throttle:ai-assistant');
+
+        // AI Exam Paper Generator
+        Route::get('exam-papers', [ExamPaperController::class, 'index']);
+        Route::post('exam-papers/generate', [ExamPaperController::class, 'generate'])->middleware('throttle:ai-assistant');
+        Route::get('exam-papers/{examPaper}', [ExamPaperController::class, 'show']);
+        Route::patch('exam-papers/{examPaper}', [ExamPaperController::class, 'update']);
+        Route::post('exam-papers/{examPaper}/refine', [ExamPaperController::class, 'refine'])->middleware('throttle:ai-assistant');
+        Route::post('exam-papers/{examPaper}/finalize', [ExamPaperController::class, 'finalize']);
+        Route::get('exam-papers/{examPaper}/pdf/{type}', [ExamPaperController::class, 'pdf']);
+        Route::delete('exam-papers/{examPaper}', [ExamPaperController::class, 'destroy']);
 
         // Signed on top of the surrounding auth:web + password.changed group
         // — the signature alone proves this exact URL was legitimately

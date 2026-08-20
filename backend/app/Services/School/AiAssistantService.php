@@ -247,6 +247,113 @@ class AiAssistantService
     }
 
     /**
+     * @param  array{subject_name: string, class_name: string, title: string, exam_date: ?string, duration_minutes: int, sections: array<int, array{type: string, count: int, marks_per_question: int}>, notes: ?string}  $params
+     * @return array{instructions: string, sections: array<int, array<string, mixed>>}
+     */
+    public function generateExamPaper(array $params, School $school, User $user): array
+    {
+        $reply = $this->call(
+            $this->examPaperSystemPrompt($school, $user),
+            [['role' => 'user', 'content' => $this->examPaperPrompt($params)]],
+            6000,
+        );
+
+        return $this->decodeExamPaperReply($reply);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $currentSections
+     * @param  array{subject_name: string, class_name: string, title: string, exam_date: ?string, duration_minutes: int}  $params
+     * @return array{instructions: string, sections: array<int, array<string, mixed>>}
+     */
+    public function refineExamPaper(array $currentSections, string $instruction, array $params, School $school, User $user): array
+    {
+        $prompt = sprintf(
+            "Here is the exam paper as it currently stands, as JSON:\n%s\n\n".
+            "The teacher has asked for this change: %s\n\n".
+            "Exam context — Subject: %s, Class: %s, Title: %s, Duration: %d minutes.\n".
+            'Apply the requested change and return the FULL revised paper (every section, not just the changed one), '.
+            'in the exact same JSON shape as before, keeping question numbering sequential within each section '.
+            'and preserving anything the teacher didn\'t ask you to change.',
+            json_encode($currentSections),
+            $instruction,
+            $params['subject_name'],
+            $params['class_name'],
+            $params['title'],
+            $params['duration_minutes'],
+        );
+
+        $reply = $this->call(
+            $this->examPaperSystemPrompt($school, $user),
+            [['role' => 'user', 'content' => $prompt]],
+            6000,
+        );
+
+        return $this->decodeExamPaperReply($reply);
+    }
+
+    /** @return array{instructions: string, sections: array<int, array<string, mixed>>} */
+    protected function decodeExamPaperReply(string $reply): array
+    {
+        $text = $this->stripCodeFences($reply);
+        $paper = json_decode($text, true);
+
+        if (! is_array($paper) || ! isset($paper['sections']) || ! is_array($paper['sections'])) {
+            throw new RuntimeException('The AI response could not be read as an exam paper. Please try again.');
+        }
+
+        $paper['instructions'] ??= '';
+
+        return $paper;
+    }
+
+    protected function examPaperSystemPrompt(School $school, User $user): string
+    {
+        return $this->systemPrompt($school, $user)."\n\n".
+            'You write complete, exam-board-quality examination papers for teachers. Respond with ONLY a single '.
+            'JSON object (no markdown code fences, no prose before or after) matching exactly this shape: '.
+            '{"instructions": string, "sections": [ ...one entry per requested section, in the shape below... ]}. '.
+            "\n\nA multiple_choice section: ".
+            '{"type": "multiple_choice", "title": string, "instructions": string, "questions": '.
+            '[{"number": number, "question": string, "options": [{"label": "A", "text": string}, ...4 options], '.
+            '"correct_option": string, "marks": number}]}'.
+            "\n\nA matching section: ".
+            '{"type": "matching", "title": string, "instructions": string, '.
+            '"left_items": [{"key": string, "text": string}], "right_items": [{"key": string, "text": string}], '.
+            '"correct_matches": {"<left key>": "<right key>"}, "marks_per_pair": number}'.
+            "\n\nA short_answer section: ".
+            '{"type": "short_answer", "title": string, "instructions": string, "questions": '.
+            '[{"number": number, "question": string, "model_answer": string, "marks": number}]}'.
+            "\n\nRules: produce exactly the section types, question counts, and marks-per-question the teacher ".
+            'requests, in the order requested. Number questions sequentially starting at 1 within each section. '.
+            'Give each section a clear heading like "Section A: Multiple Choice". Write the top-level "instructions" '.
+            'field as the general exam instructions a student reads first (e.g. "Answer all questions", pens/calculators '.
+            'allowed, etc.) and include a suggested time allocation per section so the whole paper is realistically '.
+            'completable within the given total duration — question length and difficulty must be calibrated to '.
+            "that duration and the student's class/grade level, not just to the mark count. Never leave a section ".
+            'empty and never invent extra sections the teacher did not ask for.';
+    }
+
+    protected function examPaperPrompt(array $params): string
+    {
+        $sectionLines = collect($params['sections'])->map(
+            fn (array $s) => sprintf('- %s: %d question(s), %d mark(s) each', $s['type'], $s['count'], $s['marks_per_question'])
+        )->implode("\n");
+
+        return sprintf(
+            "Create an examination paper for:\nSubject: %s\nClass: %s\nExam title: %s\nExam date: %s\n".
+            "Total duration: %d minutes\n\nRequested sections:\n%s%s",
+            $params['subject_name'],
+            $params['class_name'],
+            $params['title'],
+            $params['exam_date'] ?? 'not specified',
+            $params['duration_minutes'],
+            $sectionLines,
+            filled($params['notes']) ? "\n\nSyllabus topics / additional notes from the teacher: {$params['notes']}" : '',
+        );
+    }
+
+    /**
      * Anthropic wins if both keys are set — this is the only place that
      * decides, so switching providers is just filling in one env var
      * instead of the other, nothing else in this class cares which.
@@ -259,11 +366,11 @@ class AiAssistantService
     /**
      * @param  array<int, array{role: string, content: string}>  $messages
      */
-    protected function call(string $system, array $messages): string
+    protected function call(string $system, array $messages, int $maxTokens = 2000): string
     {
         return match ($this->provider()) {
-            'gemini' => $this->callGemini($system, $messages),
-            default => $this->callAnthropic($system, $messages),
+            'gemini' => $this->callGemini($system, $messages, $maxTokens),
+            default => $this->callAnthropic($system, $messages, $maxTokens),
         };
     }
 
@@ -284,7 +391,7 @@ class AiAssistantService
     }
 
     /** @param  array<int, array{role: string, content: string}>  $messages */
-    protected function callAnthropic(string $system, array $messages): string
+    protected function callAnthropic(string $system, array $messages, int $maxTokens = 2000): string
     {
         $response = $this->withTransientRetry()
             ->withHeaders([
@@ -294,7 +401,7 @@ class AiAssistantService
             ->timeout(45)
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => config('services.anthropic.model'),
-                'max_tokens' => 2000,
+                'max_tokens' => $maxTokens,
                 'system' => $system,
                 'messages' => $messages,
             ]);
@@ -318,7 +425,7 @@ class AiAssistantService
      *
      * @param  array<int, array{role: string, content: string}>  $messages
      */
-    protected function callGemini(string $system, array $messages): string
+    protected function callGemini(string $system, array $messages, int $maxTokens = 2000): string
     {
         $contents = collect($messages)->map(fn (array $message) => [
             'role' => $message['role'] === 'assistant' ? 'model' : 'user',
@@ -335,7 +442,7 @@ class AiAssistantService
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'systemInstruction' => ['parts' => [['text' => $system]]],
                 'contents' => $contents,
-                'generationConfig' => ['maxOutputTokens' => 2000],
+                'generationConfig' => ['maxOutputTokens' => $maxTokens],
             ]);
 
         if ($response->failed()) {

@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
-import { AlertTriangle, Bot, Clock, Copy, Download, FileText, Loader2, Lock, NotebookPen, Send, Sparkles, User } from 'lucide-react'
+import { AlertTriangle, Bot, Clock, Copy, Download, FileText, GraduationCap, Loader2, Lock, NotebookPen, Send, Sparkles, User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAiAssistantStatus, useAiChat, useGenerateLessonPlan } from '@/hooks/useAiAssistant'
 import { useClasses, useSubjects } from '@/hooks/useAcademics'
+import { ExamPaperPanel } from '@/pages/school/ai/ExamPaperPanel'
 import { cn } from '@/lib/utils'
 import type { AiAccess, ChatMessage, GeneratedReport, LessonPlan } from '@/types/aiAssistant'
 
@@ -459,12 +460,18 @@ export function AiAssistantPage() {
             <TabsTrigger value="lesson-plan" className="gap-1.5">
               <NotebookPen className="size-3.5" /> Lesson Plan
             </TabsTrigger>
+            <TabsTrigger value="exam-paper" className="gap-1.5">
+              <GraduationCap className="size-3.5" /> Exam Paper
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="mt-4">
             <ChatPanel />
           </TabsContent>
           <TabsContent value="lesson-plan" className="mt-4">
             <LessonPlanPanel />
+          </TabsContent>
+          <TabsContent value="exam-paper" className="mt-4">
+            <ExamPaperPanel />
           </TabsContent>
         </Tabs>
       )}
