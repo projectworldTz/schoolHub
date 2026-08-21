@@ -7,6 +7,7 @@ import {
   feeStructuresApi,
   fetchInvoice,
   generateInvoices,
+  importFees,
   includeStudentFee,
   listInvoices,
   listStudentFeeExclusions,
@@ -39,6 +40,18 @@ export function useGenerateInvoices() {
   return useMutation({
     mutationFn: (payload: GenerateInvoicesPayload) => generateInvoices(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: INVOICES_KEY }),
+  })
+}
+
+export function useImportFees() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, dryRun }: { file: File; dryRun: boolean }) => importFees(file, dryRun),
+    onSuccess: (result) => {
+      if (result.committed) {
+        queryClient.invalidateQueries({ queryKey: INVOICES_KEY })
+      }
+    },
   })
 }
 

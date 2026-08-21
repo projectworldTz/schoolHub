@@ -87,6 +87,7 @@ use App\Http\Controllers\Finance\BudgetController;
 use App\Http\Controllers\Finance\ExpenseCategoryController;
 use App\Http\Controllers\Finance\ExpenseController;
 use App\Http\Controllers\Finance\FeeCategoryController;
+use App\Http\Controllers\Finance\FeeImportController;
 use App\Http\Controllers\Finance\FeeStructureController;
 use App\Http\Controllers\Finance\InvoiceController;
 use App\Http\Controllers\Finance\PaymentController;
@@ -240,6 +241,7 @@ $schoolRoutes = function () {
         // Finance: fees & billing
         Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
         Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
+        Route::post('invoices/import', [FeeImportController::class, 'import']);
         Route::get('invoices', [InvoiceController::class, 'index']);
         Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
         Route::post('invoices/generate', [InvoiceController::class, 'generate']);

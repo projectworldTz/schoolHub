@@ -77,3 +77,29 @@ export interface Invoice {
   payments?: Payment[]
   created_at: string
 }
+
+export interface FeeImportRow {
+  row: number
+  admission_number: string
+  student_name: string | null
+  academic_year: string
+  term: string | null
+  fee_category: string
+  amount: string
+  amount_paid: string | null
+  invoice_number: string | null
+  status: 'created' | 'would_create' | 'skipped' | 'error'
+  errors: string[]
+  warnings: string[]
+}
+
+export interface FeeImportResult {
+  total_rows: number
+  invoice_count: number
+  created_count: number
+  skipped_count: number
+  error_count: number
+  committed: boolean
+  missing_headers: string[]
+  rows: FeeImportRow[]
+}

@@ -46,12 +46,12 @@ import { Badge } from '@/components/ui/badge'
 import { SimpleCrudCard, type ColumnDef } from '@/components/school/SimpleCrudCard'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import { TablePagination } from '@/components/school/TablePagination'
-import { useFeeCategories, useFeeStructures, useGenerateInvoices, useInvoices } from '@/hooks/useFinance'
+import { useFeeCategories, useFeeStructures, useGenerateInvoices, useImportFees, useInvoices } from '@/hooks/useFinance'
 import { useAcademicYears } from '@/hooks/useSchoolSetup'
 import { useClasses } from '@/hooks/useAcademics'
 import { useQuickAddTrigger } from '@/hooks/useQuickAddTrigger'
 import { feeReportPdfUrl, type FeeCategoryPayload, type FeeStructurePayload } from '@/api/finance'
-import type { FeeCategory, FeeStructure } from '@/types/finance'
+import type { FeeCategory, FeeImportResult, FeeStructure } from '@/types/finance'
 
 const feeCategoryDefaults = { name: '', description: '', is_optional: false }
 const feeCategorySchema = z.object({
@@ -433,6 +433,215 @@ function GenerateInvoicesDialog() {
   )
 }
 
+function downloadFeeImportTemplate() {
+  const csv =
+    'admission_number,academic_year,term,fee_category,amount,due_date,amount_paid,payment_method,payment_reference,payment_date\n'
+    + 'ADM-001,2026,Term 1,Tuition,50000,2026-09-01,20000,bank_transfer,TXN10293,2026-08-15\n'
+    + 'ADM-001,2026,Term 1,Transport,8000,2026-09-01,,,,\n'
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'fee-import-template.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+const FEE_IMPORT_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  created: 'default',
+  would_create: 'secondary',
+  skipped: 'outline',
+  error: 'destructive',
+}
+
+const FEE_IMPORT_STATUS_LABEL: Record<string, string> = {
+  created: 'charged',
+  would_create: 'valid',
+  skipped: 'skipped',
+  error: 'error',
+}
+
+function FeeImportResultTable({ result }: { result: FeeImportResult }) {
+  return (
+    <div className="max-h-72 overflow-y-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-14">Row</TableHead>
+            <TableHead>Student</TableHead>
+            <TableHead>Fee category</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Notes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {result.rows.map((row) => (
+            <TableRow key={row.row}>
+              <TableCell>{row.row}</TableCell>
+              <TableCell className="font-medium">{row.student_name ?? (row.admission_number || '—')}</TableCell>
+              <TableCell>{row.fee_category || '—'}</TableCell>
+              <TableCell>{row.amount ? Number(row.amount).toLocaleString() : '—'}</TableCell>
+              <TableCell>
+                <Badge variant={FEE_IMPORT_STATUS_VARIANT[row.status]}>{FEE_IMPORT_STATUS_LABEL[row.status]}</Badge>
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {[...row.errors, ...row.warnings].join(' ') || '—'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function ImportFeesDialog() {
+  const [open, setOpen] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<FeeImportResult | null>(null)
+  const [committedResult, setCommittedResult] = useState<FeeImportResult | null>(null)
+  const importFees = useImportFees()
+
+  function reset() {
+    setFile(null)
+    setPreview(null)
+    setCommittedResult(null)
+  }
+
+  function handlePreview() {
+    if (!file) return
+    importFees.mutate(
+      { file, dryRun: true },
+      {
+        onSuccess: (result) => {
+          if (result.missing_headers.length > 0) {
+            toast.error(`Missing required columns: ${result.missing_headers.join(', ')}`)
+            return
+          }
+          setPreview(result)
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Could not read that file')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  function handleConfirm() {
+    if (!file) return
+    importFees.mutate(
+      { file, dryRun: false },
+      {
+        onSuccess: (result) => {
+          setCommittedResult(result)
+          const parts = [`${result.invoice_count} invoice(s) created`]
+          if (result.skipped_count > 0) parts.push(`${result.skipped_count} skipped`)
+          toast.success(parts.join(', '))
+        },
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? (error.response?.data?.message ?? 'Import failed')
+            : 'Something went wrong'
+          toast.error(message)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) reset()
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          Import fees
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Import student fees</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <p className="text-muted-foreground">
+              Columns: <code>admission_number</code>, <code>academic_year</code>, <code>fee_category</code>,{' '}
+              <code>amount</code> (required), plus optional <code>term</code>, <code>due_date</code>,{' '}
+              <code>amount_paid</code>, <code>payment_method</code>, <code>payment_reference</code>,{' '}
+              <code>payment_date</code>. Rows for the same student and period are combined into a single invoice.
+              <code>fee_category</code> must match an existing fee category exactly. A student excluded from a
+              category, already invoiced for it this period, or already billed a pay-once fee is skipped
+              automatically.
+            </p>
+            <Button type="button" variant="link" size="sm" className="shrink-0" onClick={downloadFeeImportTemplate}>
+              Download template
+            </Button>
+          </div>
+
+          <Input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null)
+              setPreview(null)
+              setCommittedResult(null)
+            }}
+          />
+
+          {committedResult ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium text-primary">{committedResult.invoice_count} invoice(s) created</span>
+                {committedResult.skipped_count > 0 && `, ${committedResult.skipped_count} skipped`}
+                {committedResult.error_count > 0 && `, ${committedResult.error_count} had errors`}
+              </p>
+              <FeeImportResultTable result={committedResult} />
+            </>
+          ) : preview ? (
+            <>
+              <p className="text-sm">
+                <span className="font-medium">{preview.created_count} of {preview.total_rows} rows are valid</span>
+                {preview.skipped_count > 0 && ` (${preview.skipped_count} will be skipped)`}
+                {preview.error_count > 0 && ` — ${preview.error_count} have errors`}
+              </p>
+              <FeeImportResultTable result={preview} />
+            </>
+          ) : null}
+        </div>
+
+        <DialogFooter>
+          {committedResult ? (
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          ) : preview ? (
+            <>
+              <Button variant="outline" onClick={reset}>
+                Start over
+              </Button>
+              <Button onClick={handleConfirm} disabled={importFees.isPending || preview.created_count === 0}>
+                {importFees.isPending ? 'Importing…' : `Confirm import (${preview.created_count})`}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handlePreview} disabled={!file || importFees.isPending}>
+              {importFees.isPending ? 'Reading…' : 'Preview'}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const INVOICES_PER_PAGE = 100
 
 function InvoicesTab() {
@@ -491,6 +700,7 @@ function InvoicesTab() {
           >
             Download PDF
           </Button>
+          <ImportFeesDialog />
           <GenerateInvoicesDialog />
         </div>
       </CardHeader>

@@ -1,7 +1,7 @@
 import { apiClient, apiOrigin } from '@/api/client'
 import { createCrudApi } from '@/api/crud'
 import type { PaginatedResponse } from '@/types/school'
-import type { FeeCategory, FeeStructure, Invoice, PaymentMethod, StudentFeeExclusion } from '@/types/finance'
+import type { FeeCategory, FeeImportResult, FeeStructure, Invoice, PaymentMethod, StudentFeeExclusion } from '@/types/finance'
 
 export interface FeeCategoryPayload {
   name: string
@@ -72,6 +72,14 @@ export async function generateInvoices(payload: GenerateInvoicesPayload): Promis
 
 export async function deleteInvoice(id: string): Promise<void> {
   await apiClient.delete(`/school/invoices/${id}`)
+}
+
+export async function importFees(file: File, dryRun: boolean): Promise<FeeImportResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('dry_run', dryRun ? 'true' : 'false')
+  const { data } = await apiClient.post<{ data: FeeImportResult }>('/school/invoices/import', form)
+  return data.data
 }
 
 export interface RecordPaymentPayload {
