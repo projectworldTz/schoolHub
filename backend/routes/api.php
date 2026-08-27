@@ -9,6 +9,8 @@ use App\Http\Controllers\Public\NoticeBoardController;
 use App\Http\Controllers\Public\WebsiteController as PublicWebsiteController;
 use App\Http\Controllers\Public\WebsiteDownloadController as PublicWebsiteDownloadController;
 use App\Http\Controllers\Public\WebsiteTrackingController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAcademicDepartmentController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAdmissionClassController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteAnalyticsController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteBannerController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteCalendarEventController;
@@ -16,9 +18,15 @@ use App\Http\Controllers\WebsiteBuilder\WebsiteDownloadController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteFacilityController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryAlbumController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryImageController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteLeadershipController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteNewsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteOfficeController;
+use App\Http\Controllers\WebsiteBuilder\WebsitePolicyController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteResearchProjectController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteSectionController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteSettingsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSportsMediaController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSportsProgramController;
 use App\Http\Controllers\WebsiteBuilder\WebsiteTestimonialController;
 use App\Http\Controllers\School\AcademicYearController;
 use App\Http\Controllers\School\AiAssistantController;
@@ -362,6 +370,22 @@ $schoolRoutes = function () {
             Route::put('news/{news}', [WebsiteNewsController::class, 'update']);
 
             Route::get('analytics/summary', [WebsiteAnalyticsController::class, 'summary']);
+
+            // Multi-page nav content: Admission (per-class), Explore Us
+            // (Leadership, Policies, Sport & Games), Academic Disciplines,
+            // Offices & Directorates, Research & Innovation / Projects.
+            Route::get('admission-classes', [WebsiteAdmissionClassController::class, 'index']);
+            Route::put('admission-classes', [WebsiteAdmissionClassController::class, 'update']);
+
+            Route::get('academic-departments', [WebsiteAcademicDepartmentController::class, 'index']);
+            Route::put('academic-departments', [WebsiteAcademicDepartmentController::class, 'update']);
+
+            Route::apiResource('leadership', WebsiteLeadershipController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('policies', WebsitePolicyController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('sports-programs', WebsiteSportsProgramController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('sports-media', WebsiteSportsMediaController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('offices', WebsiteOfficeController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::apiResource('research-projects', WebsiteResearchProjectController::class)->only(['index', 'store', 'update', 'destroy']);
         });
 };
 

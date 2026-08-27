@@ -50,7 +50,17 @@ import { ParentDashboardPage } from '@/pages/parent/ParentDashboardPage'
 import { ParentInvoiceDetailPage } from '@/pages/parent/InvoiceDetailPage'
 import { ScanStudentPage } from '@/pages/parent/ScanStudentPage'
 import { NoticeBoardPage } from '@/pages/public/NoticeBoardPage'
-import { SchoolWebsitePage } from '@/pages/public/SchoolWebsitePage'
+import { SitePublicLayout } from '@/pages/public/site/SitePublicLayout'
+import { SchoolWebsiteHome } from '@/pages/public/site/SchoolWebsiteHome'
+import { AdmissionPage } from '@/pages/public/site/AdmissionPage'
+import { MissionVisionValuesPage } from '@/pages/public/site/MissionVisionValuesPage'
+import { LeadershipPage } from '@/pages/public/site/LeadershipPage'
+import { PoliciesPage } from '@/pages/public/site/PoliciesPage'
+import { SportsPage } from '@/pages/public/site/SportsPage'
+import { AcademicDisciplinesPage } from '@/pages/public/site/AcademicDisciplinesPage'
+import { OfficesDirectoratesPage } from '@/pages/public/site/OfficesDirectoratesPage'
+import { ResearchInnovationPage } from '@/pages/public/site/ResearchInnovationPage'
+import { ProjectsPage } from '@/pages/public/site/ProjectsPage'
 import { PlatformLayout } from '@/components/layout/PlatformLayout'
 import { AppShell } from '@/components/layout/AppShell'
 import { ParentLayout } from '@/components/layout/ParentLayout'
@@ -68,7 +78,18 @@ function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/notice-board/:slug" element={<NoticeBoardPage />} />
-      <Route path="/site/:slug" element={<SchoolWebsitePage />} />
+      <Route path="/site/:slug" element={<SitePublicLayout />}>
+        <Route index element={<SchoolWebsiteHome />} />
+        <Route path="admission" element={<AdmissionPage />} />
+        <Route path="explore-us/mission-vision-values" element={<MissionVisionValuesPage />} />
+        <Route path="explore-us/leadership" element={<LeadershipPage />} />
+        <Route path="explore-us/policies" element={<PoliciesPage />} />
+        <Route path="explore-us/sports" element={<SportsPage />} />
+        <Route path="academic-disciplines" element={<AcademicDisciplinesPage />} />
+        <Route path="offices-directorates" element={<OfficesDirectoratesPage />} />
+        <Route path="research-innovation" element={<ResearchInnovationPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+      </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomeRedirect />} />

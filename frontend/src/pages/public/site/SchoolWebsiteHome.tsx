@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  ArrowUp,
   Award,
   ChevronDown,
   Download as DownloadIcon,
   GraduationCap,
-  Link2,
   Mail,
   MapPin,
   Phone,
@@ -28,9 +26,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { usePublicWebsite } from '@/hooks/usePublicWebsite'
 import { trackWebsiteEvent, websiteDownloadUrl } from '@/api/publicWebsite'
 import { cn } from '@/lib/utils'
+import { usePublicWebsiteContext } from './PublicWebsiteContext'
 import type { PublicWebsiteData, PublicWebsitePerformanceInsights, WebsiteSectionKey } from '@/types/websiteBuilder'
 
 /**
@@ -44,40 +42,10 @@ import type { PublicWebsiteData, PublicWebsitePerformanceInsights, WebsiteSectio
 const GRADE_PALETTE_LIGHT = ['#2a78d6', '#1baf7a', '#eda100', '#eb6834', '#e34948', '#4a3aa7', '#e87ba4', '#008300']
 const GRADE_PALETTE_DARK = ['#3987e5', '#199e70', '#c98500', '#d95926', '#e66767', '#9085e9', '#d55181', '#008300']
 
-/**
- * Public, unauthenticated one-page scrolling site — same "no login of any
- * kind" tier as NoticeBoardPage, resolved by slug via Public\WebsiteController.
- * Path-based for now (schoolhub.co.tz/site/{slug}), not a subdomain — see
- * the module's plan doc for why. Rendered as pure CSS custom properties
- * driven by the school's chosen theme, so no per-element visual editor is
- * needed for a "no coding required" theming experience.
- */
-export function SchoolWebsitePage() {
-  const { slug = '' } = useParams<{ slug: string }>()
-  const { data, isLoading, isError } = usePublicWebsite(slug)
-
-  useEffect(() => {
-    if (data) trackWebsiteEvent(slug, 'page_view')
-  }, [data, slug])
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-background text-center">
-        <p className="text-lg font-semibold">This page isn't available</p>
-        <p className="text-sm text-muted-foreground">The school website may not be published yet.</p>
-      </div>
-    )
-  }
-
-  return <SiteRenderer slug={slug} data={data} />
+/** The site's home tab — the original single-scroll homepage, now nested under SitePublicLayout instead of owning its own fetch/nav/footer. */
+export function SchoolWebsiteHome() {
+  const { slug, data } = usePublicWebsiteContext()
+  return <HomeSections slug={slug} data={data} />
 }
 
 function useTrackSectionView(slug: string, sectionKey: WebsiteSectionKey) {
@@ -187,66 +155,6 @@ function useCountUp(target: number, active: boolean, duration = 1400) {
   return value
 }
 
-/** Highlights whichever section's midpoint the viewport is currently crossing, for the nav tab underline. */
-function useScrollSpy(ids: string[]) {
-  const [active, setActive] = useState(ids[0] ?? '')
-  const key = ids.join('|')
-
-  useEffect(() => {
-    const elements = ids.map((id) => document.getElementById(id)).filter((el): el is HTMLElement => Boolean(el))
-    if (elements.length === 0) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive(entry.target.id)
-        })
-      },
-      { rootMargin: '-40% 0px -55% 0px', threshold: 0 }
-    )
-    elements.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-    // key (ids.join) is the real dependency; ids itself is a fresh array on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-
-  return active
-}
-
-function useScrollState() {
-  const [state, setState] = useState({ scrolled: false, progress: 0 })
-
-  useEffect(() => {
-    function onScroll() {
-      const doc = document.documentElement
-      const max = doc.scrollHeight - doc.clientHeight
-      const top = doc.scrollTop
-      setState({ scrolled: top > 8, progress: max > 0 ? Math.min(100, (top / max) * 100) : 0 })
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [])
-
-  return state
-}
-
-function useShowAfterScroll(threshold: number) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    function onScroll() {
-      setShow(window.scrollY > threshold)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [threshold])
-  return show
-}
-
 const SECTION_LABELS: Record<WebsiteSectionKey, string> = {
   hero: 'Home',
   about: 'About',
@@ -260,7 +168,7 @@ const SECTION_LABELS: Record<WebsiteSectionKey, string> = {
   contact: 'Contact',
 }
 
-/** Mirrors each section component's own "return null" rule, so the nav never links to a tab that has nothing to show. */
+/** Mirrors each section component's own "return null" rule, so the hero's "scroll to next" arrow never targets a section that has nothing to show. */
 function sectionHasContent(key: WebsiteSectionKey, data: PublicWebsiteData): boolean {
   switch (key) {
     case 'hero':
@@ -289,34 +197,14 @@ interface NavItem {
   label: string
 }
 
-function SiteRenderer({ slug, data }: { slug: string; data: PublicWebsiteData }) {
-  const { school, settings, sections } = data
-  const theme = settings.theme
-  const primaryColor = settings.primary_color || theme?.primary_color || '#2563eb'
-  const isDark = Boolean(theme?.dark)
+function HomeSections({ slug, data }: { slug: string; data: PublicWebsiteData }) {
+  const { sections } = data
+  const isDark = Boolean(data.settings.theme?.dark)
 
   const navItems: NavItem[] = useMemo(
     () => sections.filter((key) => sectionHasContent(key, data)).map((key) => ({ key, label: SECTION_LABELS[key] })),
     [sections, data]
   )
-
-  const style: React.CSSProperties & Record<string, string> = {
-    '--wb-primary': primaryColor,
-    '--wb-radius': theme?.radius ?? '1rem',
-    fontFamily: theme?.font_body ?? 'Inter, sans-serif',
-    // Every non-dark preset otherwise shares one identical neutral-white
-    // canvas (only --wb-primary, i.e. button color, differed) — that's
-    // what read as "just a totally white theme" regardless of which
-    // preset was picked. Tinting the canvas itself from the school's own
-    // accent color is what actually makes "Luxury" read warm/gold and
-    // "Green" read minty, not just their buttons.
-    ...(!isDark && {
-      '--background': `color-mix(in srgb, ${primaryColor} 5%, white)`,
-      '--muted': `color-mix(in srgb, ${primaryColor} 10%, white)`,
-      '--card': `color-mix(in srgb, ${primaryColor} 2%, white)`,
-      '--border': `color-mix(in srgb, ${primaryColor} 20%, white)`,
-    }),
-  }
 
   const renderers: Partial<Record<WebsiteSectionKey, () => React.ReactNode>> = {
     hero: () => <HeroSection key="hero" slug={slug} data={data} navItems={navItems} />,
@@ -331,105 +219,7 @@ function SiteRenderer({ slug, data }: { slug: string; data: PublicWebsiteData })
     contact: () => <ContactSection key="contact" data={data} />,
   }
 
-  return (
-    <div
-      className={cn(
-        'public-site min-h-screen scroll-smooth bg-background text-foreground antialiased',
-        theme?.dark && 'public-site--dark'
-      )}
-      style={style}
-    >
-      <SiteNav school={school} navItems={navItems} />
-      <main>{sections.map((key) => renderers[key]?.())}</main>
-      <SiteFooter data={data} />
-      <BackToTop />
-
-      {settings.custom_css && <style>{settings.custom_css}</style>}
-    </div>
-  )
-}
-
-function SiteNav({ school, navItems }: { school: PublicWebsiteData['school']; navItems: NavItem[] }) {
-  const activeKey = useScrollSpy(navItems.map((n) => n.key))
-  const { scrolled, progress } = useScrollState()
-
-  return (
-    <header
-      className={cn(
-        'sticky top-0 z-40 border-b bg-background/80 backdrop-blur transition-shadow duration-300',
-        scrolled && 'shadow-md shadow-black/5'
-      )}
-    >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8">
-        <a href="#hero" className="flex items-center gap-2.5">
-          {school.logo_url ? (
-            <img src={school.logo_url} alt={school.name} className="h-8 w-8 rounded-lg object-cover" />
-          ) : (
-            <span className="flex size-8 items-center justify-center rounded-lg text-white" style={{ background: 'var(--wb-primary)' }}>
-              <GraduationCap className="size-4.5" />
-            </span>
-          )}
-          <span className="font-semibold">{school.name}</span>
-        </a>
-        <a
-          href="/login"
-          className="rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.02]"
-          style={{ background: 'var(--wb-primary)', borderRadius: 'var(--wb-radius)' }}
-        >
-          Portal Login
-        </a>
-      </div>
-
-      {navItems.length > 1 && (
-        <nav className="scrollbar-none overflow-x-auto border-t border-border/60">
-          <div className="mx-auto flex max-w-6xl gap-1 px-4 sm:px-8">
-            {navItems.map((item) => {
-              const active = item.key === activeKey
-              return (
-                <a
-                  key={item.key}
-                  href={`#${item.key}`}
-                  className={cn(
-                    'relative shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors',
-                    active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {item.label}
-                  <span
-                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-opacity duration-300"
-                    style={{ background: 'var(--wb-primary)', opacity: active ? 1 : 0 }}
-                  />
-                </a>
-              )
-            })}
-          </div>
-        </nav>
-      )}
-
-      <div
-        className="absolute bottom-0 left-0 h-0.5 transition-[width] duration-150 ease-out"
-        style={{ width: `${progress}%`, background: 'var(--wb-primary)' }}
-      />
-    </header>
-  )
-}
-
-function BackToTop() {
-  const show = useShowAfterScroll(600)
-  return (
-    <button
-      type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="Back to top"
-      className={cn(
-        'fixed bottom-6 right-6 z-40 flex size-11 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300',
-        show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
-      )}
-      style={{ background: 'var(--wb-primary)', borderRadius: 'var(--wb-radius)' }}
-    >
-      <ArrowUp className="size-5" />
-    </button>
-  )
+  return <>{sections.map((key) => renderers[key]?.())}</>
 }
 
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
@@ -863,14 +653,23 @@ function AdmissionsSection({ slug, data }: { slug: string; data: PublicWebsiteDa
           {settings.admission_requirements && (
             <p className="mx-auto mt-4 max-w-xl whitespace-pre-line text-sm text-muted-foreground">{settings.admission_requirements}</p>
           )}
-          <a
-            href="/login"
-            onClick={() => trackWebsiteEvent(slug, 'admission_click')}
-            className="mt-6 inline-block rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-105"
-            style={{ background: 'var(--wb-primary)', borderRadius: 'var(--wb-radius)' }}
-          >
-            Apply Now
-          </a>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="/login"
+              onClick={() => trackWebsiteEvent(slug, 'admission_click')}
+              className="inline-block rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-105"
+              style={{ background: 'var(--wb-primary)', borderRadius: 'var(--wb-radius)' }}
+            >
+              Apply Now
+            </a>
+            <Link
+              to={`/site/${slug}/admission`}
+              className="inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+              style={{ color: 'var(--wb-primary)' }}
+            >
+              View full admission requirements by class →
+            </Link>
+          </div>
         </div>
       </Reveal>
     </section>
@@ -976,41 +775,5 @@ function ContactSection({ data }: { data: PublicWebsiteData }) {
         </Reveal>
       )}
     </section>
-  )
-}
-
-function SiteFooter({ data }: { data: PublicWebsiteData }) {
-  const { school, settings } = data
-  const socials = [
-    { url: settings.facebook_url, label: 'Facebook' },
-    { url: settings.twitter_url, label: 'Twitter / X' },
-    { url: settings.instagram_url, label: 'Instagram' },
-    { url: settings.youtube_url, label: 'YouTube' },
-    { url: settings.linkedin_url, label: 'LinkedIn' },
-  ].filter((s) => s.url)
-
-  return (
-    <footer className="border-t px-4 py-10 text-center text-sm text-muted-foreground sm:px-8">
-      {socials.length > 0 && (
-        <div className="mb-4 flex justify-center gap-4">
-          {socials.map(({ url, label }) => (
-            <a
-              key={url}
-              href={url!}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 transition-colors hover:text-foreground"
-              aria-label={label}
-            >
-              <Link2 className="size-4" />
-              <span className="text-xs">{label}</span>
-            </a>
-          ))}
-        </div>
-      )}
-      <p>
-        © {new Date().getFullYear()} {school.name}. Powered by SchoolHub.
-      </p>
-    </footer>
   )
 }

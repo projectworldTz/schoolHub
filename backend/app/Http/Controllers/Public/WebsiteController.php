@@ -3,26 +3,42 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WebsiteBuilder\WebsiteAcademicDepartmentInfoResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteAdmissionClassResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteBannerResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteCalendarEventResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteDownloadResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteFacilityResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteGalleryAlbumResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteLeadershipMemberResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteNewsResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteOfficeResource;
+use App\Http\Resources\WebsiteBuilder\WebsitePolicyResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteResearchProjectResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteSettingsResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteSportsMediaResource;
+use App\Http\Resources\WebsiteBuilder\WebsiteSportsProgramResource;
 use App\Http\Resources\WebsiteBuilder\WebsiteTestimonialResource;
 use App\Models\ExamResult;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\WebsiteAcademicDepartmentInfo;
+use App\Models\WebsiteAdmissionClass;
 use App\Models\WebsiteBanner;
 use App\Models\WebsiteCalendarEvent;
 use App\Models\WebsiteDownload;
 use App\Models\WebsiteFacility;
 use App\Models\WebsiteGalleryAlbum;
+use App\Models\WebsiteLeadershipMember;
 use App\Models\WebsiteNews;
+use App\Models\WebsiteOffice;
+use App\Models\WebsitePolicy;
+use App\Models\WebsiteResearchProject;
 use App\Models\WebsiteSection;
 use App\Models\WebsiteSettings;
+use App\Models\WebsiteSportsMedia;
+use App\Models\WebsiteSportsProgram;
 use App\Models\WebsiteTestimonial;
 use App\Services\WebsiteBuilder\WebsiteMediaService;
 use App\Services\WebsiteBuilder\WebsitePremiumAccessService;
@@ -76,6 +92,33 @@ class WebsiteController extends Controller
             ),
             'news' => WebsiteNewsResource::collection(
                 WebsiteNews::with('announcement')->orderByDesc('is_featured')->orderBy('sort_order')->get()
+            ),
+            'admission_classes' => WebsiteAdmissionClassResource::collection(
+                WebsiteAdmissionClass::with('schoolClass')->where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'academic_departments' => WebsiteAcademicDepartmentInfoResource::collection(
+                WebsiteAcademicDepartmentInfo::with('department.subjects')->where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'leadership' => WebsiteLeadershipMemberResource::collection(
+                WebsiteLeadershipMember::where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'policies' => WebsitePolicyResource::collection(
+                WebsitePolicy::where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'sports_programs' => WebsiteSportsProgramResource::collection(
+                WebsiteSportsProgram::where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'sports_media' => WebsiteSportsMediaResource::collection(
+                WebsiteSportsMedia::where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'offices' => WebsiteOfficeResource::collection(
+                WebsiteOffice::where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'research_items' => WebsiteResearchProjectResource::collection(
+                WebsiteResearchProject::where('category', 'research')->where('is_visible', true)->orderBy('sort_order')->get()
+            ),
+            'projects' => WebsiteResearchProjectResource::collection(
+                WebsiteResearchProject::where('category', 'project')->where('is_visible', true)->orderBy('sort_order')->get()
             ),
         ]]);
     }

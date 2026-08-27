@@ -3,12 +3,16 @@ import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import {
   AlertTriangle,
+  Building2,
   Download,
   Eye,
   EyeOff,
+  FileText,
+  GraduationCap,
   Globe,
   GripVertical,
   Image as ImageIcon,
+  Lightbulb,
   Lock,
   Newspaper,
   Palette,
@@ -17,7 +21,9 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Trash2,
+  Trophy,
   Upload,
+  Users,
   X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -42,6 +48,12 @@ import {
   useCreateWebsiteDownload,
   useCreateWebsiteFacility,
   useCreateWebsiteGalleryAlbum,
+  useCreateWebsiteLeadership,
+  useCreateWebsiteOffice,
+  useCreateWebsitePolicy,
+  useCreateWebsiteResearchProject,
+  useCreateWebsiteSportsMedia,
+  useCreateWebsiteSportsProgram,
   useCreateWebsiteTestimonial,
   useDeleteWebsiteBanner,
   useDeleteWebsiteCalendarEvent,
@@ -49,25 +61,50 @@ import {
   useDeleteWebsiteFacility,
   useDeleteWebsiteGalleryAlbum,
   useDeleteWebsiteGalleryImage,
+  useDeleteWebsiteLeadership,
+  useDeleteWebsiteOffice,
+  useDeleteWebsitePolicy,
+  useDeleteWebsiteResearchProject,
+  useDeleteWebsiteSportsMedia,
+  useDeleteWebsiteSportsProgram,
   useDeleteWebsiteTestimonial,
+  useUpdateWebsiteAcademicDepartments,
+  useUpdateWebsiteAdmissionClasses,
   useUpdateWebsiteBanner,
   useUpdateWebsiteGalleryImage,
   useUpdateWebsiteNews,
   useUpdateWebsiteSections,
   useUpdateWebsiteSettings,
   useUploadWebsiteHeroMedia,
+  useWebsiteAcademicDepartments,
+  useWebsiteAdmissionClasses,
   useWebsiteAnalyticsSummary,
   useWebsiteBanners,
   useWebsiteCalendarEvents,
   useWebsiteDownloads,
   useWebsiteFacilities,
   useWebsiteGalleryAlbums,
+  useWebsiteLeadership,
   useWebsiteNews,
+  useWebsiteOffices,
+  useWebsitePolicies,
+  useWebsiteResearchProjects,
   useWebsiteSections,
   useWebsiteSettings,
+  useWebsiteSportsMedia,
+  useWebsiteSportsPrograms,
   useWebsiteTestimonials,
 } from '@/hooks/useWebsiteBuilder'
-import type { WebsiteGalleryImage, WebsiteSection, WebsiteSectionKey, WebsiteSettingsPayload, WebsiteThemeKey } from '@/types/websiteBuilder'
+import type {
+  WebsiteAcademicDepartment,
+  WebsiteAdmissionClass,
+  WebsiteGalleryImage,
+  WebsiteResearchProject,
+  WebsiteSection,
+  WebsiteSectionKey,
+  WebsiteSettingsPayload,
+  WebsiteThemeKey,
+} from '@/types/websiteBuilder'
 
 function errorMessage(error: unknown, fallback: string): string {
   return isAxiosError(error) ? (error.response?.data?.message ?? fallback) : fallback
@@ -1201,6 +1238,598 @@ function DownloadsTab() {
   )
 }
 
+/**
+ * Fixed-set pattern, same shape as SectionsTab: one row per real SchoolClass,
+ * merged server-side so every class shows up here even before it has a
+ * settings row yet (a not-yet-saved row has no `id`, so local state is keyed
+ * by the stable `school_class_id` instead).
+ */
+function AdmissionClassesTab() {
+  const { data: classes, isLoading } = useWebsiteAdmissionClasses()
+  const update = useUpdateWebsiteAdmissionClasses()
+  const [local, setLocal] = useState<WebsiteAdmissionClass[]>([])
+
+  useEffect(() => {
+    if (classes) setLocal(classes)
+  }, [classes])
+
+  function patch(schoolClassId: string, changes: Partial<WebsiteAdmissionClass>) {
+    setLocal((prev) => prev.map((c) => (c.school_class_id === schoolClassId ? { ...c, ...changes } : c)))
+  }
+
+  function save() {
+    update.mutate(
+      local.map((c, i) => ({
+        school_class_id: c.school_class_id,
+        summary: c.summary,
+        requirements: c.requirements,
+        is_visible: c.is_visible,
+        sort_order: i,
+      })),
+      {
+        onSuccess: () => toast.success('Admission classes saved'),
+        onError: (error) => toast.error(errorMessage(error, 'Could not save admission classes')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Admission by class</CardTitle>
+          <CardDescription>Shown in the public site's Admission dropdown &amp; page</CardDescription>
+        </div>
+        <Button onClick={save} disabled={update.isPending}>
+          {update.isPending ? 'Saving…' : 'Save all'}
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {local.length === 0 && <p className="text-sm text-muted-foreground">No classes found — set up classes first.</p>}
+        {local.map((c) => (
+          <div key={c.school_class_id} className="rounded-xl border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-medium">{c.class_name ?? 'Class'}</p>
+              <Button variant="ghost" size="icon" onClick={() => patch(c.school_class_id, { is_visible: !c.is_visible })}>
+                {c.is_visible ? <Eye className="size-4" /> : <EyeOff className="size-4 text-muted-foreground" />}
+              </Button>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Summary (short teaser)</Label>
+                <Input
+                  value={c.summary ?? ''}
+                  onChange={(e) => patch(c.school_class_id, { summary: e.target.value })}
+                  placeholder="e.g. Ages 6-7, foundational literacy & numeracy"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Full requirements</Label>
+                <Textarea rows={2} value={c.requirements ?? ''} onChange={(e) => patch(c.school_class_id, { requirements: e.target.value })} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Same fixed-set pattern as AdmissionClassesTab, one row per real Department. */
+function AcademicDepartmentsTab() {
+  const { data: departments, isLoading } = useWebsiteAcademicDepartments()
+  const update = useUpdateWebsiteAcademicDepartments()
+  const [local, setLocal] = useState<WebsiteAcademicDepartment[]>([])
+
+  useEffect(() => {
+    if (departments) setLocal(departments)
+  }, [departments])
+
+  function patch(departmentId: string, changes: Partial<WebsiteAcademicDepartment>) {
+    setLocal((prev) => prev.map((d) => (d.department_id === departmentId ? { ...d, ...changes } : d)))
+  }
+
+  function save() {
+    update.mutate(
+      local.map((d, i) => ({
+        department_id: d.department_id,
+        public_description: d.public_description,
+        is_visible: d.is_visible,
+        sort_order: i,
+      })),
+      {
+        onSuccess: () => toast.success('Academic disciplines saved'),
+        onError: (error) => toast.error(errorMessage(error, 'Could not save academic disciplines')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Academic disciplines</CardTitle>
+          <CardDescription>Shown in the public site's Academic Disciplines dropdown &amp; page</CardDescription>
+        </div>
+        <Button onClick={save} disabled={update.isPending}>
+          {update.isPending ? 'Saving…' : 'Save all'}
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {local.length === 0 && <p className="text-sm text-muted-foreground">No departments found — set up departments first.</p>}
+        {local.map((d) => (
+          <div key={d.department_id} className="rounded-xl border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium">{d.department_name ?? 'Department'}</p>
+                {d.subjects && d.subjects.length > 0 && (
+                  <p className="text-xs text-muted-foreground">{d.subjects.join(', ')}</p>
+                )}
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => patch(d.department_id, { is_visible: !d.is_visible })}>
+                {d.is_visible ? <Eye className="size-4" /> : <EyeOff className="size-4 text-muted-foreground" />}
+              </Button>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <Label>Public description</Label>
+              <Textarea rows={2} value={d.public_description ?? ''} onChange={(e) => patch(d.department_id, { public_description: e.target.value })} />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function LeadershipTab() {
+  const { data: members, isLoading } = useWebsiteLeadership()
+  const create = useCreateWebsiteLeadership()
+  const remove = useDeleteWebsiteLeadership()
+  const [name, setName] = useState('')
+  const [roleTitle, setRoleTitle] = useState('')
+  const [bio, setBio] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || !roleTitle.trim()) return
+    create.mutate(
+      { name: name.trim(), role_title: roleTitle.trim(), bio: bio.trim() || undefined, photo: photo ?? undefined },
+      {
+        onSuccess: () => {
+          setName('')
+          setRoleTitle('')
+          setBio('')
+          setPhoto(null)
+          toast.success('Leadership member added')
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not add member')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-80 w-full rounded-2xl" />
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add a leadership member</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jane Doe" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role / title</Label>
+              <Input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Headmistress" />
+            </div>
+            <div className="min-w-64 flex-1 space-y-1.5">
+              <Label>Bio (optional)</Label>
+              <Input value={bio} onChange={(e) => setBio(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="leadership-photo" className="cursor-pointer text-sm font-medium text-primary">
+                {photo ? photo.name : 'Add photo'}
+              </Label>
+              <Input id="leadership-photo" type="file" accept="image/*" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+            </div>
+            <Button type="submit" disabled={create.isPending}>
+              Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(members ?? []).map((m) => (
+          <Card key={m.id}>
+            <CardContent className="flex items-start justify-between gap-2 pt-6">
+              <div className="flex items-start gap-3">
+                {m.photo_url && <img src={m.photo_url} alt={m.name} className="size-12 rounded-full object-cover" />}
+                <div>
+                  <p className="font-medium">{m.name}</p>
+                  <p className="text-sm text-muted-foreground">{m.role_title}</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => remove.mutate(m.id)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PoliciesTab() {
+  const { data: policies, isLoading } = useWebsitePolicies()
+  const create = useCreateWebsitePolicy()
+  const remove = useDeleteWebsitePolicy()
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [document, setDocument] = useState<File | null>(null)
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
+    create.mutate(
+      { title: title.trim(), content: content.trim(), document: document ?? undefined },
+      {
+        onSuccess: () => {
+          setTitle('')
+          setContent('')
+          setDocument(null)
+          toast.success('Policy added')
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not add policy')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-80 w-full rounded-2xl" />
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add a policy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-64 flex-1 space-y-1.5">
+                <Label>Title</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Uniform Policy" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="policy-document" className="cursor-pointer text-sm font-medium text-primary">
+                  {document ? document.name : 'Attach document (optional)'}
+                </Label>
+                <Input id="policy-document" type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setDocument(e.target.files?.[0] ?? null)} />
+              </div>
+              <Button type="submit" disabled={create.isPending}>
+                Add
+              </Button>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Content</Label>
+              <Textarea rows={3} value={content} onChange={(e) => setContent(e.target.value)} />
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-3">
+        {(policies ?? []).map((p) => (
+          <Card key={p.id}>
+            <CardContent className="flex items-start justify-between gap-2 pt-6">
+              <div>
+                <p className="font-medium">{p.title}</p>
+                {p.content && <p className="line-clamp-2 text-sm text-muted-foreground">{p.content}</p>}
+              </div>
+              <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => remove.mutate(p.id)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SportsTab() {
+  const { data: programs, isLoading: programsLoading } = useWebsiteSportsPrograms()
+  const createProgram = useCreateWebsiteSportsProgram()
+  const removeProgram = useDeleteWebsiteSportsProgram()
+  const [name, setName] = useState('')
+  const [schedule, setSchedule] = useState('')
+  const [description, setDescription] = useState('')
+
+  const { data: media, isLoading: mediaLoading } = useWebsiteSportsMedia()
+  const createMedia = useCreateWebsiteSportsMedia()
+  const removeMedia = useDeleteWebsiteSportsMedia()
+
+  function submitProgram(e: FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+    createProgram.mutate(
+      { name: name.trim(), schedule: schedule.trim() || undefined, description: description.trim() || undefined },
+      {
+        onSuccess: () => {
+          setName('')
+          setSchedule('')
+          setDescription('')
+          toast.success('Sports program added')
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not add program')),
+      }
+    )
+  }
+
+  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    createMedia.mutate(
+      { media_type: file.type.startsWith('video') ? 'video' : 'image', file },
+      { onError: (error) => toast.error(errorMessage(error, 'Could not upload media')) }
+    )
+    e.target.value = ''
+  }
+
+  if (programsLoading || mediaLoading) return <Skeleton className="h-96 w-full rounded-2xl" />
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add a sports program</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submitProgram} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Football Team" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Schedule (optional)</Label>
+              <Input value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder="e.g. Tue & Thu, 4-5pm" />
+            </div>
+            <div className="min-w-64 flex-1 space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={createProgram.isPending}>
+              Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(programs ?? []).map((p) => (
+          <Card key={p.id}>
+            <CardContent className="flex items-start justify-between gap-2 pt-6">
+              <div>
+                <p className="font-medium">{p.name}</p>
+                {p.schedule && <p className="text-xs text-muted-foreground">{p.schedule}</p>}
+                {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
+              </div>
+              <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => removeProgram.mutate(p.id)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Photos &amp; videos</CardTitle>
+            <CardDescription>Shown in the public Sport &amp; Games gallery</CardDescription>
+          </div>
+          <div>
+            <Label htmlFor="sports-media-upload" className="cursor-pointer text-sm font-medium text-primary">
+              Add photo/video
+            </Label>
+            <Input id="sports-media-upload" type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-4">
+          {(media ?? []).length === 0 && <p className="text-sm text-muted-foreground">No photos or videos yet.</p>}
+          {(media ?? []).map((m) => (
+            <div key={m.id} className="relative w-40 rounded-lg border p-2">
+              {m.media_type === 'video' ? (
+                <video src={m.file_url ?? ''} className="mb-2 h-24 w-full rounded object-cover" muted />
+              ) : (
+                <img src={m.file_url ?? ''} alt={m.caption ?? ''} className="mb-2 h-24 w-full rounded object-cover" />
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs capitalize text-muted-foreground">{m.media_type}</span>
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeMedia.mutate(m.id)}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function OfficesTab() {
+  const { data: offices, isLoading } = useWebsiteOffices()
+  const create = useCreateWebsiteOffice()
+  const remove = useDeleteWebsiteOffice()
+  const [name, setName] = useState('')
+  const [directorateHead, setDirectorateHead] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+    create.mutate(
+      {
+        name: name.trim(),
+        directorate_head: directorateHead.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setName('')
+          setDirectorateHead('')
+          setEmail('')
+          setPhone('')
+          toast.success('Office added')
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not add office')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-80 w-full rounded-2xl" />
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add an office / directorate</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Directorate of Academics" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Head (optional)</Label>
+              <Input value={directorateHead} onChange={(e) => setDirectorateHead(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email (optional)</Label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone (optional)</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={create.isPending}>
+              Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(offices ?? []).map((o) => (
+          <Card key={o.id}>
+            <CardContent className="flex items-start justify-between gap-2 pt-6">
+              <div>
+                <p className="font-medium">{o.name}</p>
+                {o.directorate_head && <p className="text-sm text-muted-foreground">{o.directorate_head}</p>}
+              </div>
+              <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => remove.mutate(o.id)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ResearchProjectsTab() {
+  const { data: items, isLoading } = useWebsiteResearchProjects()
+  const create = useCreateWebsiteResearchProject()
+  const remove = useDeleteWebsiteResearchProject()
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState<WebsiteResearchProject['category']>('research')
+  const [description, setDescription] = useState('')
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
+    create.mutate(
+      { title: title.trim(), category, description: description.trim() || undefined },
+      {
+        onSuccess: () => {
+          setTitle('')
+          setDescription('')
+          toast.success(category === 'research' ? 'Research item added' : 'Project added')
+        },
+        onError: (error) => toast.error(errorMessage(error, 'Could not add item')),
+      }
+    )
+  }
+
+  if (isLoading) return <Skeleton className="h-80 w-full rounded-2xl" />
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add a research item or project</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={(v) => setCategory(v as WebsiteResearchProject['category'])}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="research">Research</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-64 flex-1 space-y-1.5">
+              <Label>Title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="min-w-64 flex-1 space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={create.isPending}>
+              Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(items ?? []).map((item) => (
+          <Card key={item.id}>
+            <CardContent className="flex items-start justify-between gap-2 pt-6">
+              <div>
+                <p className="font-medium">{item.title}</p>
+                <p className="text-xs capitalize text-muted-foreground">{item.category}</p>
+                {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+              </div>
+              <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => remove.mutate(item.id)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CalendarTab() {
   const { data: events, isLoading } = useWebsiteCalendarEvents()
   const create = useCreateWebsiteCalendarEvent()
@@ -1403,6 +2032,13 @@ export function WebsiteBuilderPage() {
               <TabsTrigger value="banners">Banners</TabsTrigger>
               <TabsTrigger value="news" className="gap-1"><Newspaper className="size-3.5" />News</TabsTrigger>
               <TabsTrigger value="admissions">Admissions</TabsTrigger>
+              <TabsTrigger value="admission-classes" className="gap-1"><GraduationCap className="size-3.5" />Admission Classes</TabsTrigger>
+              <TabsTrigger value="academic-departments" className="gap-1"><Users className="size-3.5" />Academic Disciplines</TabsTrigger>
+              <TabsTrigger value="leadership" className="gap-1"><Users className="size-3.5" />Leadership</TabsTrigger>
+              <TabsTrigger value="policies" className="gap-1"><FileText className="size-3.5" />Policies</TabsTrigger>
+              <TabsTrigger value="sports" className="gap-1"><Trophy className="size-3.5" />Sport & Games</TabsTrigger>
+              <TabsTrigger value="offices" className="gap-1"><Building2 className="size-3.5" />Offices</TabsTrigger>
+              <TabsTrigger value="research-projects" className="gap-1"><Lightbulb className="size-3.5" />Research & Projects</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="downloads">Downloads</TabsTrigger>
               <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
@@ -1419,6 +2055,13 @@ export function WebsiteBuilderPage() {
           <TabsContent value="banners" className="mt-4"><BannersTab /></TabsContent>
           <TabsContent value="news" className="mt-4"><NewsTab /></TabsContent>
           <TabsContent value="admissions" className="mt-4"><AdmissionsTab /></TabsContent>
+          <TabsContent value="admission-classes" className="mt-4"><AdmissionClassesTab /></TabsContent>
+          <TabsContent value="academic-departments" className="mt-4"><AcademicDepartmentsTab /></TabsContent>
+          <TabsContent value="leadership" className="mt-4"><LeadershipTab /></TabsContent>
+          <TabsContent value="policies" className="mt-4"><PoliciesTab /></TabsContent>
+          <TabsContent value="sports" className="mt-4"><SportsTab /></TabsContent>
+          <TabsContent value="offices" className="mt-4"><OfficesTab /></TabsContent>
+          <TabsContent value="research-projects" className="mt-4"><ResearchProjectsTab /></TabsContent>
           <TabsContent value="calendar" className="mt-4"><CalendarTab /></TabsContent>
           <TabsContent value="downloads" className="mt-4"><DownloadsTab /></TabsContent>
           <TabsContent value="testimonials" className="mt-4"><TestimonialsTab /></TabsContent>

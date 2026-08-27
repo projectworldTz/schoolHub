@@ -6,6 +6,12 @@ import {
   createWebsiteDownload,
   createWebsiteFacility,
   createWebsiteGalleryAlbum,
+  createWebsiteLeadership,
+  createWebsiteOffice,
+  createWebsitePolicy,
+  createWebsiteResearchProject,
+  createWebsiteSportsMedia,
+  createWebsiteSportsProgram,
   createWebsiteTestimonial,
   deleteWebsiteBanner,
   deleteWebsiteCalendarEvent,
@@ -13,30 +19,57 @@ import {
   deleteWebsiteFacility,
   deleteWebsiteGalleryAlbum,
   deleteWebsiteGalleryImage,
+  deleteWebsiteLeadership,
+  deleteWebsiteOffice,
+  deleteWebsitePolicy,
+  deleteWebsiteResearchProject,
+  deleteWebsiteSportsMedia,
+  deleteWebsiteSportsProgram,
   deleteWebsiteTestimonial,
+  fetchWebsiteAcademicDepartments,
+  fetchWebsiteAdmissionClasses,
   fetchWebsiteAnalyticsSummary,
   fetchWebsiteBanners,
   fetchWebsiteCalendarEvents,
   fetchWebsiteDownloads,
   fetchWebsiteFacilities,
   fetchWebsiteGalleryAlbums,
+  fetchWebsiteLeadership,
   fetchWebsiteNews,
+  fetchWebsiteOffices,
+  fetchWebsitePolicies,
+  fetchWebsiteResearchProjects,
   fetchWebsiteSections,
   fetchWebsiteSettings,
+  fetchWebsiteSportsMedia,
+  fetchWebsiteSportsPrograms,
   fetchWebsiteTestimonials,
+  updateWebsiteAcademicDepartments,
+  updateWebsiteAdmissionClasses,
   updateWebsiteBanner,
   updateWebsiteFacility,
   updateWebsiteGalleryImage,
+  updateWebsiteLeadership,
   updateWebsiteNews,
+  updateWebsiteOffice,
+  updateWebsitePolicy,
   updateWebsiteSections,
   updateWebsiteSettings,
   uploadWebsiteHeroMedia,
+  type WebsiteAcademicDepartmentRow,
+  type WebsiteAdmissionClassRow,
   type WebsiteBannerPayload,
   type WebsiteCalendarEventPayload,
   type WebsiteDownloadPayload,
   type WebsiteFacilityPayload,
   type WebsiteGalleryAlbumPayload,
   type WebsiteGalleryImagePayload,
+  type WebsiteLeadershipPayload,
+  type WebsiteOfficePayload,
+  type WebsitePolicyPayload,
+  type WebsiteResearchProjectPayload,
+  type WebsiteSportsMediaPayload,
+  type WebsiteSportsProgramPayload,
   type WebsiteTestimonialPayload,
 } from '@/api/websiteBuilder'
 import type { WebsiteSection, WebsiteSettingsPayload } from '@/types/websiteBuilder'
@@ -52,6 +85,14 @@ const KEY = {
   calendarEvents: ['website-builder', 'calendar-events'] as const,
   news: ['website-builder', 'news'] as const,
   analytics: ['website-builder', 'analytics'] as const,
+  admissionClasses: ['website-builder', 'admission-classes'] as const,
+  academicDepartments: ['website-builder', 'academic-departments'] as const,
+  leadership: ['website-builder', 'leadership'] as const,
+  policies: ['website-builder', 'policies'] as const,
+  sportsPrograms: ['website-builder', 'sports-programs'] as const,
+  sportsMedia: ['website-builder', 'sports-media'] as const,
+  offices: ['website-builder', 'offices'] as const,
+  researchProjects: ['website-builder', 'research-projects'] as const,
 }
 
 export function useWebsiteSettings() {
@@ -262,4 +303,172 @@ export function useUpdateWebsiteNews() {
 
 export function useWebsiteAnalyticsSummary() {
   return useQuery({ queryKey: KEY.analytics, queryFn: fetchWebsiteAnalyticsSummary })
+}
+
+export function useWebsiteAdmissionClasses() {
+  return useQuery({ queryKey: KEY.admissionClasses, queryFn: fetchWebsiteAdmissionClasses })
+}
+
+export function useUpdateWebsiteAdmissionClasses() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (classes: WebsiteAdmissionClassRow[]) => updateWebsiteAdmissionClasses(classes),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.admissionClasses }),
+  })
+}
+
+export function useWebsiteAcademicDepartments() {
+  return useQuery({ queryKey: KEY.academicDepartments, queryFn: fetchWebsiteAcademicDepartments })
+}
+
+export function useUpdateWebsiteAcademicDepartments() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (departments: WebsiteAcademicDepartmentRow[]) => updateWebsiteAcademicDepartments(departments),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.academicDepartments }),
+  })
+}
+
+export function useWebsiteLeadership() {
+  return useQuery({ queryKey: KEY.leadership, queryFn: fetchWebsiteLeadership })
+}
+
+export function useCreateWebsiteLeadership() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsiteLeadershipPayload) => createWebsiteLeadership(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.leadership }),
+  })
+}
+
+export function useUpdateWebsiteLeadership() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: WebsiteLeadershipPayload }) => updateWebsiteLeadership(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.leadership }),
+  })
+}
+
+export function useDeleteWebsiteLeadership() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsiteLeadership(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.leadership }),
+  })
+}
+
+export function useWebsitePolicies() {
+  return useQuery({ queryKey: KEY.policies, queryFn: fetchWebsitePolicies })
+}
+
+export function useCreateWebsitePolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsitePolicyPayload) => createWebsitePolicy(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.policies }),
+  })
+}
+
+export function useUpdateWebsitePolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: WebsitePolicyPayload }) => updateWebsitePolicy(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.policies }),
+  })
+}
+
+export function useDeleteWebsitePolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsitePolicy(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.policies }),
+  })
+}
+
+export function useWebsiteSportsPrograms() {
+  return useQuery({ queryKey: KEY.sportsPrograms, queryFn: fetchWebsiteSportsPrograms })
+}
+
+export function useCreateWebsiteSportsProgram() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsiteSportsProgramPayload) => createWebsiteSportsProgram(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.sportsPrograms }),
+  })
+}
+
+export function useDeleteWebsiteSportsProgram() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsiteSportsProgram(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.sportsPrograms }),
+  })
+}
+
+export function useWebsiteSportsMedia() {
+  return useQuery({ queryKey: KEY.sportsMedia, queryFn: fetchWebsiteSportsMedia })
+}
+
+export function useCreateWebsiteSportsMedia() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsiteSportsMediaPayload) => createWebsiteSportsMedia(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.sportsMedia }),
+  })
+}
+
+export function useDeleteWebsiteSportsMedia() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsiteSportsMedia(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.sportsMedia }),
+  })
+}
+
+export function useWebsiteOffices() {
+  return useQuery({ queryKey: KEY.offices, queryFn: fetchWebsiteOffices })
+}
+
+export function useCreateWebsiteOffice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsiteOfficePayload) => createWebsiteOffice(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.offices }),
+  })
+}
+
+export function useUpdateWebsiteOffice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: WebsiteOfficePayload }) => updateWebsiteOffice(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.offices }),
+  })
+}
+
+export function useDeleteWebsiteOffice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsiteOffice(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.offices }),
+  })
+}
+
+export function useWebsiteResearchProjects() {
+  return useQuery({ queryKey: KEY.researchProjects, queryFn: fetchWebsiteResearchProjects })
+}
+
+export function useCreateWebsiteResearchProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WebsiteResearchProjectPayload) => createWebsiteResearchProject(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.researchProjects }),
+  })
+}
+
+export function useDeleteWebsiteResearchProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteWebsiteResearchProject(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY.researchProjects }),
+  })
 }

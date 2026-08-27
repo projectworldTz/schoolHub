@@ -136,6 +136,89 @@ export interface WebsiteNews {
   }
 }
 
+export interface WebsiteAdmissionClass {
+  id: string
+  school_class_id: string
+  class_name: string | null
+  class_level: number | null
+  summary: string | null
+  requirements: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteAcademicDepartment {
+  id: string
+  department_id: string
+  department_name: string | null
+  department_code: string | null
+  subjects: string[] | null
+  public_description: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteLeadershipMember {
+  id: string
+  name: string
+  role_title: string
+  bio: string | null
+  photo_url: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsitePolicy {
+  id: string
+  title: string
+  content: string
+  document_url: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteSportsProgram {
+  id: string
+  name: string
+  description: string | null
+  schedule: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteSportsMedia {
+  id: string
+  media_type: 'image' | 'video'
+  file_url: string | null
+  caption: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteOffice {
+  id: string
+  name: string
+  directorate_head: string | null
+  description: string | null
+  email: string | null
+  phone: string | null
+  photo_url: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export interface WebsiteResearchProject {
+  id: string
+  title: string
+  category: 'research' | 'project'
+  description: string | null
+  status: string | null
+  image_url: string | null
+  link_url: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
 export interface PublicWebsiteStats {
   student_count: number
   teacher_count: number
@@ -172,6 +255,15 @@ export interface PublicWebsiteData {
   downloads: WebsiteDownload[]
   calendar_events: WebsiteCalendarEvent[]
   news: WebsiteNews[]
+  admission_classes: WebsiteAdmissionClass[]
+  academic_departments: WebsiteAcademicDepartment[]
+  leadership: WebsiteLeadershipMember[]
+  policies: WebsitePolicy[]
+  sports_programs: WebsiteSportsProgram[]
+  sports_media: WebsiteSportsMedia[]
+  offices: WebsiteOffice[]
+  research_items: WebsiteResearchProject[]
+  projects: WebsiteResearchProject[]
 }
 
 export interface WebsiteAnalyticsSummary {

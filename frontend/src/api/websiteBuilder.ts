@@ -1,5 +1,7 @@
 import { apiClient } from '@/api/client'
 import type {
+  WebsiteAcademicDepartment,
+  WebsiteAdmissionClass,
   WebsiteAnalyticsSummary,
   WebsiteBanner,
   WebsiteCalendarEvent,
@@ -7,10 +9,16 @@ import type {
   WebsiteFacility,
   WebsiteGalleryAlbum,
   WebsiteGalleryImage,
+  WebsiteLeadershipMember,
   WebsiteNews,
+  WebsiteOffice,
+  WebsitePolicy,
+  WebsiteResearchProject,
   WebsiteSection,
   WebsiteSettings,
   WebsiteSettingsPayload,
+  WebsiteSportsMedia,
+  WebsiteSportsProgram,
   WebsiteTestimonial,
 } from '@/types/websiteBuilder'
 
@@ -250,4 +258,224 @@ export async function updateWebsiteNews(id: string, payload: { is_featured?: boo
 export async function fetchWebsiteAnalyticsSummary(): Promise<WebsiteAnalyticsSummary> {
   const { data } = await apiClient.get<{ data: WebsiteAnalyticsSummary }>(`${BASE}/analytics/summary`)
   return data.data
+}
+
+// Multi-page nav content: Admission (per-class), Academic Disciplines
+// (per-department) — fixed-set, same shape as sections: one row per real
+// SchoolClass/Department, merged server-side so the admin list always shows
+// every class/department even before it has a settings row yet.
+
+export async function fetchWebsiteAdmissionClasses(): Promise<WebsiteAdmissionClass[]> {
+  const { data } = await apiClient.get<{ data: WebsiteAdmissionClass[] }>(`${BASE}/admission-classes`)
+  return data.data
+}
+
+export interface WebsiteAdmissionClassRow {
+  school_class_id: string
+  summary?: string | null
+  requirements?: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export async function updateWebsiteAdmissionClasses(classes: WebsiteAdmissionClassRow[]): Promise<WebsiteAdmissionClass[]> {
+  const { data } = await apiClient.put<{ data: WebsiteAdmissionClass[] }>(`${BASE}/admission-classes`, { classes })
+  return data.data
+}
+
+export async function fetchWebsiteAcademicDepartments(): Promise<WebsiteAcademicDepartment[]> {
+  const { data } = await apiClient.get<{ data: WebsiteAcademicDepartment[] }>(`${BASE}/academic-departments`)
+  return data.data
+}
+
+export interface WebsiteAcademicDepartmentRow {
+  department_id: string
+  public_description?: string | null
+  is_visible: boolean
+  sort_order: number
+}
+
+export async function updateWebsiteAcademicDepartments(departments: WebsiteAcademicDepartmentRow[]): Promise<WebsiteAcademicDepartment[]> {
+  const { data } = await apiClient.put<{ data: WebsiteAcademicDepartment[] }>(`${BASE}/academic-departments`, { departments })
+  return data.data
+}
+
+// Explore Us → Leadership & Management
+
+export async function fetchWebsiteLeadership(): Promise<WebsiteLeadershipMember[]> {
+  const { data } = await apiClient.get<{ data: WebsiteLeadershipMember[] }>(`${BASE}/leadership`)
+  return data.data
+}
+
+export interface WebsiteLeadershipPayload {
+  name: string
+  role_title: string
+  bio?: string
+  photo?: File
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsiteLeadership(payload: WebsiteLeadershipPayload): Promise<WebsiteLeadershipMember> {
+  const { data } = await apiClient.post<{ data: WebsiteLeadershipMember }>(`${BASE}/leadership`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function updateWebsiteLeadership(id: string, payload: WebsiteLeadershipPayload): Promise<WebsiteLeadershipMember> {
+  const { data } = await apiClient.post<{ data: WebsiteLeadershipMember }>(`${BASE}/leadership/${id}?_method=PUT`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function deleteWebsiteLeadership(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/leadership/${id}`)
+}
+
+// Explore Us → Policies
+
+export async function fetchWebsitePolicies(): Promise<WebsitePolicy[]> {
+  const { data } = await apiClient.get<{ data: WebsitePolicy[] }>(`${BASE}/policies`)
+  return data.data
+}
+
+export interface WebsitePolicyPayload {
+  title: string
+  content: string
+  document?: File
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsitePolicy(payload: WebsitePolicyPayload): Promise<WebsitePolicy> {
+  const { data } = await apiClient.post<{ data: WebsitePolicy }>(`${BASE}/policies`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function updateWebsitePolicy(id: string, payload: WebsitePolicyPayload): Promise<WebsitePolicy> {
+  const { data } = await apiClient.post<{ data: WebsitePolicy }>(`${BASE}/policies/${id}?_method=PUT`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function deleteWebsitePolicy(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/policies/${id}`)
+}
+
+// Explore Us → Sport & Games (programs + image/video gallery)
+
+export async function fetchWebsiteSportsPrograms(): Promise<WebsiteSportsProgram[]> {
+  const { data } = await apiClient.get<{ data: WebsiteSportsProgram[] }>(`${BASE}/sports-programs`)
+  return data.data
+}
+
+export interface WebsiteSportsProgramPayload {
+  name: string
+  description?: string
+  schedule?: string
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsiteSportsProgram(payload: WebsiteSportsProgramPayload): Promise<WebsiteSportsProgram> {
+  const { data } = await apiClient.post<{ data: WebsiteSportsProgram }>(`${BASE}/sports-programs`, payload)
+  return data.data
+}
+
+export async function deleteWebsiteSportsProgram(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/sports-programs/${id}`)
+}
+
+export async function fetchWebsiteSportsMedia(): Promise<WebsiteSportsMedia[]> {
+  const { data } = await apiClient.get<{ data: WebsiteSportsMedia[] }>(`${BASE}/sports-media`)
+  return data.data
+}
+
+export interface WebsiteSportsMediaPayload {
+  media_type: WebsiteSportsMedia['media_type']
+  file?: File
+  caption?: string
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsiteSportsMedia(payload: WebsiteSportsMediaPayload): Promise<WebsiteSportsMedia> {
+  const { data } = await apiClient.post<{ data: WebsiteSportsMedia }>(`${BASE}/sports-media`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function deleteWebsiteSportsMedia(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/sports-media/${id}`)
+}
+
+// Offices & Directorates
+
+export async function fetchWebsiteOffices(): Promise<WebsiteOffice[]> {
+  const { data } = await apiClient.get<{ data: WebsiteOffice[] }>(`${BASE}/offices`)
+  return data.data
+}
+
+export interface WebsiteOfficePayload {
+  name: string
+  directorate_head?: string
+  description?: string
+  email?: string
+  phone?: string
+  photo?: File
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsiteOffice(payload: WebsiteOfficePayload): Promise<WebsiteOffice> {
+  const { data } = await apiClient.post<{ data: WebsiteOffice }>(`${BASE}/offices`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function updateWebsiteOffice(id: string, payload: WebsiteOfficePayload): Promise<WebsiteOffice> {
+  const { data } = await apiClient.post<{ data: WebsiteOffice }>(`${BASE}/offices/${id}?_method=PUT`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function deleteWebsiteOffice(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/offices/${id}`)
+}
+
+// Research & Innovation / Projects — one shared table, filtered by category
+
+export async function fetchWebsiteResearchProjects(): Promise<WebsiteResearchProject[]> {
+  const { data } = await apiClient.get<{ data: WebsiteResearchProject[] }>(`${BASE}/research-projects`)
+  return data.data
+}
+
+export interface WebsiteResearchProjectPayload {
+  title: string
+  category: WebsiteResearchProject['category']
+  description?: string
+  status?: string
+  image?: File
+  link_url?: string
+  is_visible?: boolean
+  sort_order?: number
+}
+
+export async function createWebsiteResearchProject(payload: WebsiteResearchProjectPayload): Promise<WebsiteResearchProject> {
+  const { data } = await apiClient.post<{ data: WebsiteResearchProject }>(`${BASE}/research-projects`, toFormData(payload), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function deleteWebsiteResearchProject(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/research-projects/${id}`)
 }
