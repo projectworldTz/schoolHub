@@ -29,6 +29,20 @@ export async function updateSchoolProfile(payload: Partial<School>): Promise<Sch
   return data.data
 }
 
+export async function uploadSchoolLogo(file: File): Promise<School> {
+  const form = new FormData()
+  form.append('logo', file)
+  const { data } = await apiClient.post<{ data: School }>('/school/profile/logo', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data
+}
+
+export async function removeSchoolLogo(): Promise<School> {
+  const { data } = await apiClient.delete<{ data: School }>('/school/profile/logo')
+  return data.data
+}
+
 export async function listTerms(academicYearId: string): Promise<Term[]> {
   const { data } = await apiClient.get<{ data: Term[] }>(`/school/academic-years/${academicYearId}/terms`)
   return data.data

@@ -30,6 +30,7 @@ export interface School {
   timezone: string | null
   currency: string | null
   logo_path: string | null
+  logo_url: string | null
   subscription_plan: string | null
   license_expires_at: string | null
   approved_at: string | null

@@ -19,6 +19,7 @@
 </head>
 <body>
     <div class="letterhead">
+        @include('components.school-logo')
         <p class="school-name">{{ $school->name }}</p>
         <p class="school-meta">
             {{ collect([$school->address, $school->city, $school->country])->filter()->join(', ') }}

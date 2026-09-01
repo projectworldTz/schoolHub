@@ -5,7 +5,7 @@ import { useForm, type FieldValues, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { Check, Copy, MoreHorizontal } from 'lucide-react'
+import { Check, Copy, ImageIcon, MoreHorizontal, Trash2, Upload } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -54,6 +54,8 @@ import {
   useDepartments,
   useSchoolPaymentAccounts,
   useSchoolProfile,
+  useRemoveSchoolLogo,
+  useUploadSchoolLogo,
   useUpdateSchoolProfile,
 } from '@/hooks/useSchoolSetup'
 import { useApiTokens, useCreateApiToken, useDeleteApiToken } from '@/hooks/useApiTokens'
@@ -75,6 +77,32 @@ const profileSchema = z.object({
 function ProfileTab() {
   const { data: school, isLoading } = useSchoolProfile()
   const updateProfile = useUpdateSchoolProfile()
+  const uploadLogo = useUploadSchoolLogo()
+  const removeLogo = useRemoveSchoolLogo()
+
+  function logoError(error: unknown, fallback: string) {
+    if (!isAxiosError(error)) return fallback
+    const errors = error.response?.data?.errors as Record<string, string[]> | undefined
+    return errors?.logo?.[0] ?? error.response?.data?.message ?? fallback
+  }
+
+  function onLogoSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    uploadLogo.mutate(file, {
+      onSuccess: () => toast.success('School logo updated'),
+      onError: (error) => toast.error(logoError(error, 'Could not upload logo')),
+    })
+  }
+
+  function onRemoveLogo() {
+    removeLogo.mutate(undefined, {
+      onSuccess: () => toast.success('School logo removed'),
+      onError: (error) => toast.error(logoError(error, 'Could not remove logo')),
+    })
+  }
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -128,6 +156,36 @@ function ProfileTab() {
         <CardDescription>Basic information shown across the platform.</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+            {school?.logo_url ? (
+              <img src={school.logo_url} alt={`${school.name} logo`} className="size-full object-contain p-1" />
+            ) : (
+              <ImageIcon className="size-9 text-muted-foreground" aria-hidden="true" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">School branding</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              PNG, JPG, or WebP up to 5 MB. This logo appears on official school documents.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" asChild disabled={uploadLogo.isPending || removeLogo.isPending}>
+                <label className="cursor-pointer">
+                  <Upload className="size-4" />
+                  {uploadLogo.isPending ? 'Uploading…' : school?.logo_url ? 'Change logo' : 'Upload logo'}
+                  <input className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogoSelected} disabled={uploadLogo.isPending || removeLogo.isPending} />
+                </label>
+              </Button>
+              {school?.logo_url && (
+                <Button type="button" variant="outline" size="sm" onClick={onRemoveLogo} disabled={uploadLogo.isPending || removeLogo.isPending}>
+                  <Trash2 className="size-4" />
+                  {removeLogo.isPending ? 'Removing…' : 'Remove logo'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

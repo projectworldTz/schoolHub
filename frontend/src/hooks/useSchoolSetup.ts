@@ -11,6 +11,8 @@ import {
   listTerms,
   schoolPaymentAccountsApi,
   updateSchoolProfile,
+  uploadSchoolLogo,
+  removeSchoolLogo,
   updateTerm,
   type SchoolPaymentAccountPayload,
 } from '@/api/school-setup'
@@ -34,6 +36,22 @@ export function useUpdateSchoolProfile() {
   return useMutation({
     mutationFn: updateSchoolProfile,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', 'profile'] }),
+  })
+}
+
+export function useUploadSchoolLogo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: uploadSchoolLogo,
+    onSuccess: (school) => queryClient.setQueryData(['school', 'profile'], school),
+  })
+}
+
+export function useRemoveSchoolLogo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: removeSchoolLogo,
+    onSuccess: (school) => queryClient.setQueryData(['school', 'profile'], school),
   })
 }
 

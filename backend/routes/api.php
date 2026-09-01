@@ -122,6 +122,8 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->m
 $schoolRoutes = function () {
     Route::get('profile', [SchoolProfileController::class, 'show']);
         Route::put('profile', [SchoolProfileController::class, 'update']);
+        Route::post('profile/logo', [SchoolProfileController::class, 'uploadLogo']);
+        Route::delete('profile/logo', [SchoolProfileController::class, 'removeLogo']);
         Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show']);
 
         Route::apiResource('branches', BranchController::class);

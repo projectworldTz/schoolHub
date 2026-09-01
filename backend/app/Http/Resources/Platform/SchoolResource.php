@@ -2,10 +2,12 @@
 
 namespace App\Http\Resources\Platform;
 
+use App\Models\School;
+use App\Services\School\SchoolBrandingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\School */
+/** @mixin School */
 class SchoolResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -25,6 +27,7 @@ class SchoolResource extends JsonResource
             'timezone' => $this->timezone,
             'currency' => $this->currency,
             'logo_path' => $this->logo_path,
+            'logo_url' => app(SchoolBrandingService::class)->url($this->logo_path),
             'subscription_plan' => $this->subscription_plan,
             'license_expires_at' => $this->license_expires_at,
             'approved_at' => $this->approved_at,
