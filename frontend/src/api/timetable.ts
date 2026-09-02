@@ -31,6 +31,11 @@ export async function createTimetableEntry(payload: TimetableEntryPayload): Prom
   return data.data
 }
 
+export async function updateTimetableEntry(id: string, payload: TimetableEntryPayload): Promise<TimetableEntry> {
+  const { data } = await apiClient.put<{ data: TimetableEntry }>(`/school/timetable-entries/${id}`, payload)
+  return data.data
+}
+
 export async function deleteTimetableEntry(id: string): Promise<void> {
   await apiClient.delete(`/school/timetable-entries/${id}`)
 }

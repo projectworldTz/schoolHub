@@ -4,9 +4,10 @@ import { useForm, type FieldValues, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs'
@@ -33,8 +34,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { SimpleCrudCard } from '@/components/school/SimpleCrudCard'
-import { useTimetablePeriods, useTimetableEntries, useCreateTimetableEntry, useDeleteTimetableEntry } from '@/hooks/useTimetable'
-import { useAcademicYears } from '@/hooks/useSchoolSetup'
+import { useTimetablePeriods, useTimetableEntries, useCreateTimetableEntry, useDeleteTimetableEntry, useUpdateTimetableEntry } from '@/hooks/useTimetable'
+import { useAcademicYears, useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { useClasses, useStreams, useSubjects, useRooms } from '@/hooks/useAcademics'
 import { useStaffList } from '@/hooks/useStaff'
 import type { DayOfWeek, TimetableEntry } from '@/types/timetable'
@@ -52,15 +53,19 @@ const periodSchema = z.object({
   start_time: z.string().min(1, 'Required'),
   end_time: z.string().min(1, 'Required'),
   sort_order: z.string().optional(),
+  is_break: z.boolean().default(false),
 })
+
+const periodDefaults = { name: '', start_time: '', end_time: '', sort_order: '', is_break: false }
 
 function PeriodsTab() {
   const { data: periods, isLoading } = useTimetablePeriods.useList()
   const create = useTimetablePeriods.useCreate()
+  const update = useTimetablePeriods.useUpdate()
   const remove = useTimetablePeriods.useRemove()
   const form = useForm({
     resolver: zodResolver(periodSchema),
-    defaultValues: { name: '', start_time: '', end_time: '', sort_order: '' },
+    defaultValues: periodDefaults,
   })
 
   return (
@@ -74,25 +79,46 @@ function PeriodsTab() {
         { key: 'start', label: 'Start', render: (p) => p.start_time },
         { key: 'end', label: 'End', render: (p) => p.end_time },
         { key: 'order', label: 'Order', render: (p) => p.sort_order },
+        { key: 'type', label: 'Type', render: (p) => (p.is_break ? 'Break / lunch' : 'Teaching period') },
       ]}
       fields={[
         { name: 'name', label: 'Name', type: 'text', placeholder: 'Period 1' },
         { name: 'start_time', label: 'Start time', type: 'text', placeholder: '07:30' },
         { name: 'end_time', label: 'End time', type: 'text', placeholder: '08:10' },
         { name: 'sort_order', label: 'Sort order', type: 'number', placeholder: '1' },
+        { name: 'is_break', label: 'Break / lunch period', type: 'switch' },
       ]}
       form={form as unknown as UseFormReturn<FieldValues>}
-      defaultValues={{ name: '', start_time: '', end_time: '', sort_order: '' }}
+      defaultValues={periodDefaults}
       onCreate={(values) =>
         create.mutateAsync({
           name: values.name as string,
           start_time: values.start_time as string,
           end_time: values.end_time as string,
           sort_order: values.sort_order ? Number(values.sort_order) : undefined,
+          is_break: Boolean(values.is_break),
         })
       }
+      onEdit={(period, values) => update.mutateAsync({
+        id: period.id,
+        payload: {
+          name: values.name as string,
+          start_time: values.start_time as string,
+          end_time: values.end_time as string,
+          sort_order: values.sort_order ? Number(values.sort_order) : undefined,
+          is_break: Boolean(values.is_break),
+        },
+      })}
+      toFormValues={(period) => ({
+        name: period.name,
+        start_time: period.start_time,
+        end_time: period.end_time,
+        sort_order: String(period.sort_order),
+        is_break: period.is_break,
+      })}
       onDelete={(p) => remove.mutateAsync(p.id)}
       createLabel="New period"
+      editLabel="Edit period"
     />
   )
 }
@@ -103,13 +129,14 @@ const entrySchema = z.object({
   room_id: z.string().optional(),
 })
 
-function AddLessonDialog({
+function LessonDialog({
   open,
   onOpenChange,
   schoolClassId,
   academicYearId,
   dayOfWeek,
   periodId,
+  entry,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -117,52 +144,64 @@ function AddLessonDialog({
   academicYearId: string
   dayOfWeek: DayOfWeek | null
   periodId: string | null
+  entry?: TimetableEntry
 }) {
   const { data: subjects } = useSubjects.useList()
   const { data: staff } = useStaffList()
   const { data: rooms } = useRooms.useList()
   const create = useCreateTimetableEntry()
+  const update = useUpdateTimetableEntry()
   const form = useForm({
     resolver: zodResolver(entrySchema),
     defaultValues: { subject_id: '', teacher_id: '', room_id: '' },
   })
 
   useEffect(() => {
-    if (open) form.reset({ subject_id: '', teacher_id: '', room_id: '' })
-  }, [open, form])
+    if (open) {
+      form.reset({
+        subject_id: entry?.subject_id ?? '',
+        teacher_id: entry?.teacher_id ?? '',
+        room_id: entry?.room_id ?? '',
+      })
+    }
+  }, [open, entry, form])
 
   function onSubmit(values: z.infer<typeof entrySchema>) {
     if (!dayOfWeek || !periodId) return
-    create.mutate(
-      {
-        school_class_id: schoolClassId,
-        academic_year_id: academicYearId,
-        timetable_period_id: periodId,
-        day_of_week: dayOfWeek,
-        subject_id: values.subject_id,
-        teacher_id: values.teacher_id,
-        room_id: values.room_id || undefined,
+    const payload = {
+      school_class_id: schoolClassId,
+      academic_year_id: academicYearId,
+      timetable_period_id: periodId,
+      day_of_week: dayOfWeek,
+      subject_id: values.subject_id,
+      teacher_id: values.teacher_id,
+      room_id: values.room_id || undefined,
+    }
+    const options = {
+      onSuccess: () => {
+        toast.success(entry ? 'Lesson updated' : 'Lesson added')
+        onOpenChange(false)
       },
-      {
-        onSuccess: () => {
-          toast.success('Lesson added')
-          onOpenChange(false)
-        },
-        onError: (error) => {
-          const message = isAxiosError(error)
-            ? (error.response?.data?.message ?? 'Could not add lesson')
-            : 'Something went wrong'
-          toast.error(message)
-        },
-      }
-    )
+      onError: (error: unknown) => {
+        const message = isAxiosError(error)
+          ? (error.response?.data?.message ?? `Could not ${entry ? 'update' : 'add'} lesson`)
+          : 'Something went wrong'
+        toast.error(message)
+      },
+    }
+
+    if (entry) {
+      update.mutate({ id: entry.id, payload }, options)
+    } else {
+      create.mutate(payload, options)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add lesson</DialogTitle>
+          <DialogTitle>{entry ? 'Edit lesson' : 'Add lesson'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -172,20 +211,16 @@ function AddLessonDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subject</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subjects?.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      options={subjects?.map((subject) => ({ value: subject.id, label: subject.name, sublabel: subject.code ?? undefined })) ?? []}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select subject"
+                      searchPlaceholder="Search subjects…"
+                      emptyText="No subject found."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -196,22 +231,18 @@ function AddLessonDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Teacher</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {staff?.data
-                        .filter((s): s is typeof s & { user_id: string } => Boolean(s.user_id))
-                        .map((s) => (
-                          <SelectItem key={s.user_id} value={s.user_id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      options={staff?.data
+                        .filter((person): person is typeof person & { user_id: string } => Boolean(person.user_id))
+                        .map((person) => ({ value: person.user_id, label: person.name ?? 'Unnamed teacher', sublabel: person.job_title ?? undefined })) ?? []}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select teacher"
+                      searchPlaceholder="Search teachers…"
+                      emptyText="No teacher found."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -222,7 +253,7 @@ function AddLessonDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Room (optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -241,8 +272,8 @@ function AddLessonDialog({
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={create.isPending}>
-                {create.isPending ? 'Saving…' : 'Add'}
+              <Button type="submit" disabled={create.isPending || update.isPending}>
+                {create.isPending || update.isPending ? 'Saving…' : entry ? 'Save changes' : 'Add'}
               </Button>
             </DialogFooter>
           </form>
@@ -252,7 +283,14 @@ function AddLessonDialog({
   )
 }
 
-function ClassTimetableTab() {
+type PrimarySection = 'lower' | 'upper'
+
+function primarySectionFor(className: string): PrimarySection {
+  const primaryNumber = className.match(/(?:standard|std|grade|class)\s*(\d+)/i)
+  return primaryNumber && Number(primaryNumber[1]) >= 5 ? 'upper' : 'lower'
+}
+
+function ClassTimetableTab({ section }: { section?: PrimarySection }) {
   const { data: academicYears } = useAcademicYears.useList()
   const { data: classes } = useClasses.useList()
   const { data: streams } = useStreams.useList()
@@ -260,6 +298,7 @@ function ClassTimetableTab() {
   const [academicYearId, setAcademicYearId] = useState('')
   const [schoolClassId, setSchoolClassId] = useState('')
   const [dialogTarget, setDialogTarget] = useState<{ day: DayOfWeek; periodId: string } | null>(null)
+  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null)
   const remove = useDeleteTimetableEntry()
 
   useEffect(() => {
@@ -274,12 +313,19 @@ function ClassTimetableTab() {
     return entries?.find((e) => e.day_of_week === day && e.timetable_period_id === periodId)
   }
 
+  const availableClasses = section ? classes?.filter((c) => primarySectionFor(c.name) === section) : classes
   const classStreams = streams?.filter((s) => s.school_class_id === schoolClassId)
+
+  useEffect(() => {
+    if (schoolClassId && availableClasses && !availableClasses.some((schoolClass) => schoolClass.id === schoolClassId)) {
+      setSchoolClassId('')
+    }
+  }, [availableClasses, schoolClassId])
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Class timetable</CardTitle>
+        <CardTitle>{section ? `${section === 'lower' ? 'Lower' : 'Upper'} classes timetable` : 'Class timetable'}</CardTitle>
         <CardDescription>
           <div className="mt-2 flex flex-wrap gap-3">
             <Select value={academicYearId} onValueChange={setAcademicYearId}>
@@ -299,7 +345,7 @@ function ClassTimetableTab() {
                 <SelectValue placeholder="Class" />
               </SelectTrigger>
               <SelectContent>
-                {classes?.map((c) => (
+                {availableClasses?.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -330,17 +376,27 @@ function ClassTimetableTab() {
                 </tr>
               </thead>
               <tbody>
-                {periods
-                  .filter((p) => !p.is_break)
-                  .map((period) => (
-                    <tr key={period.id}>
-                      <td className="border p-2 align-top">
-                        <div className="font-medium">{period.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {period.start_time}–{period.end_time}
+                {periods.map((period) => (
+                  <tr key={period.id}>
+                    {period.is_break ? (
+                      <td
+                        colSpan={DAYS.length + 1}
+                        className="border bg-amber-50 p-3 text-center dark:bg-amber-950/30"
+                      >
+                        <div className="font-semibold text-amber-900 dark:text-amber-100">{period.name}</div>
+                        <div className="text-xs text-amber-700 dark:text-amber-300">
+                          {period.start_time}–{period.end_time} · No lessons scheduled during this time
                         </div>
                       </td>
-                      {DAYS.map((day) => {
+                    ) : (
+                      <>
+                        <td className="border p-2 align-top">
+                          <div className="font-medium">{period.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {period.start_time}–{period.end_time}
+                          </div>
+                        </td>
+                        {DAYS.map((day) => {
                         const entry = entryFor(day.value, period.id)
                         return (
                           <td key={day.value} className="border p-2 align-top">
@@ -351,14 +407,26 @@ function ClassTimetableTab() {
                                 {entry.room_name && (
                                   <div className="text-xs text-muted-foreground">{entry.room_name}</div>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-1 top-1 size-5 opacity-0 group-hover:opacity-100"
-                                  onClick={() => remove.mutate(entry.id)}
-                                >
-                                  <Trash2 className="size-3" />
-                                </Button>
+                                <div className="absolute right-1 top-1 flex opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-5"
+                                    aria-label="Edit lesson"
+                                    onClick={() => setEditingEntry(entry)}
+                                  >
+                                    <Pencil className="size-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-5"
+                                    aria-label="Delete lesson"
+                                    onClick={() => remove.mutate(entry.id)}
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <Button
@@ -372,9 +440,11 @@ function ClassTimetableTab() {
                             )}
                           </td>
                         )
-                      })}
-                    </tr>
-                  ))}
+                        })}
+                      </>
+                    )}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -386,19 +456,28 @@ function ClassTimetableTab() {
           </p>
         )}
       </CardContent>
-      <AddLessonDialog
-        open={dialogTarget !== null}
-        onOpenChange={(open) => !open && setDialogTarget(null)}
+      <LessonDialog
+        open={dialogTarget !== null || editingEntry !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogTarget(null)
+            setEditingEntry(null)
+          }
+        }}
         schoolClassId={schoolClassId}
         academicYearId={academicYearId}
-        dayOfWeek={dialogTarget?.day ?? null}
-        periodId={dialogTarget?.periodId ?? null}
+        dayOfWeek={dialogTarget?.day ?? editingEntry?.day_of_week ?? null}
+        periodId={dialogTarget?.periodId ?? editingEntry?.timetable_period_id ?? null}
+        entry={editingEntry ?? undefined}
       />
     </Card>
   )
 }
 
 export function TimetablePage() {
+  const { data: school } = useSchoolProfile()
+  const isPrimary = school?.type === 'primary'
+
   return (
     <div className="space-y-6">
       <div>
@@ -406,14 +485,32 @@ export function TimetablePage() {
         <p className="text-sm text-muted-foreground">Periods and the weekly class schedule.</p>
       </div>
 
-      <Tabs defaultValue="timetable">
+      <Tabs defaultValue={isPrimary ? 'lower-timetable' : 'timetable'} key={isPrimary ? 'primary' : 'other'}>
         <TabsList>
-          <TabsTrigger value="timetable">Class timetable</TabsTrigger>
+          {isPrimary ? (
+            <>
+              <TabsTrigger value="lower-timetable">Lower classes</TabsTrigger>
+              <TabsTrigger value="upper-timetable">Upper classes</TabsTrigger>
+            </>
+          ) : (
+            <TabsTrigger value="timetable">Class timetable</TabsTrigger>
+          )}
           <TabsTrigger value="periods">Periods</TabsTrigger>
         </TabsList>
-        <TabsContent value="timetable" className="mt-4">
-          <ClassTimetableTab />
-        </TabsContent>
+        {isPrimary ? (
+          <>
+            <TabsContent value="lower-timetable" className="mt-4">
+              <ClassTimetableTab section="lower" />
+            </TabsContent>
+            <TabsContent value="upper-timetable" className="mt-4">
+              <ClassTimetableTab section="upper" />
+            </TabsContent>
+          </>
+        ) : (
+          <TabsContent value="timetable" className="mt-4">
+            <ClassTimetableTab />
+          </TabsContent>
+        )}
         <TabsContent value="periods" className="mt-4">
           <PeriodsTab />
         </TabsContent>

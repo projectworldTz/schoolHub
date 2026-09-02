@@ -5,6 +5,7 @@ import {
   deleteTimetableEntry,
   listTimetableEntries,
   timetablePeriodsApi,
+  updateTimetableEntry,
   type ListTimetableEntriesParams,
   type TimetableEntryPayload,
 } from '@/api/timetable'
@@ -34,6 +35,15 @@ export function useDeleteTimetableEntry() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteTimetableEntry,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ENTRIES_KEY }),
+  })
+}
+
+export function useUpdateTimetableEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: TimetableEntryPayload }) =>
+      updateTimetableEntry(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ENTRIES_KEY }),
   })
 }

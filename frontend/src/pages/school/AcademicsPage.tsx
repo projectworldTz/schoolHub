@@ -47,9 +47,10 @@ const subjectSchema = z.object({
 const subjectDefaults = { name: '', code: '' }
 
 function SubjectsTab() {
-  const { useList, useCreate, useRemove } = useSubjects
+  const { useList, useCreate, useUpdate, useRemove } = useSubjects
   const { data, isLoading } = useList()
   const create = useCreate()
+  const update = useUpdate()
   const remove = useRemove()
   const form = useForm({ resolver: zodResolver(subjectSchema), defaultValues: subjectDefaults })
 
@@ -76,8 +77,11 @@ function SubjectsTab() {
         { name: 'code', label: 'Code', type: 'text' },
       ]}
       onCreate={(values) => create.mutateAsync(values)}
+      onEdit={(item, values) => update.mutateAsync({ id: item.id, payload: values })}
+      toFormValues={(item) => ({ name: item.name, code: item.code ?? '' })}
       onDelete={(item) => remove.mutateAsync(item.id)}
       createLabel="New subject"
+      editLabel="Edit subject"
       quickAddKey="subject"
     />
   )

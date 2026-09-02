@@ -24,6 +24,7 @@ class SubjectRequest extends FormRequest
                 'required', 'string', 'max:255',
                 Rule::unique('subjects', 'name')
                     ->where('school_id', Tenant::id())
+                    ->withoutTrashed()
                     ->ignore($this->route('subject')),
             ],
             'code' => ['nullable', 'string', 'max:50'],
