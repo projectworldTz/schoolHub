@@ -110,7 +110,7 @@ class InvoiceController extends Controller
             $invoice->load([
                 'student', 'academicYear', 'term',
                 'items.feeStructure' => fn ($q) => $q->withTrashed()->with('feeCategory'),
-                'payments.receivedBy', 'payments.feeCategory',
+                'payments.receivedBy', 'payments.feeCategory', 'payments.reversal',
             ])
         );
     }

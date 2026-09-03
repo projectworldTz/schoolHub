@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
 use App\Models\FeeCategory;
 use App\Models\FeeStructure;
 use App\Models\Guardian;
 use App\Models\Invoice;
+use App\Models\School;
+use App\Models\SchoolClass;
+use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SetsUpTenant;
 use Tests\TestCase;
@@ -22,10 +26,34 @@ class RecordPaymentTest extends TestCase
 {
     use RefreshDatabase, SetsUpTenant;
 
+    public function test_payment_reversal_preserves_payment_and_recalculates_invoice(): void
+    {
+        $this->seedPermissions();
+        $fixture = $this->setUpSchoolWithClass(studentCount: 1);
+        $student = $fixture['students']->first();
+        $invoice = $this->invoiceWithTwoCategories($fixture['school'], $fixture['academicYear'], $fixture['schoolClass'], $student)['invoice'];
+        $owner = $this->createUser($fixture['school'], 'School Owner');
+
+        $recorded = $this->actingAs($owner, 'web')->postJson("/api/school/invoices/{$invoice->id}/payments", [
+            'amount' => 100000, 'method' => 'cash', 'paid_at' => now()->toDateString(),
+        ])->assertOk();
+        $paymentId = $recorded->json('data.payments.0.id');
+
+        $this->actingAs($owner, 'web')->postJson("/api/school/payments/{$paymentId}/reverse", [
+            'reason' => 'Cash entry was duplicated',
+        ])->assertOk()->assertJsonPath('data.amount_paid', '0.00')
+            ->assertJsonPath('data.payments.0.reversal.reason', 'Cash entry was duplicated');
+
+        $this->assertDatabaseHas('payments', ['id' => $paymentId]);
+        $this->assertDatabaseHas('payment_reversals', ['payment_id' => $paymentId]);
+        $this->actingAs($owner, 'web')->postJson("/api/school/payments/{$paymentId}/reverse", ['reason' => 'Again'])
+            ->assertUnprocessable();
+    }
+
     /**
      * @return array{invoice: Invoice, tuition_category: FeeCategory, transport_category: FeeCategory}
      */
-    protected function invoiceWithTwoCategories(\App\Models\School $school, \App\Models\AcademicYear $academicYear, \App\Models\SchoolClass $schoolClass, \App\Models\Student $student): array
+    protected function invoiceWithTwoCategories(School $school, AcademicYear $academicYear, SchoolClass $schoolClass, Student $student): array
     {
         $tuitionCategory = FeeCategory::create(['school_id' => $school->id, 'name' => 'Tuition']);
         $transportCategory = FeeCategory::create(['school_id' => $school->id, 'name' => 'Transport', 'is_optional' => true]);

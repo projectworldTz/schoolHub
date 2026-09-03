@@ -6,6 +6,13 @@ import {
   listTimetableEntries,
   timetablePeriodsApi,
   updateTimetableEntry,
+  generateTimetable,
+  type TimetableGenerationPayload,
+  listTeacherAvailability,
+  saveTeacherAvailability,
+  listSubstitutions,
+  createSubstitution,
+  deleteSubstitution,
   type ListTimetableEntriesParams,
   type TimetableEntryPayload,
 } from '@/api/timetable'
@@ -46,4 +53,29 @@ export function useUpdateTimetableEntry() {
       updateTimetableEntry(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ENTRIES_KEY }),
   })
+}
+
+export function useGenerateTimetable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: TimetableGenerationPayload) => generateTimetable(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ENTRIES_KEY }),
+  })
+}
+
+export function useTeacherAvailability(teacherId: string, yearId: string) {
+  return useQuery({ queryKey: ['school', 'teacher-availability', teacherId, yearId], queryFn: () => listTeacherAvailability(teacherId, yearId), enabled: Boolean(teacherId && yearId) })
+}
+
+export function useSaveTeacherAvailability() {
+  const client = useQueryClient()
+  return useMutation({ mutationFn: saveTeacherAvailability, onSuccess: () => client.invalidateQueries({ queryKey: ['school', 'teacher-availability'] }) })
+}
+
+export function useSubstitutions() {
+  const client = useQueryClient()
+  const list = useQuery({ queryKey: ['school', 'timetable-substitutions'], queryFn: listSubstitutions })
+  const create = useMutation({ mutationFn: createSubstitution, onSuccess: () => client.invalidateQueries({ queryKey: ['school', 'timetable-substitutions'] }) })
+  const remove = useMutation({ mutationFn: deleteSubstitution, onSuccess: () => client.invalidateQueries({ queryKey: ['school', 'timetable-substitutions'] }) })
+  return { list, create, remove }
 }

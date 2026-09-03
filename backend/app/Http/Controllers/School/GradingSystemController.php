@@ -28,8 +28,7 @@ class GradingSystemController extends Controller
             }
 
             $gradingSystem = GradingSystem::create([
-                'name' => $data['name'],
-                'is_default' => $data['is_default'] ?? false,
+                ...collect($data)->except('grade_bands')->all(),
             ]);
 
             $gradingSystem->gradeBands()->createMany($data['grade_bands']);
@@ -55,8 +54,7 @@ class GradingSystemController extends Controller
             }
 
             $gradingSystem->update([
-                'name' => $data['name'],
-                'is_default' => $data['is_default'] ?? false,
+                ...collect($data)->except('grade_bands')->all(),
             ]);
 
             $gradingSystem->gradeBands()->delete();

@@ -17,12 +17,20 @@ class GradingSystem extends Model
         'school_id',
         'name',
         'is_default',
+        'necta_enabled',
+        'points_subject_count',
+        'division_rules',
+        'assessment_weights',
     ];
 
     protected function casts(): array
     {
         return [
             'is_default' => 'boolean',
+            'necta_enabled' => 'boolean',
+            'points_subject_count' => 'integer',
+            'division_rules' => 'array',
+            'assessment_weights' => 'array',
         ];
     }
 

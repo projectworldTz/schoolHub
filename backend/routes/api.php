@@ -3,39 +3,34 @@
 use App\Http\Controllers\Api\V1\AuthController as ApiAuthController;
 use App\Http\Controllers\Auth\ApiTokenController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\NotificationController;
+use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Finance\BudgetController;
+use App\Http\Controllers\Finance\ExpenseCategoryController;
+use App\Http\Controllers\Finance\ExpenseController;
+use App\Http\Controllers\Finance\FeeCategoryController;
+use App\Http\Controllers\Finance\FeeImportController;
+use App\Http\Controllers\Finance\FeeStructureController;
+use App\Http\Controllers\Finance\InvoiceController;
+use App\Http\Controllers\Finance\PaymentController;
+use App\Http\Controllers\Finance\PayrollRunController;
+use App\Http\Controllers\Finance\PayslipController;
+use App\Http\Controllers\Finance\StaffSalaryController;
+use App\Http\Controllers\Finance\StudentFeeExclusionController;
+use App\Http\Controllers\ParentPortal\ParentPortalController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
 use App\Http\Controllers\Platform\SchoolController as PlatformSchoolController;
 use App\Http\Controllers\Public\NoticeBoardController;
 use App\Http\Controllers\Public\WebsiteController as PublicWebsiteController;
 use App\Http\Controllers\Public\WebsiteDownloadController as PublicWebsiteDownloadController;
 use App\Http\Controllers\Public\WebsiteTrackingController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteAcademicDepartmentController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteAdmissionClassController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteAnalyticsController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteBannerController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteCalendarEventController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteDownloadController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteFacilityController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryAlbumController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryImageController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteLeadershipController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteNewsController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteOfficeController;
-use App\Http\Controllers\WebsiteBuilder\WebsitePolicyController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteResearchProjectController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteSectionController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteSettingsController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteSportsMediaController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteSportsProgramController;
-use App\Http\Controllers\WebsiteBuilder\WebsiteTestimonialController;
 use App\Http\Controllers\School\AcademicYearController;
-use App\Http\Controllers\School\AiAssistantController;
-use App\Http\Controllers\School\AiReportDownloadController;
 use App\Http\Controllers\School\ActivityLogController;
 use App\Http\Controllers\School\AdmissionApplicationController;
 use App\Http\Controllers\School\AdmissionDocumentController;
+use App\Http\Controllers\School\AiAssistantController;
+use App\Http\Controllers\School\AiReportDownloadController;
 use App\Http\Controllers\School\AnalyticsController;
-use App\Http\Controllers\School\ReportController;
 use App\Http\Controllers\School\AnnouncementController;
 use App\Http\Controllers\School\AttendanceController;
 use App\Http\Controllers\School\BookController;
@@ -56,7 +51,6 @@ use App\Http\Controllers\School\ExamResultController;
 use App\Http\Controllers\School\ExamSubjectController;
 use App\Http\Controllers\School\GradingSystemController;
 use App\Http\Controllers\School\GraduationController;
-use App\Http\Controllers\School\PromotionController;
 use App\Http\Controllers\School\GuardianImportController;
 use App\Http\Controllers\School\GuardianPortalController;
 use App\Http\Controllers\School\HolidayController;
@@ -68,7 +62,9 @@ use App\Http\Controllers\School\InventoryItemController;
 use App\Http\Controllers\School\InventoryTransactionController;
 use App\Http\Controllers\School\LeaveRequestController;
 use App\Http\Controllers\School\LessonController;
+use App\Http\Controllers\School\PromotionController;
 use App\Http\Controllers\School\ReportCardController;
+use App\Http\Controllers\School\ReportController;
 use App\Http\Controllers\School\RoomController;
 use App\Http\Controllers\School\SchoolClassController;
 use App\Http\Controllers\School\SchoolPaymentAccountController;
@@ -84,25 +80,33 @@ use App\Http\Controllers\School\StudentEnrollmentController;
 use App\Http\Controllers\School\StudentGuardianController;
 use App\Http\Controllers\School\StudentImportController;
 use App\Http\Controllers\School\SubjectController;
+use App\Http\Controllers\School\TeacherAvailabilityController;
 use App\Http\Controllers\School\TeacherImportController;
 use App\Http\Controllers\School\TermController;
 use App\Http\Controllers\School\TimetableEntryController;
 use App\Http\Controllers\School\TimetablePeriodController;
+use App\Http\Controllers\School\TimetableSubstitutionController;
 use App\Http\Controllers\School\TransportAssignmentController;
 use App\Http\Controllers\School\TransportRouteController;
-use App\Http\Controllers\ParentPortal\ParentPortalController;
-use App\Http\Controllers\Finance\BudgetController;
-use App\Http\Controllers\Finance\ExpenseCategoryController;
-use App\Http\Controllers\Finance\ExpenseController;
-use App\Http\Controllers\Finance\FeeCategoryController;
-use App\Http\Controllers\Finance\FeeImportController;
-use App\Http\Controllers\Finance\FeeStructureController;
-use App\Http\Controllers\Finance\InvoiceController;
-use App\Http\Controllers\Finance\PaymentController;
-use App\Http\Controllers\Finance\PayrollRunController;
-use App\Http\Controllers\Finance\PayslipController;
-use App\Http\Controllers\Finance\StaffSalaryController;
-use App\Http\Controllers\Finance\StudentFeeExclusionController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAcademicDepartmentController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAdmissionClassController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteAnalyticsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteBannerController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteCalendarEventController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteDownloadController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteFacilityController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryAlbumController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteGalleryImageController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteLeadershipController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteNewsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteOfficeController;
+use App\Http\Controllers\WebsiteBuilder\WebsitePolicyController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteResearchProjectController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSectionController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSettingsController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSportsMediaController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteSportsProgramController;
+use App\Http\Controllers\WebsiteBuilder\WebsiteTestimonialController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -121,274 +125,279 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->m
 // default auth guard (that's what breaks Spatie permission checks).
 $schoolRoutes = function () {
     Route::get('profile', [SchoolProfileController::class, 'show']);
-        Route::put('profile', [SchoolProfileController::class, 'update']);
-        Route::post('profile/logo', [SchoolProfileController::class, 'uploadLogo']);
-        Route::delete('profile/logo', [SchoolProfileController::class, 'removeLogo']);
-        Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show']);
+    Route::put('profile', [SchoolProfileController::class, 'update']);
+    Route::post('profile/logo', [SchoolProfileController::class, 'uploadLogo']);
+    Route::delete('profile/logo', [SchoolProfileController::class, 'removeLogo']);
+    Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show']);
 
-        Route::apiResource('branches', BranchController::class);
-        Route::apiResource('departments', DepartmentController::class);
+    Route::apiResource('branches', BranchController::class);
+    Route::apiResource('departments', DepartmentController::class);
 
-        Route::apiResource('academic-years', AcademicYearController::class);
-        Route::apiResource('academic-years.terms', TermController::class)->shallow();
-        Route::apiResource('holidays', HolidayController::class);
+    Route::apiResource('academic-years', AcademicYearController::class);
+    Route::apiResource('academic-years.terms', TermController::class)->shallow();
+    Route::apiResource('holidays', HolidayController::class);
 
-        Route::apiResource('classes', SchoolClassController::class);
-        Route::put('classes/{class}/subjects', [SchoolClassController::class, 'syncSubjects']);
-        Route::apiResource('streams', StreamController::class);
-        Route::apiResource('rooms', RoomController::class);
+    Route::apiResource('classes', SchoolClassController::class);
+    Route::put('classes/{class}/subjects', [SchoolClassController::class, 'syncSubjects']);
+    Route::apiResource('streams', StreamController::class);
+    Route::apiResource('rooms', RoomController::class);
 
-        Route::apiResource('subjects', SubjectController::class);
-        Route::apiResource('grading-systems', GradingSystemController::class);
+    Route::apiResource('subjects', SubjectController::class);
+    Route::apiResource('grading-systems', GradingSystemController::class);
 
-        Route::get('roles', [SchoolUserController::class, 'availableRoles']);
-        Route::get('users/roles', [SchoolUserController::class, 'usedRoles']);
-        Route::apiResource('users', SchoolUserController::class);
-        Route::put('users/{user}/email', [SchoolUserController::class, 'addEmail']);
+    Route::get('roles', [SchoolUserController::class, 'availableRoles']);
+    Route::get('users/roles', [SchoolUserController::class, 'usedRoles']);
+    Route::apiResource('users', SchoolUserController::class);
+    Route::put('users/{user}/email', [SchoolUserController::class, 'addEmail']);
 
-        // Students
-        Route::apiResource('students', StudentController::class);
-        Route::post('students/import', [StudentImportController::class, 'import']);
-        Route::post('students/{student}/guardians', [StudentGuardianController::class, 'store']);
-        Route::delete('students/{student}/guardians/{guardian}', [StudentGuardianController::class, 'destroy']);
-        Route::post('guardians/import', [GuardianImportController::class, 'import']);
-        Route::get('students/{student}/enrollments', [StudentEnrollmentController::class, 'index']);
-        Route::post('students/{student}/enrollments', [StudentEnrollmentController::class, 'store']);
-        Route::get('students/{student}/documents', [StudentDocumentController::class, 'index']);
-        Route::post('students/{student}/documents', [StudentDocumentController::class, 'store']);
-        Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
-        Route::get('students/{student}/certificate', [DocumentGeneratorController::class, 'studentCertificate']);
-        Route::get('students/{student}/transcript', [DocumentGeneratorController::class, 'studentTranscript']);
+    // Students
+    Route::apiResource('students', StudentController::class);
+    Route::post('students/import', [StudentImportController::class, 'import']);
+    Route::post('students/{student}/guardians', [StudentGuardianController::class, 'store']);
+    Route::delete('students/{student}/guardians/{guardian}', [StudentGuardianController::class, 'destroy']);
+    Route::post('guardians/import', [GuardianImportController::class, 'import']);
+    Route::get('students/{student}/enrollments', [StudentEnrollmentController::class, 'index']);
+    Route::post('students/{student}/enrollments', [StudentEnrollmentController::class, 'store']);
+    Route::get('students/{student}/documents', [StudentDocumentController::class, 'index']);
+    Route::post('students/{student}/documents', [StudentDocumentController::class, 'store']);
+    Route::delete('documents/{document}', [DocumentController::class, 'destroy']);
+    Route::get('students/{student}/certificate', [DocumentGeneratorController::class, 'studentCertificate']);
+    Route::get('students/{student}/transcript', [DocumentGeneratorController::class, 'studentTranscript']);
 
-        // Discipline
-        Route::apiResource('discipline-incidents', DisciplineIncidentController::class)->except(['show']);
+    // Discipline
+    Route::apiResource('discipline-incidents', DisciplineIncidentController::class)->except(['show']);
 
-        // Graduation / leaver & transfer records
-        Route::get('graduation/eligible', [GraduationController::class, 'eligible']);
-        Route::post('graduation/batch', [GraduationController::class, 'batch']);
-        Route::get('graduation/history', [GraduationController::class, 'history']);
+    // Graduation / leaver & transfer records
+    Route::get('graduation/eligible', [GraduationController::class, 'eligible']);
+    Route::post('graduation/batch', [GraduationController::class, 'batch']);
+    Route::get('graduation/history', [GraduationController::class, 'history']);
 
-        // Annual class promotion
-        Route::get('promotions/preview', [PromotionController::class, 'preview']);
-        Route::post('promotions', [PromotionController::class, 'store']);
-        Route::get('promotions/history', [PromotionController::class, 'history']);
+    // Annual class promotion
+    Route::get('promotions/preview', [PromotionController::class, 'preview']);
+    Route::post('promotions', [PromotionController::class, 'store']);
+    Route::get('promotions/history', [PromotionController::class, 'history']);
 
-        // Staff / Teachers (HR)
-        Route::apiResource('staff', StaffProfileController::class);
-        Route::post('staff/import', [TeacherImportController::class, 'import']);
-        Route::put('staff/{staff}/subjects', [StaffProfileController::class, 'syncSubjects']);
-        Route::put('staff/{staff}/classes', [StaffProfileController::class, 'syncClasses']);
-        Route::get('staff/{staff}/contracts', [StaffContractController::class, 'index']);
-        Route::post('staff-contracts', [StaffContractController::class, 'store']);
-        Route::delete('staff-contracts/{contract}', [StaffContractController::class, 'destroy']);
-        Route::get('staff-contracts/{contract}/document', [DocumentGeneratorController::class, 'staffContract']);
+    // Staff / Teachers (HR)
+    Route::apiResource('staff', StaffProfileController::class);
+    Route::post('staff/import', [TeacherImportController::class, 'import']);
+    Route::put('staff/{staff}/subjects', [StaffProfileController::class, 'syncSubjects']);
+    Route::put('staff/{staff}/classes', [StaffProfileController::class, 'syncClasses']);
+    Route::get('staff/{staff}/contracts', [StaffContractController::class, 'index']);
+    Route::post('staff-contracts', [StaffContractController::class, 'store']);
+    Route::delete('staff-contracts/{contract}', [StaffContractController::class, 'destroy']);
+    Route::get('staff-contracts/{contract}/document', [DocumentGeneratorController::class, 'staffContract']);
 
-        Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'store', 'destroy']);
-        Route::post('leave-requests/{leaveRequest}/review', [LeaveRequestController::class, 'review']);
+    Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'store', 'destroy']);
+    Route::post('leave-requests/{leaveRequest}/review', [LeaveRequestController::class, 'review']);
 
-        // Staff attendance
-        Route::get('staff-attendance/register', [StaffAttendanceController::class, 'register']);
-        Route::post('staff-attendance', [StaffAttendanceController::class, 'store']);
+    // Staff attendance
+    Route::get('staff-attendance/register', [StaffAttendanceController::class, 'register']);
+    Route::post('staff-attendance', [StaffAttendanceController::class, 'store']);
 
-        // Admissions
-        Route::apiResource('admissions', AdmissionApplicationController::class)->except(['destroy']);
-        Route::post('admissions/{admission}/accept', [AdmissionApplicationController::class, 'accept']);
-        Route::post('admissions/{admission}/reject', [AdmissionApplicationController::class, 'reject']);
-        Route::post('admissions/{admission}/enroll', [AdmissionApplicationController::class, 'enroll']);
-        Route::get('admissions/{admission}/documents', [AdmissionDocumentController::class, 'index']);
-        Route::post('admissions/{admission}/documents', [AdmissionDocumentController::class, 'store']);
+    // Admissions
+    Route::apiResource('admissions', AdmissionApplicationController::class)->except(['destroy']);
+    Route::post('admissions/{admission}/accept', [AdmissionApplicationController::class, 'accept']);
+    Route::post('admissions/{admission}/reject', [AdmissionApplicationController::class, 'reject']);
+    Route::post('admissions/{admission}/enroll', [AdmissionApplicationController::class, 'enroll']);
+    Route::get('admissions/{admission}/documents', [AdmissionDocumentController::class, 'index']);
+    Route::post('admissions/{admission}/documents', [AdmissionDocumentController::class, 'store']);
 
-        // Attendance
-        Route::get('attendance', [AttendanceController::class, 'index']);
-        Route::get('attendance/register', [AttendanceController::class, 'register']);
-        Route::post('attendance', [AttendanceController::class, 'store']);
-        Route::get('students/{student}/attendance', [AttendanceController::class, 'history']);
+    // Attendance
+    Route::get('attendance', [AttendanceController::class, 'index']);
+    Route::get('attendance/register', [AttendanceController::class, 'register']);
+    Route::post('attendance', [AttendanceController::class, 'store']);
+    Route::get('students/{student}/attendance', [AttendanceController::class, 'history']);
 
-        // Timetable
-        Route::apiResource('timetable-periods', TimetablePeriodController::class)->except(['show']);
-        Route::apiResource('timetable-entries', TimetableEntryController::class)->except(['show']);
+    // Timetable
+    Route::apiResource('timetable-periods', TimetablePeriodController::class)->except(['show']);
+    Route::post('timetable-entries/generate', [TimetableEntryController::class, 'generate']);
+    Route::apiResource('timetable-entries', TimetableEntryController::class)->except(['show']);
+    Route::get('teacher-availabilities', [TeacherAvailabilityController::class, 'index']);
+    Route::put('teacher-availabilities', [TeacherAvailabilityController::class, 'store']);
+    Route::apiResource('timetable-substitutions', TimetableSubstitutionController::class)->only(['index', 'store', 'destroy']);
 
-        // Homework
-        Route::apiResource('homeworks', HomeworkController::class);
-        Route::put('homework-submissions/{submission}', [HomeworkSubmissionController::class, 'update']);
+    // Homework
+    Route::apiResource('homeworks', HomeworkController::class);
+    Route::put('homework-submissions/{submission}', [HomeworkSubmissionController::class, 'update']);
 
-        // Communication
-        Route::apiResource('announcements', AnnouncementController::class)->except(['show']);
-        Route::get('conversations', [ConversationController::class, 'index']);
-        Route::post('conversations', [ConversationController::class, 'store']);
-        Route::get('conversations/{conversation}/messages', [ConversationController::class, 'messages']);
-        Route::post('conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+    // Communication
+    Route::apiResource('announcements', AnnouncementController::class)->except(['show']);
+    Route::get('conversations', [ConversationController::class, 'index']);
+    Route::post('conversations', [ConversationController::class, 'store']);
+    Route::get('conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+    Route::post('conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
 
-        // Examination System
-        Route::apiResource('exams', ExamController::class);
-        Route::put('exams/{exam}/status', [ExamController::class, 'updateStatus']);
-        Route::post('exams/{exam}/subjects', [ExamSubjectController::class, 'store']);
-        Route::get('exam-subjects/{examSubject}', [ExamSubjectController::class, 'show']);
-        Route::delete('exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy']);
-        Route::get('exam-subjects/{examSubject}/results', [ExamSubjectController::class, 'results']);
-        Route::put('exam-subjects/{examSubject}/results', [ExamResultController::class, 'update']);
-        Route::post('exam-subjects/{examSubject}/submit', [ExamSubjectController::class, 'submit']);
-        Route::apiResource('exam-edit-requests', ExamEditRequestController::class)->only(['index', 'store', 'destroy']);
-        Route::post('exam-edit-requests/{examEditRequest}/review', [ExamEditRequestController::class, 'review']);
-        Route::get('students/{student}/report-card', [ReportCardController::class, 'show']);
-        Route::get('students/{student}/report-card/pdf', [ReportCardController::class, 'pdf']);
-        Route::put('exams/{exam}/students/{student}/remark', [ReportCardController::class, 'setRemark']);
-        Route::get('exams/{exam}/report-cards/ranking', [ReportCardController::class, 'ranking']);
-        Route::get('exams/{exam}/report-cards/pdf', [ReportCardController::class, 'bulkPdf']);
-        Route::get('exams/{exam}/report-cards/class-results-pdf', [ReportCardController::class, 'classResultsPdf']);
-        Route::get('exams/{exam}/report-cards/class-summary', [ReportCardController::class, 'classSummary']);
-        Route::get('exams/{exam}/teacher-performance', [ReportCardController::class, 'teacherPerformance']);
+    // Examination System
+    Route::apiResource('exams', ExamController::class);
+    Route::put('exams/{exam}/status', [ExamController::class, 'updateStatus']);
+    Route::post('exams/{exam}/subjects', [ExamSubjectController::class, 'store']);
+    Route::get('exam-subjects/{examSubject}', [ExamSubjectController::class, 'show']);
+    Route::delete('exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy']);
+    Route::get('exam-subjects/{examSubject}/results', [ExamSubjectController::class, 'results']);
+    Route::put('exam-subjects/{examSubject}/results', [ExamResultController::class, 'update']);
+    Route::post('exam-subjects/{examSubject}/submit', [ExamSubjectController::class, 'submit']);
+    Route::apiResource('exam-edit-requests', ExamEditRequestController::class)->only(['index', 'store', 'destroy']);
+    Route::post('exam-edit-requests/{examEditRequest}/review', [ExamEditRequestController::class, 'review']);
+    Route::get('students/{student}/report-card', [ReportCardController::class, 'show']);
+    Route::get('students/{student}/report-card/pdf', [ReportCardController::class, 'pdf']);
+    Route::put('exams/{exam}/students/{student}/remark', [ReportCardController::class, 'setRemark']);
+    Route::get('exams/{exam}/report-cards/ranking', [ReportCardController::class, 'ranking']);
+    Route::get('exams/{exam}/report-cards/pdf', [ReportCardController::class, 'bulkPdf']);
+    Route::get('exams/{exam}/report-cards/class-results-pdf', [ReportCardController::class, 'classResultsPdf']);
+    Route::get('exams/{exam}/report-cards/class-summary', [ReportCardController::class, 'classSummary']);
+    Route::get('exams/{exam}/teacher-performance', [ReportCardController::class, 'teacherPerformance']);
 
-        // LMS
-        Route::apiResource('courses', CourseController::class);
-        Route::post('courses/{course}/lessons', [LessonController::class, 'store']);
-        Route::put('lessons/{lesson}', [LessonController::class, 'update']);
-        Route::delete('lessons/{lesson}', [LessonController::class, 'destroy']);
+    // LMS
+    Route::apiResource('courses', CourseController::class);
+    Route::post('courses/{course}/lessons', [LessonController::class, 'store']);
+    Route::put('lessons/{lesson}', [LessonController::class, 'update']);
+    Route::delete('lessons/{lesson}', [LessonController::class, 'destroy']);
 
-        // Parent Portal access grant
-        Route::post('guardians/{guardian}/portal-access', [GuardianPortalController::class, 'store']);
+    // Parent Portal access grant
+    Route::post('guardians/{guardian}/portal-access', [GuardianPortalController::class, 'store']);
 
-        // Finance: fees & billing
-        Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
-        Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
-        Route::post('invoices/import', [FeeImportController::class, 'import']);
-        Route::get('invoices', [InvoiceController::class, 'index']);
-        Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
-        Route::post('invoices/generate', [InvoiceController::class, 'generate']);
-        Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
-        Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
-        Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store']);
-        Route::get('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'index']);
-        Route::post('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'store']);
-        Route::patch('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'update']);
-        Route::delete('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'destroy']);
+    // Finance: fees & billing
+    Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
+    Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
+    Route::post('invoices/import', [FeeImportController::class, 'import']);
+    Route::get('invoices', [InvoiceController::class, 'index']);
+    Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
+    Route::post('invoices/generate', [InvoiceController::class, 'generate']);
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
+    Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
+    Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store']);
+    Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse']);
+    Route::get('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'index']);
+    Route::post('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'store']);
+    Route::patch('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'update']);
+    Route::delete('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'destroy']);
 
-        // Finance: payroll
-        Route::apiResource('staff-salaries', StaffSalaryController::class)->except(['show']);
-        Route::apiResource('payroll-runs', PayrollRunController::class)->except(['update']);
-        Route::post('payroll-runs/{payroll_run}/process', [PayrollRunController::class, 'process']);
-        Route::post('payslips/{payslip}/mark-paid', [PayslipController::class, 'markPaid']);
+    // Finance: payroll
+    Route::apiResource('staff-salaries', StaffSalaryController::class)->except(['show']);
+    Route::apiResource('payroll-runs', PayrollRunController::class)->except(['update']);
+    Route::post('payroll-runs/{payroll_run}/process', [PayrollRunController::class, 'process']);
+    Route::post('payslips/{payslip}/mark-paid', [PayslipController::class, 'markPaid']);
 
-        // Finance: expenses
-        Route::apiResource('expense-categories', ExpenseCategoryController::class)->except(['show']);
-        Route::apiResource('expenses', ExpenseController::class)->except(['show']);
+    // Finance: expenses
+    Route::apiResource('expense-categories', ExpenseCategoryController::class)->except(['show']);
+    Route::apiResource('expenses', ExpenseController::class)->except(['show']);
 
-        // Finance: budgets
-        Route::apiResource('budgets', BudgetController::class)->except(['show']);
+    // Finance: budgets
+    Route::apiResource('budgets', BudgetController::class)->except(['show']);
 
-        // Facilities: library
-        Route::apiResource('books', BookController::class);
-        Route::get('book-loans', [BookLoanController::class, 'index']);
-        Route::post('books/{book}/loans', [BookLoanController::class, 'store']);
-        Route::post('book-loans/{loan}/return', [BookLoanController::class, 'return']);
+    // Facilities: library
+    Route::apiResource('books', BookController::class);
+    Route::get('book-loans', [BookLoanController::class, 'index']);
+    Route::post('books/{book}/loans', [BookLoanController::class, 'store']);
+    Route::post('book-loans/{loan}/return', [BookLoanController::class, 'return']);
 
-        // Facilities: hostel
-        Route::apiResource('hostel-rooms', HostelRoomController::class)->except(['show']);
-        Route::get('hostel-allocations', [HostelAllocationController::class, 'index']);
-        Route::post('hostel-allocations', [HostelAllocationController::class, 'store']);
-        Route::post('hostel-allocations/{allocation}/vacate', [HostelAllocationController::class, 'vacate']);
+    // Facilities: hostel
+    Route::apiResource('hostel-rooms', HostelRoomController::class)->except(['show']);
+    Route::get('hostel-allocations', [HostelAllocationController::class, 'index']);
+    Route::post('hostel-allocations', [HostelAllocationController::class, 'store']);
+    Route::post('hostel-allocations/{allocation}/vacate', [HostelAllocationController::class, 'vacate']);
 
-        // Facilities: transport
-        Route::apiResource('transport-routes', TransportRouteController::class)->except(['show']);
-        Route::get('transport-assignments', [TransportAssignmentController::class, 'index']);
-        Route::post('transport-assignments', [TransportAssignmentController::class, 'store']);
-        Route::post('transport-assignments/{assignment}/unassign', [TransportAssignmentController::class, 'unassign']);
+    // Facilities: transport
+    Route::apiResource('transport-routes', TransportRouteController::class)->except(['show']);
+    Route::get('transport-assignments', [TransportAssignmentController::class, 'index']);
+    Route::post('transport-assignments', [TransportAssignmentController::class, 'store']);
+    Route::post('transport-assignments/{assignment}/unassign', [TransportAssignmentController::class, 'unassign']);
 
-        // Facilities: inventory
-        Route::apiResource('inventory-items', InventoryItemController::class)->except(['show']);
-        Route::get('inventory-transactions', [InventoryTransactionController::class, 'index']);
-        Route::post('inventory-transactions', [InventoryTransactionController::class, 'store']);
+    // Facilities: inventory
+    Route::apiResource('inventory-items', InventoryItemController::class)->except(['show']);
+    Route::get('inventory-transactions', [InventoryTransactionController::class, 'index']);
+    Route::post('inventory-transactions', [InventoryTransactionController::class, 'store']);
 
-        // Facilities: clinic & cafeteria
-        Route::apiResource('clinic-visits', ClinicVisitController::class)->except(['show']);
-        Route::apiResource('cafeteria-menus', CafeteriaMenuController::class)->except(['show']);
+    // Facilities: clinic & cafeteria
+    Route::apiResource('clinic-visits', ClinicVisitController::class)->except(['show']);
+    Route::apiResource('cafeteria-menus', CafeteriaMenuController::class)->except(['show']);
 
-        // Analytics
-        Route::get('analytics/overview', [AnalyticsController::class, 'overview']);
-        Route::get('analytics/enrollment', [AnalyticsController::class, 'enrollment']);
-        Route::get('analytics/attendance', [AnalyticsController::class, 'attendance']);
-        Route::get('analytics/academics', [AnalyticsController::class, 'academics']);
-        Route::get('analytics/finance', [AnalyticsController::class, 'finance']);
-        Route::get('analytics/budget', [AnalyticsController::class, 'budget']);
-        Route::get('analytics/staff-attendance', [AnalyticsController::class, 'staffAttendance']);
-        Route::get('analytics/by-branch', [AnalyticsController::class, 'byBranch']);
+    // Analytics
+    Route::get('analytics/overview', [AnalyticsController::class, 'overview']);
+    Route::get('analytics/enrollment', [AnalyticsController::class, 'enrollment']);
+    Route::get('analytics/attendance', [AnalyticsController::class, 'attendance']);
+    Route::get('analytics/academics', [AnalyticsController::class, 'academics']);
+    Route::get('analytics/finance', [AnalyticsController::class, 'finance']);
+    Route::get('analytics/budget', [AnalyticsController::class, 'budget']);
+    Route::get('analytics/staff-attendance', [AnalyticsController::class, 'staffAttendance']);
+    Route::get('analytics/by-branch', [AnalyticsController::class, 'byBranch']);
 
-        // Report library
-        Route::get('reports', [ReportController::class, 'catalog']);
-        Route::get('reports/{key}', [ReportController::class, 'show']);
+    // Report library
+    Route::get('reports', [ReportController::class, 'catalog']);
+    Route::get('reports/{key}', [ReportController::class, 'show']);
 
-        // Audit trail
-        Route::get('activity-logs', [ActivityLogController::class, 'index']);
-        Route::get('activity-log-subject-types', [ActivityLogController::class, 'subjectTypes']);
+    // Audit trail
+    Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('activity-log-subject-types', [ActivityLogController::class, 'subjectTypes']);
 
-        // AI Assistant
-        Route::get('ai-assistant/status', [AiAssistantController::class, 'status']);
-        Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->middleware('throttle:ai-assistant');
-        Route::post('ai-assistant/lesson-plan', [AiAssistantController::class, 'lessonPlan'])->middleware('throttle:ai-assistant');
+    // AI Assistant
+    Route::get('ai-assistant/status', [AiAssistantController::class, 'status']);
+    Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])->middleware('throttle:ai-assistant');
+    Route::post('ai-assistant/lesson-plan', [AiAssistantController::class, 'lessonPlan'])->middleware('throttle:ai-assistant');
 
-        // AI Exam Paper Generator
-        Route::get('exam-papers', [ExamPaperController::class, 'index']);
-        Route::post('exam-papers/generate', [ExamPaperController::class, 'generate'])->middleware('throttle:ai-assistant');
-        Route::get('exam-papers/{examPaper}', [ExamPaperController::class, 'show']);
-        Route::patch('exam-papers/{examPaper}', [ExamPaperController::class, 'update']);
-        Route::post('exam-papers/{examPaper}/refine', [ExamPaperController::class, 'refine'])->middleware('throttle:ai-assistant');
-        Route::post('exam-papers/{examPaper}/finalize', [ExamPaperController::class, 'finalize']);
-        Route::get('exam-papers/{examPaper}/pdf/{type}', [ExamPaperController::class, 'pdf']);
-        Route::delete('exam-papers/{examPaper}', [ExamPaperController::class, 'destroy']);
+    // AI Exam Paper Generator
+    Route::get('exam-papers', [ExamPaperController::class, 'index']);
+    Route::post('exam-papers/generate', [ExamPaperController::class, 'generate'])->middleware('throttle:ai-assistant');
+    Route::get('exam-papers/{examPaper}', [ExamPaperController::class, 'show']);
+    Route::patch('exam-papers/{examPaper}', [ExamPaperController::class, 'update']);
+    Route::post('exam-papers/{examPaper}/refine', [ExamPaperController::class, 'refine'])->middleware('throttle:ai-assistant');
+    Route::post('exam-papers/{examPaper}/finalize', [ExamPaperController::class, 'finalize']);
+    Route::get('exam-papers/{examPaper}/pdf/{type}', [ExamPaperController::class, 'pdf']);
+    Route::delete('exam-papers/{examPaper}', [ExamPaperController::class, 'destroy']);
 
-        // Signed on top of the surrounding auth:web + password.changed group
-        // — the signature alone proves this exact URL was legitimately
-        // issued, not that the current session still has permission, so the
-        // controller re-verifies ownership/status/expiry itself regardless.
-        Route::get('ai-reports/{report}/download', [AiReportDownloadController::class, 'download'])
-            ->middleware('signed')
-            ->name('ai.reports.download');
+    // Signed on top of the surrounding auth:web + password.changed group
+    // — the signature alone proves this exact URL was legitimately
+    // issued, not that the current session still has permission, so the
+    // controller re-verifies ownership/status/expiry itself regardless.
+    Route::get('ai-reports/{report}/download', [AiReportDownloadController::class, 'download'])
+        ->middleware('signed')
+        ->name('ai.reports.download');
 
-        // Website Builder (Premium) CMS — 'website-builder.access' checks
-        // BOTH the website-builder.manage permission AND the school's
-        // website_enabled premium grant before any of these run. See
-        // App\Http\Middleware\EnsureWebsiteBuilderAccess.
-        Route::middleware('website-builder.access')->prefix('website-builder')->group(function () {
-            Route::get('settings', [WebsiteSettingsController::class, 'show']);
-            Route::put('settings', [WebsiteSettingsController::class, 'update']);
-            Route::post('settings/hero-media', [WebsiteSettingsController::class, 'uploadHero']);
+    // Website Builder (Premium) CMS — 'website-builder.access' checks
+    // BOTH the website-builder.manage permission AND the school's
+    // website_enabled premium grant before any of these run. See
+    // App\Http\Middleware\EnsureWebsiteBuilderAccess.
+    Route::middleware('website-builder.access')->prefix('website-builder')->group(function () {
+        Route::get('settings', [WebsiteSettingsController::class, 'show']);
+        Route::put('settings', [WebsiteSettingsController::class, 'update']);
+        Route::post('settings/hero-media', [WebsiteSettingsController::class, 'uploadHero']);
 
-            Route::get('sections', [WebsiteSectionController::class, 'index']);
-            Route::put('sections', [WebsiteSectionController::class, 'update']);
+        Route::get('sections', [WebsiteSectionController::class, 'index']);
+        Route::put('sections', [WebsiteSectionController::class, 'update']);
 
-            Route::apiResource('facilities', WebsiteFacilityController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('facilities', WebsiteFacilityController::class)->only(['index', 'store', 'update', 'destroy']);
 
-            Route::apiResource('gallery-albums', WebsiteGalleryAlbumController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::post('gallery-albums/{galleryAlbum}/images', [WebsiteGalleryImageController::class, 'store']);
-            Route::put('gallery-images/{image}', [WebsiteGalleryImageController::class, 'update']);
-            Route::delete('gallery-images/{image}', [WebsiteGalleryImageController::class, 'destroy']);
+        Route::apiResource('gallery-albums', WebsiteGalleryAlbumController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::post('gallery-albums/{galleryAlbum}/images', [WebsiteGalleryImageController::class, 'store']);
+        Route::put('gallery-images/{image}', [WebsiteGalleryImageController::class, 'update']);
+        Route::delete('gallery-images/{image}', [WebsiteGalleryImageController::class, 'destroy']);
 
-            Route::apiResource('banners', WebsiteBannerController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('testimonials', WebsiteTestimonialController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('downloads', WebsiteDownloadController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('calendar-events', WebsiteCalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('banners', WebsiteBannerController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('testimonials', WebsiteTestimonialController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('downloads', WebsiteDownloadController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('calendar-events', WebsiteCalendarEventController::class)->only(['index', 'store', 'update', 'destroy']);
 
-            Route::get('news', [WebsiteNewsController::class, 'index']);
-            Route::put('news/{news}', [WebsiteNewsController::class, 'update']);
+        Route::get('news', [WebsiteNewsController::class, 'index']);
+        Route::put('news/{news}', [WebsiteNewsController::class, 'update']);
 
-            Route::get('analytics/summary', [WebsiteAnalyticsController::class, 'summary']);
+        Route::get('analytics/summary', [WebsiteAnalyticsController::class, 'summary']);
 
-            // Multi-page nav content: Admission (per-class), Explore Us
-            // (Leadership, Policies, Sport & Games), Academic Disciplines,
-            // Offices & Directorates, Research & Innovation / Projects.
-            Route::get('admission-classes', [WebsiteAdmissionClassController::class, 'index']);
-            Route::put('admission-classes', [WebsiteAdmissionClassController::class, 'update']);
+        // Multi-page nav content: Admission (per-class), Explore Us
+        // (Leadership, Policies, Sport & Games), Academic Disciplines,
+        // Offices & Directorates, Research & Innovation / Projects.
+        Route::get('admission-classes', [WebsiteAdmissionClassController::class, 'index']);
+        Route::put('admission-classes', [WebsiteAdmissionClassController::class, 'update']);
 
-            Route::get('academic-departments', [WebsiteAcademicDepartmentController::class, 'index']);
-            Route::put('academic-departments', [WebsiteAcademicDepartmentController::class, 'update']);
+        Route::get('academic-departments', [WebsiteAcademicDepartmentController::class, 'index']);
+        Route::put('academic-departments', [WebsiteAcademicDepartmentController::class, 'update']);
 
-            Route::apiResource('leadership', WebsiteLeadershipController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('policies', WebsitePolicyController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('sports-programs', WebsiteSportsProgramController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('sports-media', WebsiteSportsMediaController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('offices', WebsiteOfficeController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::apiResource('research-projects', WebsiteResearchProjectController::class)->only(['index', 'store', 'update', 'destroy']);
-        });
+        Route::apiResource('leadership', WebsiteLeadershipController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('policies', WebsitePolicyController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('sports-programs', WebsiteSportsProgramController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('sports-media', WebsiteSportsMediaController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('offices', WebsiteOfficeController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('research-projects', WebsiteResearchProjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
 };
 
 $parentRoutes = function () {
@@ -427,6 +436,11 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     Route::middleware('password.changed')->group(function () use ($schoolRoutes, $parentRoutes) {
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::patch('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'read']);
+        Route::get('auth/sessions', [SessionController::class, 'index']);
+        Route::delete('auth/sessions/{session}', [SessionController::class, 'destroy']);
         // Self-service API key management — mint/revoke personal access
         // tokens for the 'v1' group below, from the dashboard.
         Route::apiResource('tokens', ApiTokenController::class)->only(['index', 'store', 'destroy']);
@@ -469,6 +483,10 @@ Route::prefix('v1')->group(function () use ($schoolRoutes, $parentRoutes) {
     Route::middleware(['auth.token', 'throttle:api-token'])->group(function () use ($schoolRoutes, $parentRoutes) {
         Route::post('/auth/logout', [ApiAuthController::class, 'logout']);
         Route::get('/auth/me', [ApiAuthController::class, 'me']);
+
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::patch('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'read']);
 
         Route::prefix('school')->name('v1.')->group($schoolRoutes);
         Route::middleware('role:Parent')->prefix('parent')->group($parentRoutes);

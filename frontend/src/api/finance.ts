@@ -97,6 +97,11 @@ export async function recordPayment(invoiceId: string, payload: RecordPaymentPay
   return data.data
 }
 
+export async function reversePayment(paymentId: string, reason: string): Promise<Invoice> {
+  const { data } = await apiClient.post<{ data: Invoice }>(`/school/payments/${paymentId}/reverse`, { reason })
+  return data.data
+}
+
 export async function listStudentFeeExclusions(
   studentId: string,
   academicYearId: string

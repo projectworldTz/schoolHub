@@ -23,6 +23,7 @@ class GradeBand extends Model
         'max_score',
         'remark',
         'gpa',
+        'points',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class GradeBand extends Model
             'min_score' => 'integer',
             'max_score' => 'integer',
             'gpa' => 'decimal:2',
+            'points' => 'integer',
         ];
     }
 

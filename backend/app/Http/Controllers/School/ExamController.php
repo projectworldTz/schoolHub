@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\School\ExamRequest;
 use App\Http\Resources\School\ExamResource;
 use App\Models\Exam;
+use App\Services\Notifications\SchoolEventNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ExamController extends Controller
 {
+    public function __construct(private SchoolEventNotifier $notifier) {}
+
     public function index(Request $request)
     {
         $exams = Exam::query()
@@ -68,7 +71,12 @@ class ExamController extends Controller
             'status' => ['required', Rule::in(['draft', 'scheduled', 'completed', 'published'])],
         ]);
 
+        $wasPublished = $exam->status === 'published';
         $exam->update($data);
+
+        if (! $wasPublished && $exam->status === 'published') {
+            rescue(fn () => $this->notifier->examPublished($exam), report: true);
+        }
 
         return new ExamResource($exam->load(['academicYear', 'term']));
     }

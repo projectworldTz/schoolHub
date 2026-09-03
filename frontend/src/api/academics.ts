@@ -5,7 +5,11 @@ import type { GradingSystem, Room, SchoolClass, Stream, Subject } from '@/types/
 export interface GradingSystemPayload {
   name: string
   is_default: boolean
-  grade_bands: { label: string; min_score: number; max_score: number }[]
+  necta_enabled?: boolean
+  points_subject_count?: number
+  division_rules?: { label: string; min_points: number; max_points: number }[]
+  assessment_weights?: Record<string, number>
+  grade_bands: { label: string; min_score: number; max_score: number; remark?: string; points?: number }[]
 }
 
 export const classesApi = createCrudApi<SchoolClass>('classes')

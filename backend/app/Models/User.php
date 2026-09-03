@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
@@ -148,7 +149,7 @@ class User extends Authenticatable
      * teacher (Stream::class_teacher_id), so existing homeroom assignments
      * scope correctly with no separate backfill required.
      */
-    public function assignedClassIds(): \Illuminate\Support\Collection
+    public function assignedClassIds(): Collection
     {
         $direct = $this->assignedClasses()->pluck('school_classes.id');
         $homeroom = Stream::where('class_teacher_id', $this->id)->pluck('school_class_id');
@@ -184,6 +185,11 @@ class User extends Authenticatable
     public function timetableEntries(): HasMany
     {
         return $this->hasMany(TimetableEntry::class, 'teacher_id');
+    }
+
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(AppNotification::class);
     }
 
     public function homeworksSet(): HasMany

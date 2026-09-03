@@ -6,6 +6,7 @@ use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Models\PaymentReversal;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentFeeExclusion;
@@ -155,6 +156,26 @@ class InvoiceService
             $invoice->save();
 
             return $payment;
+        });
+    }
+
+    public function reversePayment(Payment $payment, string $reason, ?string $reversedBy): PaymentReversal
+    {
+        return DB::transaction(function () use ($payment, $reason, $reversedBy) {
+            $payment = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            if ($payment->reversal()->exists()) {
+                throw ValidationException::withMessages(['payment' => 'This payment has already been reversed.']);
+            }
+            $invoice = Invoice::whereKey($payment->invoice_id)->lockForUpdate()->firstOrFail();
+            $reversal = $payment->reversal()->create([
+                'amount' => $payment->amount, 'reason' => $reason,
+                'reversed_by' => $reversedBy, 'reversed_at' => now(),
+            ]);
+            $invoice->amount_paid = max(0, (float) $invoice->amount_paid - (float) $payment->amount);
+            $invoice->status = static::computeStatus($invoice);
+            $invoice->save();
+
+            return $reversal;
         });
     }
 

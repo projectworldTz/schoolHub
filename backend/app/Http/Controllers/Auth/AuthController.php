@@ -11,10 +11,12 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Mail\PasswordResetMail;
 use App\Models\User;
+use App\Services\Notifications\InAppNotificationService;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -22,6 +24,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private InAppNotificationService $notifications) {}
+
     public function login(LoginRequest $request)
     {
         $credentials = $request->validated();
@@ -55,6 +59,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $this->notifyIfNewDevice($request, $user);
 
         return new UserResource($user);
     }
@@ -176,6 +181,38 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return new UserResource($request->user());
+    }
+
+    private function notifyIfNewDevice(Request $request, User $user): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        $sessions = DB::table(config('session.table', 'sessions'))->where('user_id', $user->id);
+        if (! (clone $sessions)->exists()) {
+            return;
+        }
+
+        $known = (clone $sessions)
+            ->where('ip_address', $request->ip())
+            ->where('user_agent', (string) $request->userAgent())
+            ->exists();
+
+        if ($known) {
+            return;
+        }
+
+        $fingerprint = hash('sha256', $request->ip().'|'.$request->userAgent());
+        rescue(fn () => $this->notifications->send(
+            $user,
+            'suspicious_login',
+            'New sign-in detected',
+            "Your account was signed in from {$request->ip()}. Review your active sessions if this was not you.",
+            '/app/settings',
+            ['ip_address' => $request->ip(), 'user_agent' => $request->userAgent()],
+            "new-device:{$fingerprint}",
+        ), report: true);
     }
 
     /**

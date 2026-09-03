@@ -7,13 +7,17 @@ use App\Http\Requests\School\MarkAttendanceRequest;
 use App\Http\Resources\School\AttendanceRecordResource;
 use App\Models\AttendanceRecord;
 use App\Models\Student;
+use App\Services\Notifications\SchoolEventNotifier;
 use App\Services\School\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class AttendanceController extends Controller
 {
-    public function __construct(protected AttendanceService $attendance) {}
+    public function __construct(
+        protected AttendanceService $attendance,
+        protected SchoolEventNotifier $notifier,
+    ) {}
 
     /**
      * A browsable, filterable log of past attendance — by class, status,
@@ -122,6 +126,15 @@ class AttendanceController extends Controller
             ], $data['records']),
             $request->user()->id,
         );
+
+        Student::query()
+            ->whereIn('id', collect($data['records'])->pluck('student_id'))
+            ->with('guardians.user')
+            ->get()
+            ->each(function (Student $student) use ($data) {
+                $record = collect($data['records'])->firstWhere('student_id', $student->id);
+                rescue(fn () => $this->notifier->attendance($student, $record['status'], $data['date']), report: true);
+            });
 
         return response()->json(['message' => 'Attendance confirmed.']);
     }

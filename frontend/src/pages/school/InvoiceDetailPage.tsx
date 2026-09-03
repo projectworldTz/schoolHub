@@ -44,7 +44,7 @@ import {
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { InvoiceStatusBadge } from '@/components/school/InvoiceStatusBadge'
 import { InvoiceCategoryBreakdown } from '@/components/school/InvoiceCategoryBreakdown'
-import { useInvoice, useRecordPayment } from '@/hooks/useFinance'
+import { useInvoice, useRecordPayment, useReversePayment } from '@/hooks/useFinance'
 import { buildCategoryBreakdown } from '@/lib/invoiceBreakdown'
 import type { Invoice, PaymentMethod } from '@/types/finance'
 
@@ -378,6 +378,16 @@ export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const invoiceId = id ?? ''
   const { data: invoice, isLoading } = useInvoice(invoiceId)
+  const reversePayment = useReversePayment(invoiceId)
+
+  function handleReverse(paymentId: string) {
+    const reason = window.prompt('Enter the reason for reversing this payment:')?.trim()
+    if (!reason) return
+    reversePayment.mutate({ paymentId, reason }, {
+      onSuccess: () => toast.success('Payment reversed; the original remains in the audit history'),
+      onError: (error) => toast.error(isAxiosError(error) ? (error.response?.data?.message ?? 'Could not reverse payment') : 'Could not reverse payment'),
+    })
+  }
 
   if (isLoading || !invoice) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
@@ -449,12 +459,13 @@ export function InvoiceDetailPage() {
                 <TableHead>Method</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>Received by</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {invoice.payments?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No payments recorded yet.
                   </TableCell>
                 </TableRow>
@@ -470,6 +481,13 @@ export function InvoiceDetailPage() {
                   </TableCell>
                   <TableCell>{payment.reference ?? '—'}</TableCell>
                   <TableCell>{payment.received_by_name ?? '—'}</TableCell>
+                  <TableCell>
+                    {payment.reversal ? (
+                      <span className="text-xs text-destructive" title={payment.reversal.reason}>Reversed</span>
+                    ) : (
+                      <Button variant="outline" size="sm" disabled={reversePayment.isPending} onClick={() => handleReverse(payment.id)}>Reverse</Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

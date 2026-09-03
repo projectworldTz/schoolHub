@@ -7,6 +7,7 @@ use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\GradeBand;
 use App\Models\GradingSystem;
+use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\TimetableEntry;
 use App\Models\User;
@@ -97,6 +98,76 @@ class ExamService
             ->where('min_score', '<=', $percentage)
             ->where('max_score', '>=', $percentage)
             ->first();
+    }
+
+    /**
+     * Optional, school-configured NECTA-style points summary. No national
+     * thresholds are hard-coded: schools opt in, assign points to their
+     * own grade bands, and define division ranges appropriate to the level.
+     */
+    public function pointsSummary(Collection $subjectPercentages): ?array
+    {
+        $system = GradingSystem::where('is_default', true)->with('gradeBands')->first();
+        if (! $system?->necta_enabled) {
+            return null;
+        }
+
+        $points = $subjectPercentages->map(function (float $percentage) use ($system) {
+            return $system->gradeBands->first(fn (GradeBand $band) => $percentage >= $band->min_score && $percentage <= $band->max_score)?->points;
+        })->filter(fn ($point) => $point !== null)->sort()->values();
+
+        $count = min($system->points_subject_count ?? $points->count(), $points->count());
+        if ($count === 0) {
+            return ['total_points' => null, 'division' => null, 'subjects_counted' => 0];
+        }
+        $total = $points->take($count)->sum();
+        $division = collect($system->division_rules ?? [])->first(
+            fn ($rule) => $total >= $rule['min_points'] && $total <= $rule['max_points']
+        );
+
+        return ['total_points' => $total, 'division' => $division['label'] ?? null, 'subjects_counted' => $count];
+    }
+
+    public function continuousAssessment(Student $student, Exam $exam): ?array
+    {
+        $system = GradingSystem::where('is_default', true)->first();
+        $weights = $system?->assessment_weights ?? [];
+        if ($weights === [] || ! $exam->term_id) {
+            return null;
+        }
+
+        $results = ExamResult::where('student_id', $student->id)
+            ->whereNotNull('marks_obtained')
+            ->whereHas('examSubject.exam', fn ($q) => $q
+                ->where('academic_year_id', $exam->academic_year_id)->where('term_id', $exam->term_id)
+                ->whereIn('status', ['completed', 'published']))
+            ->with(['examSubject.subject', 'examSubject.exam'])->get();
+
+        $subjects = $results->groupBy(fn ($result) => $result->examSubject->subject_id)->map(function ($rows) use ($weights) {
+            $weighted = 0;
+            $usedWeight = 0;
+            foreach ($rows as $result) {
+                $weight = (float) ($weights[$result->examSubject->exam->exam_type] ?? 0);
+                if ($weight <= 0 || (float) $result->examSubject->max_marks <= 0) {
+                    continue;
+                }
+                $weighted += ((float) $result->marks_obtained / (float) $result->examSubject->max_marks * 100) * $weight;
+                $usedWeight += $weight;
+            }
+            if ($usedWeight <= 0) {
+                return null;
+            }
+            $score = round($weighted / $usedWeight, 2);
+
+            return ['subject_name' => $rows->first()->examSubject->subject->name, 'score' => $score, 'grade' => $this->gradeForPercentage($score)];
+        })->filter()->values();
+
+        if ($subjects->isEmpty()) {
+            return null;
+        }
+        $average = round((float) $subjects->avg('score'), 2);
+
+        return ['subjects' => $subjects, 'average_percentage' => $average, 'grade' => $this->gradeForPercentage($average)];
     }
 
     /**

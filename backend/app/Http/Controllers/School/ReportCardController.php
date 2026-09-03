@@ -278,6 +278,13 @@ class ReportCardController extends Controller
             ];
         })->values();
 
+        $pointsSummary = $this->examService->pointsSummary(
+            $results->whereNotNull('marks_obtained')->map(fn ($result) => (float) $result->examSubject->max_marks > 0
+                    ? ((float) $result->marks_obtained / (float) $result->examSubject->max_marks) * 100
+                    : 0.0
+            )
+        );
+
         return [
             'student_id' => $student->id,
             'student_name' => $student->full_name,
@@ -300,6 +307,8 @@ class ReportCardController extends Controller
                     $classRow['position'] ?? null,
                     $classRanking->count(),
                 ),
+                'necta' => $pointsSummary,
+                'continuous_assessment' => $this->examService->continuousAssessment($student, $exam),
             ],
         ];
     }

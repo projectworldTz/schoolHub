@@ -61,7 +61,21 @@
                         @endif
                     </td>
                 </tr>
-            </table>
+        </table>
+
+        @if(!empty($card['summary']['necta']))
+            <p><strong>Points:</strong> {{ $card['summary']['necta']['total_points'] ?? '—' }}
+                &nbsp; <strong>Division:</strong> {{ $card['summary']['necta']['division'] ?? '—' }}
+                &nbsp; <span>({{ $card['summary']['necta']['subjects_counted'] }} subjects counted)</span>
+            </p>
+        @endif
+
+        @if(!empty($card['summary']['continuous_assessment']))
+            <p><strong>Continuous assessment:</strong>
+                {{ $card['summary']['continuous_assessment']['average_percentage'] }}%
+                ({{ $card['summary']['continuous_assessment']['grade'] ?? '—' }})
+            </p>
+        @endif
 
             <table class="data">
                 <thead>

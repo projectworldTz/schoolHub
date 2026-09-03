@@ -26,3 +26,22 @@ export interface TimetableEntry {
   academic_year_id: string
   day_of_week: DayOfWeek
 }
+
+export interface TeacherAvailability {
+  id: string
+  teacher_id: string
+  academic_year_id: string
+  timetable_period_id: string
+  day_of_week: DayOfWeek
+  is_available: boolean
+}
+
+export interface TimetableSubstitution {
+  id: string
+  timetable_entry_id: string
+  substitute_teacher_id: string
+  date: string
+  reason: string | null
+  substitute_teacher?: { id: string; name: string }
+  timetable_entry?: TimetableEntry
+}

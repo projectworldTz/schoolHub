@@ -12,6 +12,7 @@ import {
   listInvoices,
   listStudentFeeExclusions,
   recordPayment,
+  reversePayment,
   updateStudentFeeExclusion,
   type ExcludeStudentFeePayload,
   type FeeCategoryPayload,
@@ -67,6 +68,17 @@ export function useRecordPayment(invoiceId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: RecordPaymentPayload) => recordPayment(invoiceId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...INVOICES_KEY, invoiceId] })
+      queryClient.invalidateQueries({ queryKey: INVOICES_KEY })
+    },
+  })
+}
+
+export function useReversePayment(invoiceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ paymentId, reason }: { paymentId: string; reason: string }) => reversePayment(paymentId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...INVOICES_KEY, invoiceId] })
       queryClient.invalidateQueries({ queryKey: INVOICES_KEY })

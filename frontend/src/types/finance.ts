@@ -54,6 +54,7 @@ export interface Payment {
   paid_at: string
   received_by_name?: string
   notes: string | null
+  reversal?: { id: string; amount: string; reason: string; reversed_at: string } | null
 }
 
 export type InvoiceStatus = 'unpaid' | 'partial' | 'paid' | 'overdue' | 'cancelled'

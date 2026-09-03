@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\School\AnnouncementRequest;
 use App\Http\Resources\School\AnnouncementResource;
 use App\Models\Announcement;
+use App\Services\Notifications\SchoolEventNotifier;
 use Illuminate\Http\Request;
 
 class AnnouncementController extends Controller
 {
+    public function __construct(private SchoolEventNotifier $notifier) {}
+
     /**
      * Any authenticated school user can read the announcement list —
      * audience-based filtering of "which announcements are relevant to me"
@@ -35,6 +38,8 @@ class AnnouncementController extends Controller
             'created_by' => $request->user()->id,
             'published_at' => $request->validated('published_at') ?? now(),
         ]);
+
+        rescue(fn () => $this->notifier->announcement($announcement), report: true);
 
         return new AnnouncementResource($announcement->load(['schoolClass', 'creator']));
     }

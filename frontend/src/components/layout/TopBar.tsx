@@ -34,6 +34,7 @@ import { QuickAddMenu } from '@/components/layout/QuickAddMenu'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useAcademicYears, useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { useConversations } from '@/hooks/useMessages'
+import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/hooks/useNotifications'
 import { hasPermission } from '@/lib/permissions'
 import { AI_ASSISTANT_LINK, WEBSITE_BUILDER_LINK } from '@/config/nav'
 import { cn } from '@/lib/utils'
@@ -78,6 +79,9 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const { data: school } = useSchoolProfile()
   const { data: academicYears } = useAcademicYears.useList()
   const { data: conversations } = useConversations()
+  const { data: notifications } = useNotifications()
+  const markNotificationRead = useMarkNotificationRead()
+  const markAllNotificationsRead = useMarkAllNotificationsRead()
   const logoutMutation = useLogout()
   const navigate = useNavigate()
   const [schoolMenuOpen, setSchoolMenuOpen] = useState(false)
@@ -95,6 +99,12 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   const currentYear = academicYears?.find((y) => y.id === selectedYearId) ?? academicYears?.find((y) => y.is_current) ?? academicYears?.[0]
   const unreadMessageCount = conversations?.reduce((sum, c) => sum + c.unread_count, 0) ?? 0
+  const unreadNotificationCount = notifications?.meta.unread_count ?? 0
+
+  function openNotification(id: string, actionUrl: string | null) {
+    markNotificationRead.mutate(id)
+    if (actionUrl) navigate(actionUrl)
+  }
 
   return (
     <header className="bg-sidebar text-sidebar-foreground">
@@ -212,11 +222,57 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="hover:bg-sidebar-accent relative rounded-full text-white hover:text-white">
                 <Bell className="size-4" />
+                {unreadNotificationCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full p-0 text-[10px]"
+                  >
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 p-0">
-              <div className="border-b px-4 py-3 text-sm font-medium">Notifications</div>
-              <EmptyPanel icon={Bell} title="You're all caught up" description="New notifications will show up here." />
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <span className="text-sm font-medium">Notifications</span>
+                {unreadNotificationCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={markAllNotificationsRead.isPending}
+                    onClick={() => markAllNotificationsRead.mutate()}
+                  >
+                    <Check className="mr-1 size-3.5" /> Mark all read
+                  </Button>
+                )}
+              </div>
+              {!notifications || notifications.data.length === 0 ? (
+                <EmptyPanel icon={Bell} title="You're all caught up" description="New notifications will show up here." />
+              ) : (
+                <div className="max-h-96 divide-y overflow-y-auto">
+                  {notifications.data.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => openNotification(notification.id, notification.action_url)}
+                      className={cn(
+                        'flex w-full gap-3 px-4 py-3 text-left hover:bg-accent',
+                        !notification.read_at && 'bg-primary/5',
+                      )}
+                    >
+                      <span className={cn('mt-1 size-2 shrink-0 rounded-full', notification.read_at ? 'bg-transparent' : 'bg-primary')} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-medium">{notification.title}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{timeLabel(notification.created_at)}</span>
+                        </span>
+                        <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{notification.message}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </PopoverContent>
           </Popover>
 

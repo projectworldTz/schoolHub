@@ -47,12 +47,17 @@ export interface GradeBand {
   max_score: number
   remark: string | null
   gpa: number | null
+  points: number | null
 }
 
 export interface GradingSystem {
   id: string
   name: string
   is_default: boolean
+  necta_enabled: boolean
+  points_subject_count: number | null
+  division_rules: { label: string; min_points: number; max_points: number }[]
+  assessment_weights: Record<string, number>
   grade_bands: GradeBand[]
   created_at: string
 }

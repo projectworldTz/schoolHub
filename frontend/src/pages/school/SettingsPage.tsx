@@ -59,6 +59,7 @@ import {
   useUpdateSchoolProfile,
 } from '@/hooks/useSchoolSetup'
 import { useApiTokens, useCreateApiToken, useDeleteApiToken } from '@/hooks/useApiTokens'
+import { useAccountSessions, useRevokeAccountSession } from '@/hooks/useSessions'
 import type { SchoolPaymentAccountPayload } from '@/api/school-setup'
 import type { Branch, Department, SchoolPaymentAccount } from '@/types/school-setup'
 import type { CreatedApiToken } from '@/types/apiTokens'
@@ -643,6 +644,56 @@ function ApiTokensTab() {
   )
 }
 
+function SecurityTab() {
+  const { data: sessions, isLoading, error } = useAccountSessions()
+  const revoke = useRevokeAccountSession()
+
+  async function handleRevoke(id: string) {
+    try {
+      await revoke.mutateAsync(id)
+      toast.success('Session signed out')
+    } catch {
+      toast.error('Could not sign out that session')
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Devices and sessions</CardTitle>
+        <CardDescription>Review devices signed into your account and remove access you do not recognise.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && <p className="text-sm text-destructive">Session management is unavailable with the current server configuration.</p>}
+        <div className="space-y-3">
+          {isLoading && <p className="text-sm text-muted-foreground">Loading sessions…</p>}
+          {sessions?.map((session) => (
+            <div key={session.id} className="flex items-center justify-between gap-4 rounded-md border p-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{session.user_agent ?? 'Unknown device'}</p>
+                  {session.is_current && <Badge variant="secondary">Current</Badge>}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {session.ip_address ?? 'Unknown IP'} · Active {new Date(session.last_active_at).toLocaleString()}
+                </p>
+              </div>
+              {!session.is_current && (
+                <Button variant="outline" size="sm" disabled={revoke.isPending} onClick={() => handleRevoke(session.id)}>
+                  Sign out
+                </Button>
+              )}
+            </div>
+          ))}
+          {!isLoading && !error && sessions?.length === 0 && (
+            <p className="text-sm text-muted-foreground">No database-backed sessions are currently recorded.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SettingsPage() {
   return (
     <div className="space-y-6">
@@ -657,6 +708,7 @@ export function SettingsPage() {
           <TabsTrigger value="branches">Branches</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
           <ProfileTab />
@@ -672,6 +724,9 @@ export function SettingsPage() {
         </TabsContent>
         <TabsContent value="api-keys" className="mt-4">
           <ApiTokensTab />
+        </TabsContent>
+        <TabsContent value="security" className="mt-4">
+          <SecurityTab />
         </TabsContent>
       </Tabs>
     </div>

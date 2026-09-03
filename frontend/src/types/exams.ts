@@ -108,6 +108,8 @@ export interface ReportCard {
     class_size: number
     class_teacher_remark?: string | null
     performance_message?: PerformanceMessage
+    necta?: { total_points: number | null; division: string | null; subjects_counted: number } | null
+    continuous_assessment?: { average_percentage: number; grade: string | null; subjects: { subject_name: string; score: number; grade: string | null }[] } | null
   }
 }
 
