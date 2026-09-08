@@ -34,14 +34,14 @@ export function PlatformLayout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-30 border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-2 gap-y-2 px-3 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <PlatformMobileNav links={NAV_LINKS} />
-            <Logo />
-            <Badge variant="secondary" className="rounded-full">
+            <Logo className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
+            <Badge variant="secondary" className="hidden rounded-full md:inline-flex">
               Platform Admin
             </Badge>
-            <nav className="ml-2 hidden items-center gap-1 sm:flex">
+            <nav className="ml-2 hidden items-center gap-1 lg:flex">
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
@@ -59,25 +59,25 @@ export function PlatformLayout() {
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
             <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />
-            <div className="ml-1 flex items-center gap-2">
+            <div className="ml-1 hidden items-center gap-2 sm:flex">
               <Avatar className="size-7">
                 <AvatarFallback className="bg-gradient-brand text-xs text-white">
                   {user?.name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
+              <span className="hidden max-w-40 truncate text-sm font-medium xl:inline">{user?.name}</span>
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
+            <Button variant="ghost" size="icon" aria-label="Sign out" className="rounded-full" onClick={handleLogout}>
               <LogOut className="size-4" />
             </Button>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="app-content mx-auto min-w-0 max-w-6xl px-3 py-5 sm:px-6 sm:py-8">
         <Outlet />
       </main>
     </div>

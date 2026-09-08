@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchChildAttendance,
@@ -53,10 +54,11 @@ export function useChildResults(studentId: string) {
 }
 
 export function useChildFees(studentId: string) {
+  const feeEnabled = useFeeManagementEnabled()
   return useQuery({
     queryKey: ['parent', 'children', studentId, 'fees'],
     queryFn: () => fetchChildFees(studentId),
-    enabled: Boolean(studentId),
+    enabled: feeEnabled && Boolean(studentId),
   })
 }
 

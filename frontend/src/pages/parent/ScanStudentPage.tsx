@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useParams } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { QrCode, ShieldAlert } from 'lucide-react'
@@ -16,6 +17,7 @@ import { ExamResultsList } from '@/components/parent/ExamResultsList'
  * printed ID card is expected to land on this page.
  */
 export function ScanStudentPage() {
+  const feeEnabled = useFeeManagementEnabled()
   const { qrCode = '' } = useParams<{ qrCode: string }>()
   const { data: student, isLoading, isError, error } = useScannedStudent(qrCode)
   const { data: results, isLoading: resultsLoading } = useChildResults(student?.id ?? '')
@@ -68,9 +70,9 @@ export function ScanStudentPage() {
         </CardHeader>
       </Card>
 
-      {!invoicesLoading && invoices && <ParentRewardCard studentName={student.first_name} invoices={invoices} />}
+      {feeEnabled && !invoicesLoading && invoices && <ParentRewardCard studentName={student.first_name} invoices={invoices} />}
 
-      <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />
+      {feeEnabled && <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />}
       <ExamResultsList results={results} loading={resultsLoading} />
     </div>
   )

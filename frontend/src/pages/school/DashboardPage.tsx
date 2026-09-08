@@ -365,7 +365,7 @@ export function DashboardPage() {
       </div>
 
       <div className={cn('grid grid-cols-1 gap-4 lg:grid-cols-3', fadeUp(6).className)} style={fadeUp(6).style}>
-        <Card className="border-none shadow-sm lg:col-span-2">
+        {canFinance && (<Card className="border-none shadow-sm lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base">Fee Collection Overview</CardTitle>
@@ -404,7 +404,7 @@ export function DashboardPage() {
               <EmptyState icon={Wallet} text="No fee collection recorded for this period yet." />
             )}
           </CardContent>
-        </Card>
+        </Card>)}
 
         <Card className="border-none shadow-sm">
           <CardHeader>
@@ -546,13 +546,13 @@ export function DashboardPage() {
         <Card className="border-none shadow-sm lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Recent Activities</CardTitle>
-            <CardDescription>Admissions, payments, and exams — most recent first</CardDescription>
+            <CardDescription>{canFinance ? 'Admissions, payments, and exams' : 'Admissions and exams'} - most recent first</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1">
             {(overview?.activity.length ?? 0) === 0 && (
               <EmptyState icon={ClipboardList} text="Nothing to show yet — activity will appear here as things happen." />
             )}
-            {(overview?.activity ?? []).map((entry, i) => {
+            {(overview?.activity ?? []).filter((entry) => user?.fee_management_enabled !== false || entry.type !== 'payment').map((entry, i) => {
               const Icon = entry.type === 'admission' ? UserPlus : entry.type === 'payment' ? Wallet : FileBarChart
               const color = entry.type === 'admission' ? 'var(--chart-1)' : entry.type === 'payment' ? 'var(--chart-3)' : 'var(--chart-5)'
               return (

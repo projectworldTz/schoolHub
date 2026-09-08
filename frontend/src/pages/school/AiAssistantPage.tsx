@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
@@ -113,6 +114,7 @@ function ReportDownloadCard({ report }: { report: GeneratedReport }) {
 }
 
 function ChatPanel() {
+  const feeEnabled = useFeeManagementEnabled()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const chat = useAiChat()
@@ -156,7 +158,7 @@ function ChatPanel() {
                 <p className="mt-1 text-sm text-muted-foreground">Try one of these, or type your own question below.</p>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                {SUGGESTIONS.map((s) => (
+                {SUGGESTIONS.filter((suggestion) => feeEnabled || !suggestion.includes('fees')).map((s) => (
                   <button
                     key={s}
                     type="button"

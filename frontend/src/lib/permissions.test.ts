@@ -3,7 +3,7 @@ import { hasPermission } from '@/lib/permissions'
 import type { User } from '@/types/auth'
 
 function userWith(permissions: string[]): User {
-  return { permissions } as unknown as User
+  return { permissions, fee_management_enabled: true } as unknown as User
 }
 
 describe('hasPermission', () => {
@@ -41,5 +41,23 @@ describe('hasPermission', () => {
     const user = { roles: ['Super Admin'], permissions: [] } as unknown as User
     expect(hasPermission(user, 'exams.manage')).toBe(true)
     expect(hasPermission(user, ['finance.manage', 'staff.manage'])).toBe(true)
+  })
+})
+
+
+describe('school fee feature access', () => {
+  it('preserves default access and isolates disabled schools', () => {
+    const enabled = userWith(['finance.manage', 'payroll.manage'])
+    const disabled = { ...enabled, fee_management_enabled: false }
+    expect(hasPermission(enabled, 'finance.manage')).toBe(true)
+    expect(hasPermission(disabled, 'finance.manage')).toBe(false)
+    expect(hasPermission(disabled, 'payroll.manage')).toBe(true)
+    expect(hasPermission(disabled, ['finance.manage', 'payroll.manage'])).toBe(true)
+    expect(hasPermission({ ...disabled, fee_management_enabled: true }, 'finance.manage')).toBe(true)
+  })
+  it('also hides fees for a Super Admin viewing a disabled school', () => {
+    const user = { roles: ['Super Admin'], permissions: [], fee_management_enabled: false } as unknown as User
+    expect(hasPermission(user, 'finance.manage')).toBe(false)
+    expect(hasPermission(user, 'students.manage')).toBe(true)
   })
 })

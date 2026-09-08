@@ -44,6 +44,9 @@ class AuthController extends Controller
         $abilities = ($data['abilities'] ?? null) === 'read-only' ? ['read-only'] : ['*'];
         $token = $user->createToken($data['device_name'], $abilities);
 
+        // Login began without a tenant; serialize feature access for the verified user.
+        Tenant::set($user->school_id);
+
         return response()->json([
             'data' => [
                 'token' => $token->plainTextToken,

@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createCrudHooks } from '@/hooks/useCrud'
 import {
@@ -29,7 +30,8 @@ export const useFeeStructures = createCrudHooks<FeeStructure, FeeStructurePayloa
 const INVOICES_KEY = ['school', 'invoices'] as const
 
 export function useInvoices(params: ListInvoicesParams = {}) {
-  return useQuery({ queryKey: [...INVOICES_KEY, params], queryFn: () => listInvoices(params) })
+  const feeEnabled = useFeeManagementEnabled()
+  return useQuery({ enabled: feeEnabled, queryKey: [...INVOICES_KEY, params], queryFn: () => listInvoices(params) })
 }
 
 export function useInvoice(id: string) {

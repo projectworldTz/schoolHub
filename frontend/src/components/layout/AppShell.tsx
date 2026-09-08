@@ -25,7 +25,7 @@ function ActingSchoolBanner({ schoolName }: { schoolName: string }) {
   }
 
   return (
-    <div className="flex items-center justify-center gap-3 bg-amber-500 px-4 py-1.5 text-sm font-medium text-amber-950">
+    <div className="flex flex-wrap items-center justify-center gap-2 bg-amber-500 px-4 py-1.5 text-sm font-medium text-amber-950">
       <span>Platform admin — viewing {schoolName} with full access</span>
       <Button
         variant="outline"
@@ -56,7 +56,7 @@ export function AppShell() {
         <ModuleNavBar />
       </div>
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+      <main className="app-content mx-auto min-w-0 max-w-7xl px-3 py-5 pb-24 sm:px-6 lg:py-8 lg:pb-24">
         {!id && <Breadcrumbs />}
         <Outlet />
       </main>

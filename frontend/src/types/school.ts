@@ -1,3 +1,5 @@
+import type { SchoolFeatureSettings } from '@/config/schoolFeatures'
+
 export type SchoolStatus = 'pending' | 'approved' | 'suspended' | 'rejected'
 
 export type AiAccessStatus = 'not_granted' | 'active' | 'suspended' | 'expired'
@@ -15,7 +17,7 @@ export type SchoolType =
   | 'vocational'
   | 'other'
 
-export interface School {
+export interface School extends SchoolFeatureSettings {
   id: string
   name: string
   slug: string
@@ -36,6 +38,7 @@ export interface School {
   approved_at: string | null
   suspended_at: string | null
   suspension_reason: string | null
+  fee_management_enabled: boolean
   ai_enabled: boolean
   ai_activated_at: string | null
   ai_expires_at: string | null

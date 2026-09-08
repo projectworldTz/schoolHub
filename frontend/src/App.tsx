@@ -4,6 +4,7 @@ import { ActivateAccountPage } from '@/pages/auth/ActivateAccountPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage'
+import { SchoolDetailPage } from '@/pages/platform/SchoolDetailPage'
 import { SchoolsPage } from '@/pages/platform/SchoolsPage'
 import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { DashboardPage } from '@/pages/school/DashboardPage'
@@ -99,6 +100,7 @@ function App() {
           <Route element={<PlatformLayout />}>
             <Route path="/platform/dashboard" element={<PlatformDashboardPage />} />
             <Route path="/platform/schools" element={<SchoolsPage />} />
+            <Route path="/platform/schools/:id" element={<SchoolDetailPage />} />
           </Route>
         </Route>
 

@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { z } from 'zod'
@@ -194,7 +195,7 @@ function AddGuardianDialog({ studentId }: { studentId: string }) {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="phone"
@@ -1090,7 +1091,7 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="first_name"
@@ -1118,7 +1119,7 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="status"
@@ -1229,6 +1230,7 @@ function EditStudentDialog({ student, onOpenChange }: { student: Student; onOpen
 }
 
 export function StudentDetailPage() {
+  const feeEnabled = useFeeManagementEnabled()
   const { id } = useParams<{ id: string }>()
   const studentId = id ?? ''
   const { data: student, isLoading } = useStudent(studentId)
@@ -1244,7 +1246,7 @@ export function StudentDetailPage() {
   return (
     <div className="space-y-6">
       <Breadcrumbs extra={student.full_name} />
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold">{student.full_name}</h1>
@@ -1252,7 +1254,7 @@ export function StudentDetailPage() {
           </div>
           <p className="text-sm text-muted-foreground">Admission #{student.admission_number}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
@@ -1444,7 +1446,7 @@ export function StudentDetailPage() {
       </Card>
 
       <AttendanceCard studentId={studentId} />
-      <FeeExclusionsCard studentId={studentId} />
+      {feeEnabled && <FeeExclusionsCard studentId={studentId} />}
       <DocumentsCard studentId={studentId} />
       <ReportCardsCard studentId={studentId} />
     </div>

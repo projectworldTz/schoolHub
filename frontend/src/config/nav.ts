@@ -50,14 +50,7 @@ export interface NavSection {
   links?: NavLink[]
 }
 
-/**
- * Exactly 13 top-level entries, matching the module nav bar's fixed icon
- * count — every route that used to live here still does, just regrouped so
- * Attendance/Examinations/Library/Transport/Hostel are their own icon
- * instead of buried a level down. Sections with `links` render as a
- * dropdown (unchanged mega-menu behavior); sections with `to` are a direct
- * link.
- */
+/** Shared grouping for desktop menus, mobile navigation, and search. */
 export const NAV_SECTIONS: NavSection[] = [
   {
     key: 'dashboard',
@@ -83,6 +76,7 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: BookOpen,
     links: [
       { label: 'Subjects & Grading', to: '/app/academics', description: 'Curriculum and grading systems', icon: BookOpen, permission: 'subjects.manage' },
+      { label: 'Examinations', to: '/app/exams', description: 'Exams, marks, results, and report cards', icon: FileBarChart, permission: ['exams.manage', 'exam-marks.record'] },
       { label: 'Classes & Streams', to: '/app/classes', description: 'Classes, streams, rooms', icon: Building2, permission: 'classes.manage' },
       { label: 'Timetable', to: '/app/timetable', description: 'Periods and weekly schedule', icon: Table2, permission: 'timetable.manage' },
       { label: 'Homework', to: '/app/homework', description: 'Assignments and submissions', icon: NotebookPen, permission: 'homework.manage' },
@@ -116,13 +110,6 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: CalendarCheck,
     to: '/app/attendance',
     permission: 'attendance.manage',
-  },
-  {
-    key: 'examinations',
-    label: 'Examinations',
-    icon: FileBarChart,
-    to: '/app/exams',
-    permission: ['exams.manage', 'exam-marks.record'],
   },
   {
     key: 'library',
@@ -178,7 +165,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ]
 
-/** Surfaced as its own icon in the topbar (not the 13-item module bar) since it's a premium, gated feature rather than a regular module. */
+/** Surfaced as its own icon in the topbar (not the module bar) since it's a premium, gated feature rather than a regular module. */
 export const AI_ASSISTANT_LINK: NavLink = {
   label: 'AI Assistant',
   to: '/app/ai-assistant',
@@ -187,7 +174,7 @@ export const AI_ASSISTANT_LINK: NavLink = {
   permission: 'ai-assistant.use',
 }
 
-/** Same reasoning as AI_ASSISTANT_LINK — a premium, gated module kept out of the fixed 13-item bar rather than making it a 14th icon. */
+/** Same reasoning as AI_ASSISTANT_LINK — a premium, gated module kept out of the module bar. */
 export const WEBSITE_BUILDER_LINK: NavLink = {
   label: 'Website Builder',
   to: '/app/website-builder',

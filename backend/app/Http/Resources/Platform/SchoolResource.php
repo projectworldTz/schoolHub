@@ -33,6 +33,7 @@ class SchoolResource extends JsonResource
             'approved_at' => $this->approved_at,
             'suspended_at' => $this->suspended_at,
             'suspension_reason' => $this->suspension_reason,
+            ...\App\Services\School\SchoolFeatureAccess::states($this->resource),
             'ai_enabled' => $this->ai_enabled,
             'ai_activated_at' => $this->ai_activated_at,
             'ai_expires_at' => $this->ai_expires_at,

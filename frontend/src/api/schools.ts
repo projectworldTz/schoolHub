@@ -1,3 +1,4 @@
+import type { SchoolFeature, SchoolFeatureSettings } from '@/config/schoolFeatures'
 import { apiClient } from '@/api/client'
 import type { LicenseDurationMonths, PaginatedResponse, PlatformDashboard, School } from '@/types/school'
 
@@ -17,7 +18,7 @@ export async function listSchools(params: ListSchoolsParams = {}): Promise<Pagin
   return data
 }
 
-export interface CreateSchoolPayload {
+export interface CreateSchoolPayload extends Partial<SchoolFeatureSettings> {
   name: string
   slug: string
   type: School['type']
@@ -133,4 +134,24 @@ export async function enterSchool(id: string): Promise<void> {
 
 export async function exitActingSchool(): Promise<void> {
   await apiClient.post('/platform/exit-school')
+}
+
+export async function fetchSchool(id: string): Promise<School> {
+  const { data } = await apiClient.get<{ data: School }>(`/platform/schools/${id}`)
+  return data.data
+}
+
+export async function setSchoolFeeManagement(id: string, enabled: boolean): Promise<School> {
+  const { data } = await apiClient.put<{ data: School }>(`/platform/schools/${id}/fee-management`, { fee_management_enabled: enabled })
+  return data.data
+}
+
+export async function setSchoolFeature(id: string, feature: SchoolFeature, enabled: boolean): Promise<School> {
+  const { data } = await apiClient.put<{ data: School }>(`/platform/schools/${id}/features/${feature}`, { enabled })
+  return data.data
+}
+
+export async function setSchoolFeatures(id: string, settings: SchoolFeatureSettings): Promise<School> {
+  const { data } = await apiClient.put<{ data: School }>(`/platform/schools/${id}/features`, settings)
+  return data.data
 }

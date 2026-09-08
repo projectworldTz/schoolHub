@@ -1,6 +1,9 @@
-export interface User {
+import type { SchoolFeatureSettings } from '@/config/schoolFeatures'
+
+export interface User extends Partial<SchoolFeatureSettings> {
   id: string
   school_id: string | null
+  fee_management_enabled?: boolean
   name: string
   email: string
   phone: string | null

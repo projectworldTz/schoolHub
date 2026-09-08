@@ -31,9 +31,9 @@ export function ParentLayout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-30 border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
-          <Logo />
-          <div className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-2 gap-y-2 px-3 py-3 sm:px-6">
+          <Logo className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
             <div className="relative">
               <Button
                 variant="ghost"
@@ -73,19 +73,19 @@ export function ParentLayout() {
             <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />
-            <div className="ml-1 flex items-center gap-2">
+            <div className="ml-1 hidden items-center gap-2 sm:flex">
               <Avatar className="size-7">
                 <AvatarFallback className="bg-gradient-brand text-xs text-white">{user?.name?.[0]}</AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
+              <span className="hidden max-w-40 truncate text-sm font-medium xl:inline">{user?.name}</span>
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
+            <Button variant="ghost" size="icon" aria-label="Sign out" className="rounded-full" onClick={handleLogout}>
               <LogOut className="size-4" />
             </Button>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="app-content mx-auto min-w-0 max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
         <Outlet />
       </main>
     </div>

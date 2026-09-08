@@ -178,7 +178,7 @@ function CreateStudentDialog() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="first_name"
@@ -206,7 +206,7 @@ function CreateStudentDialog() {
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="date_of_birth"
@@ -719,12 +719,12 @@ export function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Students</h1>
           <p className="text-sm text-muted-foreground">Student profiles, guardians, and enrollment.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ImportStudentsDialog />
           <ImportGuardiansDialog />
           <CreateStudentDialog />

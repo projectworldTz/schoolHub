@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useState } from 'react'
 import {
   Area,
@@ -123,6 +124,7 @@ function useRangeState(initial: DateRangeKey = 'month') {
 }
 
 function OverviewTab() {
+  const feeEnabled = useFeeManagementEnabled()
   const { range, setRange, from, to, setFrom, setTo } = useRangeState('month')
   const params = range === 'custom' ? { range, from, to } : { range }
   const { data, isLoading } = useOverviewReport(params)
@@ -136,7 +138,7 @@ function OverviewTab() {
       {!isLoading && data && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {data.kpis.map((kpi) => (
+            {data.kpis.filter((kpi) => feeEnabled || !['revenue', 'fee_collection'].includes(kpi.key)).map((kpi) => (
               <KpiCard key={kpi.key} kpi={kpi} icon={KPI_ICONS[kpi.key] ?? FileBarChart} />
             ))}
           </div>
@@ -168,7 +170,7 @@ function OverviewTab() {
 
             <ChartCard title="Recent activity" description="Latest admissions, payments & exams" contentClassName="h-96">
               <div className="h-full overflow-y-auto">
-                <ActivityTimeline items={data.activity} />
+                <ActivityTimeline items={data.activity.filter((entry) => feeEnabled || entry.type !== 'payment')} />
               </div>
             </ChartCard>
           </div>
@@ -771,6 +773,7 @@ function BranchesTab() {
 }
 
 export function AnalyticsPage() {
+  const feeEnabled = useFeeManagementEnabled()
   return (
     <div className="space-y-6">
       <div>
@@ -784,7 +787,7 @@ export function AnalyticsPage() {
           <TabsTrigger value="enrollment">Enrollment</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="academics">Academics</TabsTrigger>
-          <TabsTrigger value="finance">Finance</TabsTrigger>
+          {feeEnabled && <TabsTrigger value="finance">Finance</TabsTrigger>}
           <TabsTrigger value="branches">Branches</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-4">
@@ -799,9 +802,9 @@ export function AnalyticsPage() {
         <TabsContent value="academics" className="mt-4">
           <AcademicsTab />
         </TabsContent>
-        <TabsContent value="finance" className="mt-4">
+        {feeEnabled && (<TabsContent value="finance" className="mt-4">
           <FinanceTab />
-        </TabsContent>
+        </TabsContent>)}
         <TabsContent value="branches" className="mt-4">
           <BranchesTab />
         </TabsContent>

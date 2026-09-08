@@ -26,7 +26,7 @@ export function QuickAddMenu({ floating = false, expanded = false }: { floating?
         {floating ? (
           <Button
             size="icon"
-            className="bg-gradient-brand fixed right-6 bottom-6 z-40 size-14 rounded-full text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105"
+            className="bg-gradient-brand fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:right-6 z-40 size-14 rounded-full text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105"
           >
             <Plus className="size-6" />
             <span className="sr-only">Quick add</span>

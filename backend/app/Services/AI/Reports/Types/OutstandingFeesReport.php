@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\School;
 use App\Models\User;
 use App\Services\AI\AiAuthorizationService;
+use App\Services\Finance\FeeManagementAccess;
 
 /**
  * Same authorization and query shape as
@@ -24,6 +25,10 @@ class OutstandingFeesReport
 
     public function authorize(User $user): bool|string
     {
+        if (! FeeManagementAccess::enabled()) {
+            return 'SchoolHub Fee Management is not enabled for this school.';
+        }
+
         if (! $this->authorization->canUseFeesTool($user)) {
             return 'You do not have permission to export fee information.';
         }
@@ -37,6 +42,8 @@ class OutstandingFeesReport
      */
     public function data(array $params, School $school): array
     {
+        FeeManagementAccess::ensureEnabled();
+
         $query = Invoice::query()
             ->whereColumn('amount_paid', '<', 'total_amount')
             ->with('student.currentEnrollment.schoolClass');

@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  fetchSchool,
+  setSchoolFeeManagement,
+  setSchoolFeatures,
   approveSchool,
   createSchool,
   enterSchool,
@@ -24,6 +27,9 @@ import {
   type ListSchoolsParams,
   type UpdateSchoolPayload,
 } from '@/api/schools'
+import { fetchCurrentUser } from '@/api/auth'
+import { SCHOOL_FEATURES, type SchoolFeatureSettings } from '@/config/schoolFeatures'
+import type { User } from '@/types/auth'
 import { AUTH_QUERY_KEY } from '@/hooks/useAuth'
 import type { LicenseDurationMonths } from '@/types/school'
 
@@ -205,8 +211,11 @@ export function useEnterSchool() {
 
   return useMutation({
     mutationFn: (id: string) => enterSchool(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: ['school'] })
+      queryClient.removeQueries({ queryKey: ['parent'] })
+      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEY })
+      queryClient.setQueryData(AUTH_QUERY_KEY, await fetchCurrentUser())
     },
   })
 }
@@ -216,7 +225,49 @@ export function useExitActingSchool() {
 
   return useMutation({
     mutationFn: () => exitActingSchool(),
-    onSuccess: () => {
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: ['school'] })
+      queryClient.removeQueries({ queryKey: ['parent'] })
+      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEY })
+      queryClient.setQueryData(AUTH_QUERY_KEY, await fetchCurrentUser())
+    },
+  })
+}
+
+export function useSchool(id: string) {
+  return useQuery({ queryKey: [...SCHOOLS_QUERY_KEY, id], queryFn: () => fetchSchool(id), enabled: Boolean(id) })
+}
+export function useSetSchoolFeeManagement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => setSchoolFeeManagement(id, enabled),
+    onSuccess: async (school) => {
+      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEY })
+      queryClient.setQueryData<User>(AUTH_QUERY_KEY, (user) => {
+        if (!user || (user.acting_school?.id ?? user.school_id) !== school.id) return user
+        return { ...user, fee_management_enabled: school.fee_management_enabled }
+      })
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
+    },
+  })
+}
+
+export function useSetSchoolFeatures() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, settings }: { id: string; settings: SchoolFeatureSettings }) => setSchoolFeatures(id, settings),
+    onSuccess: async (school) => {
+      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEY })
+      queryClient.setQueryData<User>(AUTH_QUERY_KEY, (user) => {
+        if (!user || (user.acting_school?.id ?? user.school_id) !== school.id) return user
+        const updated = { ...user }
+        for (const feature of SCHOOL_FEATURES) updated[feature.field] = school[feature.field]
+        return updated
+      })
+      queryClient.setQueryData([...SCHOOLS_QUERY_KEY, school.id], school)
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['school'] })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
     },
   })

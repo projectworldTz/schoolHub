@@ -12,13 +12,14 @@ use App\Models\ExamResult;
 use App\Models\Expense;
 use App\Models\GradingSystem;
 use App\Models\HostelRoom;
-use App\Models\Invoice;
 use App\Models\InventoryItem;
+use App\Models\Invoice;
 use App\Models\Payslip;
 use App\Models\StaffAttendanceRecord;
 use App\Models\StaffProfile;
 use App\Models\Student;
 use App\Models\TransportRoute;
+use App\Services\School\SchoolFeatureAccess;
 use Illuminate\Http\Request;
 
 /**
@@ -51,15 +52,28 @@ class ReportController extends Controller
         'clinic-visits' => ['title' => 'Clinic visit log', 'description' => 'Every recorded clinic visit with diagnosis and treatment.', 'category' => 'Facilities', 'permission' => 'clinic.manage'],
     ];
 
+    protected const FEATURES = [
+        'fee-collection' => 'fee_management',
+        'library-loans' => 'library',
+        'inventory-stock' => 'inventory',
+        'hostel-occupancy' => 'hostel',
+        'transport-roster' => 'transport',
+        'clinic-visits' => 'clinic',
+    ];
+
     public function catalog()
     {
-        $rows = collect(self::CATALOG)->map(fn ($meta, $key) => ['key' => $key, ...$meta])->values();
+        $rows = collect(self::CATALOG)->reject(fn ($meta, $key) => isset(self::FEATURES[$key]) && ! SchoolFeatureAccess::enabled(self::FEATURES[$key]))->map(fn ($meta, $key) => ['key' => $key, ...$meta])->values();
 
         return response()->json(['data' => $rows]);
     }
 
     public function show(Request $request, string $key)
     {
+        if (isset(self::FEATURES[$key])) {
+            SchoolFeatureAccess::ensureEnabled(self::FEATURES[$key]);
+        }
+
         $meta = self::CATALOG[$key] ?? null;
         abort_if($meta === null, 404, 'Unknown report.');
         abort_unless($request->user()->can($meta['permission']), 403);

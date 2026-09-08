@@ -22,7 +22,7 @@ export function PlatformMobileNav({ links }: { links: PlatformNavLink[] }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full sm:hidden">
+        <Button variant="ghost" size="icon" className="rounded-full lg:hidden">
           <Menu className="size-4" />
           <span className="sr-only">Open menu</span>
         </Button>

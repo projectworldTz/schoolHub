@@ -188,7 +188,7 @@ function CreateStaffDialog() {
               No login needed (support staff — cook, driver, gate keeper…)
             </label>
             {noLogin ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -266,7 +266,7 @@ function CreateStaffDialog() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="employment_type"
@@ -303,7 +303,7 @@ function CreateStaffDialog() {
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="gender"
@@ -455,7 +455,7 @@ function EditStaffDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="employment_type"
@@ -492,7 +492,7 @@ function EditStaffDialog({
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="gender"
@@ -927,7 +927,7 @@ function StaffTab() {
             />
           </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ImportTeachersDialog />
           <CreateStaffDialog />
         </div>
@@ -1128,7 +1128,7 @@ function CreateLeaveDialog() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="start_date"

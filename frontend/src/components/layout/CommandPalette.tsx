@@ -13,7 +13,7 @@ import {
 import { useCurrentUser } from '@/hooks/useAuth'
 import { hasPermission } from '@/lib/permissions'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { NAV_SECTIONS } from '@/config/nav'
+import { visibleNavSections } from '@/lib/navigation'
 import { listStudents } from '@/api/students'
 import { listStaff } from '@/api/staff'
 
@@ -64,10 +64,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     navigate(to)
   }
 
-  const staticEntries: StaticEntry[] = NAV_SECTIONS.flatMap((section) =>
+  const staticEntries: StaticEntry[] = visibleNavSections(user).flatMap((section) =>
     section.to
       ? [{ label: section.label, description: `Open ${section.label}`, to: section.to, icon: section.icon }]
-      : (section.links ?? []).map((link) => ({
+      : (section.links ?? []).filter((link) => hasPermission(user, link.permission)).map((link) => ({
           label: link.label,
           description: link.description,
           to: link.to,

@@ -199,6 +199,21 @@ class SchoolService
         return $school;
     }
 
+    public function setFeature(School $school, string $feature, bool $enabled): School
+    {
+        abort_unless(isset(\App\Services\School\SchoolFeatureAccess::FEATURES[$feature]), 404);
+        $school->update([$feature.'_enabled' => $enabled]);
+
+        return $school;
+    }
+
+    public function setFeeManagement(School $school, bool $enabled): School
+    {
+        $school->update(['fee_management_enabled' => $enabled]);
+
+        return $school;
+    }
+
     public function revokeWebsiteAccess(School $school, ?string $updatedByUserId): School
     {
         $school->update([

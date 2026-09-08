@@ -14,7 +14,7 @@ import { useCurrentUser } from '@/hooks/useAuth'
 import { useSchoolProfile } from '@/hooks/useSchoolSetup'
 import { hasPermission } from '@/lib/permissions'
 import { lmsTerm } from '@/lib/schoolTerms'
-import { NAV_SECTIONS } from '@/config/nav'
+import { visibleNavSections } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
 
 export function MobileNav() {
@@ -42,7 +42,7 @@ export function MobileNav() {
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-5rem)]">
           <div className="space-y-5 p-4">
-            {NAV_SECTIONS.filter((section) => hasPermission(user, section.permission)).map((section) =>
+            {visibleNavSections(user).map((section) =>
               section.to ? (
                 <Link
                   key={section.key}

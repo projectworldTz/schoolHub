@@ -139,7 +139,7 @@ function CreateHomeworkDialog() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="academic_year_id"
@@ -189,7 +189,7 @@ function CreateHomeworkDialog() {
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="subject_id"
@@ -273,7 +273,7 @@ export function HomeworkListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Homework</h1>
           <p className="text-sm text-muted-foreground">Assignments and submission tracking.</p>

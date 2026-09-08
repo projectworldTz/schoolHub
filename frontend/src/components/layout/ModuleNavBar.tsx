@@ -9,9 +9,9 @@ import {
 import { MegaMenuContent } from '@/components/layout/MegaMenuContent'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useSchoolProfile } from '@/hooks/useSchoolSetup'
-import { hasPermission } from '@/lib/permissions'
+import { visibleNavSections } from '@/lib/navigation'
 import { lmsTerm } from '@/lib/schoolTerms'
-import { NAV_SECTIONS, type NavLink } from '@/config/nav'
+import { type NavLink } from '@/config/nav'
 import { cn } from '@/lib/utils'
 import type { SchoolType } from '@/types/school'
 
@@ -34,12 +34,10 @@ export function ModuleNavBar() {
   const { data: user } = useCurrentUser()
   const { data: school } = useSchoolProfile()
 
-  const visibleSections = NAV_SECTIONS.map((section) => ({
+  const visibleSections = visibleNavSections(user).map((section) => ({
     ...section,
-    links: section.links
-      ?.filter((link) => hasPermission(user, link.permission))
-      .map((link) => resolveLmsLabel(link, school?.type)),
-  })).filter((section) => hasPermission(user, section.permission) && (section.to || (section.links && section.links.length > 0)))
+    links: section.links?.map((link) => resolveLmsLabel(link, school?.type)),
+  }))
 
   return (
     <div className="bg-sidebar border-sidebar-border hidden border-t xl:block">

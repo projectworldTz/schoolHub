@@ -23,7 +23,9 @@ export function useCurrentUser() {
     queryKey: AUTH_QUERY_KEY,
     queryFn: fetchCurrentUser,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchOnWindowFocus: true,
   })
 }
 

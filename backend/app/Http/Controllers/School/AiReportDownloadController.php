@@ -4,6 +4,7 @@ namespace App\Http\Controllers\School;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiGeneratedReport;
+use App\Services\Finance\FeeManagementAccess;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +27,10 @@ class AiReportDownloadController extends Controller
         // Phase 1 has no report-sharing/history feature — only the person
         // who asked the assistant to generate it can download it.
         abort_unless($report->user_id === $request->user()->id, 403);
+
+        if ($report->report_type === 'outstanding_fees') {
+            FeeManagementAccess::ensureEnabled();
+        }
 
         if ($report->status !== 'completed') {
             abort(404, 'This report is not ready or failed to generate.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\School;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\AdmissionApplication;
 use App\Models\AttendanceRecord;
 use App\Models\Branch;
@@ -21,6 +22,7 @@ use App\Models\StudentEnrollment;
 use App\Models\Subject;
 use App\Models\Term;
 use App\Models\User;
+use App\Services\Finance\FeeManagementAccess;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,12 +71,12 @@ class AnalyticsController extends Controller
                 $this->cumulativeSpark(SchoolClass::query(), 'created_at', $from, $to),
                 SchoolClass::where('created_at', '<', $prevTo)->count(),
             ),
-            $this->kpi(
+            FeeManagementAccess::enabled() ? $this->kpi(
                 'revenue', 'Revenue Collected', 'currency',
                 (float) Payment::whereBetween('paid_at', [$from->toDateString(), $to->toDateString()])->sum('amount'),
                 $this->dailySumSpark(Payment::query(), 'paid_at', 'amount', $from, $to),
                 (float) Payment::whereBetween('paid_at', [$prevFrom->toDateString(), $prevTo->toDateString()])->sum('amount'),
-            ),
+            ) : null,
             $this->kpi(
                 'subjects', 'Subjects', 'number',
                 Subject::where('is_active', true)->count(),
@@ -93,17 +95,17 @@ class AnalyticsController extends Controller
                 $this->attendanceRateSpark($from, $to),
                 $this->attendanceRateFor(now()->subDays($prevSpan)->toDateString()),
             ),
-            $this->kpi(
+            FeeManagementAccess::enabled() ? $this->kpi(
                 'fee_collection', 'Fee Collection', 'percent',
                 $this->collectionRate(),
                 $this->collectionRateSpark($from, $to),
                 null,
-            ),
+            ) : null,
         ];
 
         return response()->json(['data' => [
             'range' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
-            'kpis' => $kpis,
+            'kpis' => array_values(array_filter($kpis)),
             'admissions_funnel' => $this->admissionsFunnel(),
             'activity' => $this->recentActivity(),
         ]]);
@@ -435,7 +437,7 @@ class AnalyticsController extends Controller
     {
         $academicYearId = $request->input('academic_year_id')
             ?? Term::where('is_current', true)->value('academic_year_id')
-            ?? \App\Models\AcademicYear::orderByDesc('start_date')->value('id');
+            ?? AcademicYear::orderByDesc('start_date')->value('id');
 
         if (! $academicYearId) {
             return response()->json(['data' => ['academic_year_id' => null, 'lines' => [], 'total_budgeted' => 0, 'total_actual' => 0]]);
@@ -539,7 +541,7 @@ class AnalyticsController extends Controller
     {
         $academicYearId = $request->input('academic_year_id')
             ?? Term::where('is_current', true)->value('academic_year_id')
-            ?? \App\Models\AcademicYear::orderByDesc('start_date')->value('id');
+            ?? AcademicYear::orderByDesc('start_date')->value('id');
 
         $branches = Branch::orderBy('name')->get(['id', 'name']);
         if ($branches->isEmpty()) {
@@ -837,7 +839,7 @@ class AnalyticsController extends Controller
                 'at' => $a->created_at,
             ]);
 
-        $payments = Payment::query()
+        $payments = FeeManagementAccess::enabled() ? Payment::query()
             ->with('student')
             ->orderByDesc('created_at')
             ->limit(4)
@@ -846,7 +848,7 @@ class AnalyticsController extends Controller
                 'type' => 'payment',
                 'text' => ($p->student?->full_name ?? 'A student').' paid '.number_format((float) $p->amount),
                 'at' => $p->created_at,
-            ]);
+            ]) : collect();
 
         $exams = Exam::query()
             ->orderByDesc('created_at')

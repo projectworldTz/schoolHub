@@ -19,6 +19,16 @@ class School extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
+    protected $attributes = [
+        'fee_management_enabled' => true,
+        'library_enabled' => true,
+        'hostel_enabled' => true,
+        'transport_enabled' => true,
+        'cafeteria_enabled' => true,
+        'clinic_enabled' => true,
+        'inventory_enabled' => true,
+    ];
+
     protected $fillable = [
         'name',
         'slug',
@@ -38,6 +48,14 @@ class School extends Model
         'approved_at',
         'suspended_at',
         'suspension_reason',
+        'fee_management_enabled',
+        'library_enabled',
+        'hostel_enabled',
+        'transport_enabled',
+        'cafeteria_enabled',
+        'clinic_enabled',
+        'inventory_enabled',
+
         'ai_enabled',
         'ai_activated_at',
         'ai_expires_at',
@@ -59,6 +77,14 @@ class School extends Model
             'license_expires_at' => 'datetime',
             'approved_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'fee_management_enabled' => 'boolean',
+            'library_enabled' => 'boolean',
+            'hostel_enabled' => 'boolean',
+            'transport_enabled' => 'boolean',
+            'cafeteria_enabled' => 'boolean',
+            'clinic_enabled' => 'boolean',
+            'inventory_enabled' => 'boolean',
+
             'ai_enabled' => 'boolean',
             'ai_activated_at' => 'datetime',
             'ai_expires_at' => 'datetime',

@@ -5,6 +5,7 @@ namespace App\Services\AI\Tools;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Services\AI\AiAuthorizationService;
+use App\Services\Finance\FeeManagementAccess;
 
 /**
  * "Show students with outstanding fees." Reuses Invoice's own `balance`
@@ -25,6 +26,10 @@ class OutstandingFeesTool
 
     public function authorize(User $user): bool|string
     {
+        if (! FeeManagementAccess::enabled()) {
+            return 'SchoolHub Fee Management is not enabled for this school.';
+        }
+
         if (! $this->authorization->canUseFeesTool($user)) {
             return 'You do not have permission to view outstanding fee information.';
         }
@@ -35,6 +40,8 @@ class OutstandingFeesTool
     /** @param  array<string, mixed>  $params */
     public function run(array $params): array
     {
+        FeeManagementAccess::ensureEnabled();
+
         $query = Invoice::query()
             ->whereColumn('amount_paid', '<', 'total_amount')
             ->with('student.currentEnrollment.schoolClass');

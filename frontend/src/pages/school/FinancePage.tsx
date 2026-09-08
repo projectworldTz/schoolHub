@@ -86,7 +86,7 @@ function FeeCategoriesCard() {
       key: 'is_optional',
       label: 'Optional',
       render: (c) => (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Switch checked={c.is_optional} onCheckedChange={() => toggleOptional(c)} />
           <Badge variant={c.is_optional ? 'outline' : 'secondary'}>{c.is_optional ? 'Optional' : 'Mandatory'}</Badge>
         </div>
@@ -312,7 +312,7 @@ function GenerateInvoicesDialog() {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="academic_year_id"
@@ -693,7 +693,7 @@ function InvoicesTab() {
             </div>
           </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={() => window.open(feeReportPdfUrl({ status: status || undefined, search: search || undefined }), '_blank')}

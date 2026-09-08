@@ -42,6 +42,16 @@ class SchoolPolicy
         return $user->hasRole('Super Admin');
     }
 
+    public function manageFeatures(User $user, School $school): bool
+    {
+        return $user->hasRole('Super Admin');
+    }
+
+    public function manageFees(User $user, School $school): bool
+    {
+        return $user->hasRole('Super Admin');
+    }
+
     public function manageAi(User $user, School $school): bool
     {
         return $user->hasRole('Super Admin');

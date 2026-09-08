@@ -7,8 +7,8 @@ export function createCrudHooks<T extends { id: string }, TPayload = Partial<T>>
 ) {
   const key = ['school', queryKey] as const
 
-  function useList() {
-    return useQuery({ queryKey: key, queryFn: api.list })
+  function useList(enabled = true) {
+    return useQuery({ queryKey: key, queryFn: api.list, enabled })
   }
 
   function useCreate() {

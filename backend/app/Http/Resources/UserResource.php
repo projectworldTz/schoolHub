@@ -3,11 +3,13 @@
 namespace App\Http\Resources;
 
 use App\Models\School;
+use App\Models\User;
+use App\Services\School\SchoolFeatureAccess;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\User */
+/** @mixin User */
 class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -15,6 +17,7 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'school_id' => $this->school_id,
+            ...SchoolFeatureAccess::states(Tenant::check() ? School::find(Tenant::id()) : null),
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,

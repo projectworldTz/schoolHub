@@ -15,6 +15,13 @@ class StoreSchoolRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'fee_management_enabled' => ['sometimes', 'boolean'],
+            'library_enabled' => ['sometimes', 'boolean'],
+            'hostel_enabled' => ['sometimes', 'boolean'],
+            'transport_enabled' => ['sometimes', 'boolean'],
+            'cafeteria_enabled' => ['sometimes', 'boolean'],
+            'clinic_enabled' => ['sometimes', 'boolean'],
+            'inventory_enabled' => ['sometimes', 'boolean'],
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:schools,slug'],
             'type' => ['required', Rule::in([

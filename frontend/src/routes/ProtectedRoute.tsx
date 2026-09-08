@@ -1,3 +1,4 @@
+import { featureForPath } from '@/config/schoolFeatures'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useCurrentUser } from '@/hooks/useAuth'
 
@@ -41,6 +42,11 @@ export function ProtectedRoute({ requireRole }: ProtectedRouteProps) {
 
   if (requireRole && !user.roles?.includes(requireRole)) {
     return <Navigate to="/login" replace />
+  }
+
+  const feature = featureForPath(location.pathname)
+  if (feature && user[feature.field] !== true) {
+    return <div className="p-6">SchoolHub {feature.label} is not enabled for this school.</div>
   }
 
   return <Outlet />

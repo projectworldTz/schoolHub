@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useQuery } from '@tanstack/react-query'
 import {
   fetchAcademicsReport,
@@ -34,7 +35,9 @@ export function useAcademicsReport(examId?: string) {
 }
 
 export function useFinanceReport(params: RangeParams & { academic_year_id?: string } = {}) {
+  const feeEnabled = useFeeManagementEnabled()
   return useQuery({
+    enabled: feeEnabled,
     queryKey: ['school', 'analytics', 'finance', params],
     queryFn: () => fetchFinanceReport(params),
   })

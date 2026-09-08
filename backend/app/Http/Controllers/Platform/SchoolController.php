@@ -7,6 +7,7 @@ use App\Http\Requests\Platform\GrantSchoolAiAccessRequest;
 use App\Http\Requests\Platform\GrantSchoolWebsiteAccessRequest;
 use App\Http\Requests\Platform\RenewSchoolLicenseRequest;
 use App\Http\Requests\Platform\SetSchoolCustomDomainRequest;
+use App\Http\Requests\Platform\SetSchoolFeeManagementRequest;
 use App\Http\Requests\Platform\StoreSchoolRequest;
 use App\Http\Requests\Platform\SuspendSchoolAiAccessRequest;
 use App\Http\Requests\Platform\SuspendSchoolRequest;
@@ -123,6 +124,23 @@ class SchoolController extends Controller
         $school->update(['custom_domain' => $request->validated('custom_domain')]);
 
         return new SchoolResource($school);
+    }
+
+    public function setFeatures(\App\Http\Requests\Platform\SetSchoolFeaturesRequest $request, School $school)
+    {
+        $school->update($request->validated());
+
+        return new SchoolResource($school);
+    }
+
+    public function setFeature(\App\Http\Requests\Platform\SetSchoolFeatureRequest $request, School $school, string $feature)
+    {
+        return new SchoolResource($this->schools->setFeature($school, $feature, (bool) $request->validated('enabled')));
+    }
+
+    public function setFeeManagement(SetSchoolFeeManagementRequest $request, School $school)
+    {
+        return new SchoolResource($this->schools->setFeeManagement($school, (bool) $request->validated('fee_management_enabled')));
     }
 
     public function grantAiAccess(GrantSchoolAiAccessRequest $request, School $school)

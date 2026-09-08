@@ -53,7 +53,7 @@ const queryClient = new QueryClient({
 // Bump this string if a cached query's shape ever changes incompatibly
 // (a field renamed/removed) — it invalidates every persisted cache entry
 // on load rather than risk the UI rendering a stale, mismatched shape.
-const PERSIST_CACHE_BUSTER = 'v1'
+const PERSIST_CACHE_BUSTER = 'v3-school-features'
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,

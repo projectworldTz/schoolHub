@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useEffect } from 'react'
@@ -202,7 +203,7 @@ function ProfileTab() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -695,6 +696,7 @@ function SecurityTab() {
 }
 
 export function SettingsPage() {
+  const feeEnabled = useFeeManagementEnabled()
   return (
     <div className="space-y-6">
       <div>
@@ -704,7 +706,7 @@ export function SettingsPage() {
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="payment-accounts">Payment accounts</TabsTrigger>
+          {feeEnabled && <TabsTrigger value="payment-accounts">Payment accounts</TabsTrigger>}
           <TabsTrigger value="branches">Branches</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
@@ -713,9 +715,9 @@ export function SettingsPage() {
         <TabsContent value="profile" className="mt-4">
           <ProfileTab />
         </TabsContent>
-        <TabsContent value="payment-accounts" className="mt-4">
+        {feeEnabled && (<TabsContent value="payment-accounts" className="mt-4">
           <PaymentAccountsTab />
-        </TabsContent>
+        </TabsContent>)}
         <TabsContent value="branches" className="mt-4">
           <BranchesTab />
         </TabsContent>

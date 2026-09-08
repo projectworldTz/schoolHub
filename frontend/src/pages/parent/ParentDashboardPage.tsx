@@ -1,3 +1,4 @@
+import { useFeeManagementEnabled } from '@/hooks/useFeeManagement'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
@@ -46,6 +47,7 @@ import type { Student } from '@/types/students'
 import type { SchoolPaymentAccount } from '@/types/school-setup'
 
 function ChildOverview({ student, paymentAccounts }: { student: Student; paymentAccounts?: SchoolPaymentAccount[] }) {
+  const feeEnabled = useFeeManagementEnabled()
   const { data: attendance, isLoading: attendanceLoading } = useChildAttendance(student.id)
   const { data: homework, isLoading: homeworkLoading } = useChildHomework(student.id)
   const { data: results, isLoading: resultsLoading } = useChildResults(student.id)
@@ -71,7 +73,7 @@ function ChildOverview({ student, paymentAccounts }: { student: Student; payment
         </CardHeader>
       </Card>
 
-      {!invoicesLoading && invoices && (
+      {feeEnabled && !invoicesLoading && invoices && (
         <ParentRewardCard studentName={student.first_name} invoices={invoices} />
       )}
 
@@ -123,7 +125,7 @@ function ChildOverview({ student, paymentAccounts }: { student: Student; payment
             </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm">
+        {feeEnabled && (<Card className="border-none shadow-sm">
           <CardContent className="flex items-center gap-3 p-5">
             <span className="bg-gradient-brand flex size-10 items-center justify-center rounded-xl text-white">
               <Receipt className="size-5" />
@@ -135,10 +137,10 @@ function ChildOverview({ student, paymentAccounts }: { student: Student; payment
               </p>
             </div>
           </CardContent>
-        </Card>
+        </Card>)}
       </div>
 
-      {paymentAccounts && paymentAccounts.length > 0 && (
+      {feeEnabled && paymentAccounts && paymentAccounts.length > 0 && (
         <Card className="border-none bg-muted/40">
           <CardHeader>
             <CardTitle className="text-base">Pay fees to</CardTitle>
@@ -161,7 +163,7 @@ function ChildOverview({ student, paymentAccounts }: { student: Student; payment
         </Card>
       )}
 
-      <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />
+      {feeEnabled && <FeesTable invoices={invoices} loading={invoicesLoading} studentId={student.id} />}
 
       <Card>
         <CardHeader>
@@ -391,9 +393,10 @@ function ParentMessagesCard() {
 }
 
 export function ParentDashboardPage() {
+  const feeEnabled = useFeeManagementEnabled()
   const { data: children, isLoading } = useMyChildren()
   const { data: announcements } = useParentAnnouncements()
-  const { data: paymentAccounts } = useSchoolPaymentAccounts.useList()
+  const { data: paymentAccounts } = useSchoolPaymentAccounts.useList(feeEnabled)
   const [activeChild, setActiveChild] = useState('')
 
   useEffect(() => {

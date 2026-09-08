@@ -1,3 +1,5 @@
+import { SCHOOL_FEATURES } from '@/config/schoolFeatures'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -52,6 +54,14 @@ const LICENSE_DURATIONS = [
 ] as const
 
 const createSchoolSchema = z.object({
+  fee_management_enabled: z.boolean(),
+  library_enabled: z.boolean(),
+  hostel_enabled: z.boolean(),
+  transport_enabled: z.boolean(),
+  cafeteria_enabled: z.boolean(),
+  clinic_enabled: z.boolean(),
+  inventory_enabled: z.boolean(),
+
   name: z.string().min(2, 'Name is required'),
   slug: z
     .string()
@@ -116,6 +126,14 @@ export function CreateSchoolDialog() {
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
     defaultValues: {
+      fee_management_enabled: true,
+      library_enabled: true,
+      hostel_enabled: true,
+      transport_enabled: true,
+      cafeteria_enabled: true,
+      clinic_enabled: true,
+      inventory_enabled: true,
+
       name: '',
       slug: '',
       type: 'secondary',
@@ -234,7 +252,7 @@ export function CreateSchoolDialog() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="city"
@@ -299,6 +317,21 @@ export function CreateSchoolDialog() {
                 </FormItem>
               )}
             />
+            <fieldset className="space-y-3 border-t pt-4">
+              <legend className="text-sm font-medium">School features</legend>
+              <p className="text-sm text-muted-foreground">Select the features this school will use. Super Admin can change these anytime from the school details page.</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {SCHOOL_FEATURES.map((feature) => (
+                  <FormField key={feature.key} control={form.control} name={feature.field} render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-lg border p-3">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} /></FormControl>
+                      <FormLabel className="cursor-pointer leading-snug">{feature.label}</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                ))}
+              </div>
+            </fieldset>
             <div className="space-y-4 border-t pt-4">
               <p className="text-sm font-medium">School Owner account</p>
               <p className="text-muted-foreground text-sm">

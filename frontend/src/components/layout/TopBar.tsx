@@ -108,9 +108,9 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   return (
     <header className="bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+      <div className="flex min-h-16 flex-wrap items-center gap-1.5 px-3 py-2 sm:gap-3 sm:px-6">
         <MobileNav />
-        <Logo className="mr-1 shrink-0" onDark />
+        <Logo className="mr-1 shrink-0 [&>span:last-child]:hidden sm:[&>span:last-child]:inline" onDark />
 
         <DropdownMenu open={schoolMenuOpen} onOpenChange={setSchoolMenuOpen}>
           <DropdownMenuTrigger asChild>
@@ -171,15 +171,15 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
-            className="hover:bg-sidebar-accent hidden w-64 items-center justify-between gap-2 rounded-full text-white/70 hover:text-white/70 lg:flex"
+            className="hover:bg-sidebar-accent hidden w-64 min-w-0 items-center justify-between gap-2 rounded-full text-white/70 hover:text-white/70 lg:flex"
             onClick={onOpenSearch}
           >
             <span className="flex items-center gap-2 text-sm">
               <Search className="size-4" />
-              Search students, staff, classes, invoices…
+              Search students, staff, classes{user?.fee_management_enabled === true ? ', invoices' : ''}…
             </span>
             <kbd className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
           </Button>
@@ -192,13 +192,13 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <Search className="size-4" />
           </Button>
 
-          <QuickAddMenu expanded />
+          <div className="hidden md:block"><QuickAddMenu expanded /></div>
 
           {hasPermission(user, AI_ASSISTANT_LINK.permission) && (
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 hover:text-violet-200"
+              className="hidden rounded-full sm:inline-flex bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 hover:text-violet-200"
               onClick={() => navigate(AI_ASSISTANT_LINK.to)}
             >
               <Sparkles className="size-4" />
@@ -210,7 +210,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full bg-gradient-to-br from-yellow-400 to-red-500 text-white hover:from-yellow-300 hover:to-red-400"
+              className="hidden rounded-full sm:inline-flex bg-gradient-to-br from-yellow-400 to-red-500 text-white hover:from-yellow-300 hover:to-red-400"
               onClick={() => navigate(WEBSITE_BUILDER_LINK.to)}
             >
               <Globe className="size-4 animate-spin" />
@@ -332,7 +332,7 @@ export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
             </PopoverContent>
           </Popover>
 
-          <span className="text-white [&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
+          <span className="flex flex-wrap items-center text-white [&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
             <NavigationButtons />
             <RefreshButton />
             <ThemeToggle />

@@ -329,7 +329,7 @@ function RegisterTab() {
                 cannot be changed — double-check every student's status before continuing.
               </p>
             </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 text-sm">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 text-sm">
               {STATUS_OPTIONS.map((opt) => (
                 <div key={opt.value} className="contents">
                   <dt className="flex items-center gap-2 text-muted-foreground">

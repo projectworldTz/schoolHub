@@ -246,7 +246,7 @@ function CreateUserDialog() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Roles</FormLabel>
-                      <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                      <div className="grid max-h-48 grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
                         {roles?.map((role) => (
                           <label key={role} className="flex items-center gap-2 text-sm">
                             <Checkbox
@@ -332,7 +332,7 @@ function EditRolesDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Roles</FormLabel>
-                  <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
+                  <div className="grid max-h-48 grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto rounded-md border p-3">
                     {roles?.map((role) => (
                       <label key={role} className="flex items-center gap-2 text-sm">
                         <Checkbox
@@ -602,7 +602,7 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Users & Roles</h1>
           <p className="text-sm text-muted-foreground">Staff accounts for this school.</p>

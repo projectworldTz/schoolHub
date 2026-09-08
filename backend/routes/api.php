@@ -128,7 +128,7 @@ $schoolRoutes = function () {
     Route::put('profile', [SchoolProfileController::class, 'update']);
     Route::post('profile/logo', [SchoolProfileController::class, 'uploadLogo']);
     Route::delete('profile/logo', [SchoolProfileController::class, 'removeLogo']);
-    Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show']);
+    Route::apiResource('payment-accounts', SchoolPaymentAccountController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureFeeManagementEnabled::class);
 
     Route::apiResource('branches', BranchController::class);
     Route::apiResource('departments', DepartmentController::class);
@@ -256,21 +256,23 @@ $schoolRoutes = function () {
     // Parent Portal access grant
     Route::post('guardians/{guardian}/portal-access', [GuardianPortalController::class, 'store']);
 
-    // Finance: fees & billing
-    Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
-    Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
-    Route::post('invoices/import', [FeeImportController::class, 'import']);
-    Route::get('invoices', [InvoiceController::class, 'index']);
-    Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
-    Route::post('invoices/generate', [InvoiceController::class, 'generate']);
-    Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
-    Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
-    Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store']);
-    Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse']);
-    Route::get('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'index']);
-    Route::post('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'store']);
-    Route::patch('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'update']);
-    Route::delete('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'destroy']);
+    Route::middleware(\App\Http\Middleware\EnsureFeeManagementEnabled::class)->group(function () {
+        // Finance: fees & billing
+        Route::apiResource('fee-categories', FeeCategoryController::class)->except(['show']);
+        Route::apiResource('fee-structures', FeeStructureController::class)->except(['show']);
+        Route::post('invoices/import', [FeeImportController::class, 'import']);
+        Route::get('invoices', [InvoiceController::class, 'index']);
+        Route::get('invoices/pdf', [InvoiceController::class, 'pdf']);
+        Route::post('invoices/generate', [InvoiceController::class, 'generate']);
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
+        Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store']);
+        Route::post('payments/{payment}/reverse', [PaymentController::class, 'reverse']);
+        Route::get('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'index']);
+        Route::post('students/{student}/fee-exclusions', [StudentFeeExclusionController::class, 'store']);
+        Route::patch('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'update']);
+        Route::delete('students/{student}/fee-exclusions/{fee_exclusion}', [StudentFeeExclusionController::class, 'destroy']);
+    });
 
     // Finance: payroll
     Route::apiResource('staff-salaries', StaffSalaryController::class)->except(['show']);
@@ -286,38 +288,38 @@ $schoolRoutes = function () {
     Route::apiResource('budgets', BudgetController::class)->except(['show']);
 
     // Facilities: library
-    Route::apiResource('books', BookController::class);
-    Route::get('book-loans', [BookLoanController::class, 'index']);
-    Route::post('books/{book}/loans', [BookLoanController::class, 'store']);
-    Route::post('book-loans/{loan}/return', [BookLoanController::class, 'return']);
+    Route::apiResource('books', BookController::class)->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':library');
+    Route::get('book-loans', [BookLoanController::class, 'index'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':library');
+    Route::post('books/{book}/loans', [BookLoanController::class, 'store'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':library');
+    Route::post('book-loans/{loan}/return', [BookLoanController::class, 'return'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':library');
 
     // Facilities: hostel
-    Route::apiResource('hostel-rooms', HostelRoomController::class)->except(['show']);
-    Route::get('hostel-allocations', [HostelAllocationController::class, 'index']);
-    Route::post('hostel-allocations', [HostelAllocationController::class, 'store']);
-    Route::post('hostel-allocations/{allocation}/vacate', [HostelAllocationController::class, 'vacate']);
+    Route::apiResource('hostel-rooms', HostelRoomController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':hostel');
+    Route::get('hostel-allocations', [HostelAllocationController::class, 'index'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':hostel');
+    Route::post('hostel-allocations', [HostelAllocationController::class, 'store'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':hostel');
+    Route::post('hostel-allocations/{allocation}/vacate', [HostelAllocationController::class, 'vacate'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':hostel');
 
     // Facilities: transport
-    Route::apiResource('transport-routes', TransportRouteController::class)->except(['show']);
-    Route::get('transport-assignments', [TransportAssignmentController::class, 'index']);
-    Route::post('transport-assignments', [TransportAssignmentController::class, 'store']);
-    Route::post('transport-assignments/{assignment}/unassign', [TransportAssignmentController::class, 'unassign']);
+    Route::apiResource('transport-routes', TransportRouteController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':transport');
+    Route::get('transport-assignments', [TransportAssignmentController::class, 'index'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':transport');
+    Route::post('transport-assignments', [TransportAssignmentController::class, 'store'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':transport');
+    Route::post('transport-assignments/{assignment}/unassign', [TransportAssignmentController::class, 'unassign'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':transport');
 
     // Facilities: inventory
-    Route::apiResource('inventory-items', InventoryItemController::class)->except(['show']);
-    Route::get('inventory-transactions', [InventoryTransactionController::class, 'index']);
-    Route::post('inventory-transactions', [InventoryTransactionController::class, 'store']);
+    Route::apiResource('inventory-items', InventoryItemController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':inventory');
+    Route::get('inventory-transactions', [InventoryTransactionController::class, 'index'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':inventory');
+    Route::post('inventory-transactions', [InventoryTransactionController::class, 'store'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':inventory');
 
     // Facilities: clinic & cafeteria
-    Route::apiResource('clinic-visits', ClinicVisitController::class)->except(['show']);
-    Route::apiResource('cafeteria-menus', CafeteriaMenuController::class)->except(['show']);
+    Route::apiResource('clinic-visits', ClinicVisitController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':clinic');
+    Route::apiResource('cafeteria-menus', CafeteriaMenuController::class)->except(['show'])->middleware(\App\Http\Middleware\EnsureSchoolFeatureEnabled::class.':cafeteria');
 
     // Analytics
     Route::get('analytics/overview', [AnalyticsController::class, 'overview']);
     Route::get('analytics/enrollment', [AnalyticsController::class, 'enrollment']);
     Route::get('analytics/attendance', [AnalyticsController::class, 'attendance']);
     Route::get('analytics/academics', [AnalyticsController::class, 'academics']);
-    Route::get('analytics/finance', [AnalyticsController::class, 'finance']);
+    Route::get('analytics/finance', [AnalyticsController::class, 'finance'])->middleware(\App\Http\Middleware\EnsureFeeManagementEnabled::class);
     Route::get('analytics/budget', [AnalyticsController::class, 'budget']);
     Route::get('analytics/staff-attendance', [AnalyticsController::class, 'staffAttendance']);
     Route::get('analytics/by-branch', [AnalyticsController::class, 'byBranch']);
@@ -408,8 +410,8 @@ $parentRoutes = function () {
     Route::get('children/{student}/attendance', [ParentPortalController::class, 'attendance']);
     Route::get('children/{student}/homework', [ParentPortalController::class, 'homework']);
     Route::get('children/{student}/results', [ParentPortalController::class, 'results']);
-    Route::get('children/{student}/fees', [ParentPortalController::class, 'fees']);
-    Route::get('children/{student}/invoices/{invoice}', [ParentPortalController::class, 'invoice']);
+    Route::get('children/{student}/fees', [ParentPortalController::class, 'fees'])->middleware(\App\Http\Middleware\EnsureFeeManagementEnabled::class);
+    Route::get('children/{student}/invoices/{invoice}', [ParentPortalController::class, 'invoice'])->middleware(\App\Http\Middleware\EnsureFeeManagementEnabled::class);
     Route::get('announcements', [ParentPortalController::class, 'announcements']);
 
     // Read/reply only — parents never start a conversation (see
@@ -448,6 +450,10 @@ Route::middleware('auth:web')->group(function () use ($schoolRoutes, $parentRout
         Route::middleware('role:Super Admin')->prefix('platform')->group(function () {
             Route::get('dashboard', [PlatformDashboardController::class, 'index']);
             Route::apiResource('schools', PlatformSchoolController::class);
+            Route::put('schools/{school}/features', [PlatformSchoolController::class, 'setFeatures']);
+            Route::put('schools/{school}/features/{feature}', [PlatformSchoolController::class, 'setFeature'])
+                ->whereIn('feature', array_keys(\App\Services\School\SchoolFeatureAccess::FEATURES));
+            Route::put('schools/{school}/fee-management', [PlatformSchoolController::class, 'setFeeManagement']);
             Route::post('schools/{school}/approve', [PlatformSchoolController::class, 'approve']);
             Route::post('schools/{school}/suspend', [PlatformSchoolController::class, 'suspend']);
             Route::post('schools/{school}/renew-license', [PlatformSchoolController::class, 'renewLicense']);
